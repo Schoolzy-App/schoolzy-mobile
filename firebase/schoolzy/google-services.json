@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "603920733346",
+    "project_id": "schoolzy-640ed",
+    "storage_bucket": "schoolzy-640ed.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:603920733346:android:d524a032c37c284f4c33fb",
+        "android_client_info": {
+          "package_name": "com.schoolzy.schoolzy"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBhRrHZ8jEwP_VINYshp-sYK5uL8hy4kCM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

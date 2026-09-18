@@ -1,0 +1,31 @@
+{
+  "cli": {
+    "version": ">= 16.17.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "preview": {
+      "distribution": "internal",
+      "channel": "preview"
+    },
+    "production": {
+      "channel": "production",
+      "autoIncrement": true
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "appleId": "info@edugistics.com"
+      },
+      "android": {
+        "serviceAccountKeyPath": "./credentials/play-service-account.json",
+        "track": "internal"
+      }
+    }
+  }
+}
