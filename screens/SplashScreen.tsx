@@ -3,13 +3,13 @@ import { Image, StyleSheet, View } from "react-native";
 import Animated, {
   Easing,
   cancelAnimation,
-  runOnJS,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
   withTiming,
   type SharedValue,
 } from "react-native-reanimated";
+import { scheduleOnRN } from "react-native-worklets";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
 
@@ -88,7 +88,7 @@ export default function SplashScreen({
         "worklet";
         if (finished) {
           // Callback runs on the UI thread — hop back to JS to call onFinish.
-          runOnJS(onFinish)();
+          scheduleOnRN(onFinish);
         }
       });
     }, durationMs);
