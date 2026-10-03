@@ -15,6 +15,10 @@ const ChronicDiseaseForm = memo<ChronicDiseaseFormProps>(({ draft, onChange }) =
   const set = <K extends keyof ChronicDisease>(key: K, value: ChronicDisease[K]) =>
     onChange({ ...draft, [key]: value });
 
+  /** Un-ticking "Recovered" drops the date with it. */
+  const setRecovered = (recovered: boolean) =>
+    onChange({ ...draft, recovered, ...(recovered ? {} : { recoveredDate: '' }) });
+
   return (
     <>
       <View style={{ zIndex: 30 }}>
@@ -72,8 +76,21 @@ const ChronicDiseaseForm = memo<ChronicDiseaseFormProps>(({ draft, onChange }) =
       <CheckboxRow
         label="Recovered"
         value={draft.recovered ?? false}
-        onChange={(v) => set('recovered', v)}
+        onChange={setRecovered}
       />
+
+      {/* Only meaningful once recovered; clearing the flag clears the date so
+          a stale value can't be sent. `recoveredDate` was already in the DTO,
+          the mapper and the save payload — it just had no field. */}
+      {draft.recovered ? (
+        <DefaultInput
+          label="Recovery Date"
+          value={draft.recoveredDate ?? ''}
+          onChange={(v) => set('recoveredDate', v)}
+          type="date"
+          placeholder="DD/MM/YYYY"
+        />
+      ) : null}
     </>
   );
 });

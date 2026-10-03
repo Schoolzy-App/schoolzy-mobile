@@ -4,8 +4,13 @@ import React, { memo, useCallback, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, View } from 'react-native';
 
 import type { ColorPalette } from '@/apps';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+
 import { useStyles, useUploadHealthAttachments } from '@/hooks';
 import { useTheme } from '@/contexts/ThemeContext';
+import type { RootStackParamList } from '@/navigation/types';
+import { healthProfileApi } from '@/services/api';
 import { ApiError } from '@/types/api';
 import type { UploadFile } from '@/services/api/multipart';
 import type { AttachmentsState } from '@/types/wellness';
@@ -27,8 +32,38 @@ const AttachmentsTab = memo<AttachmentsTabProps>(
   /** Names of files uploaded in this session, for immediate feedback. */
   const [justUploaded, setJustUploaded] = useState<string[]>([]);
 
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
   const { mutateAsync: upload, isPending: isUploading } =
     useUploadHealthAttachments();
+
+  /**
+   * Opens a saved attachment in the document viewer.
+   *
+   * The file endpoint returns raw bytes and is authenticated, so it is handed
+   * to the viewer as a URL plus an Authorization header rather than fetched
+   * into JS memory — the same approach as newsletters and request files.
+   */
+  const handleOpenDocument = useCallback(
+    async (documentId: string, name: string) => {
+      if (typeof studentSeasonId !== 'number') return;
+
+      const attachmentId = Number(documentId);
+      if (!Number.isFinite(attachmentId)) return;
+
+      const headers = await healthProfileApi.getAttachmentHeaders();
+      navigation.navigate('Pdf', {
+        title: name,
+        uri: healthProfileApi.getAttachmentUrl(studentSeasonId, attachmentId),
+        headers,
+        // The file URL has no extension, so the viewer can't guess — the stored
+        // file name can. Attachments uploaded from here are photos.
+        kind: /\.pdf$/i.test(name) ? 'pdf' : 'image',
+      });
+    },
+    [studentSeasonId, navigation],
+  );
 
   /**
    * Lifts every edit immediately. This tab used to stage changes behind its own
@@ -115,14 +150,18 @@ const AttachmentsTab = memo<AttachmentsTabProps>(
         ) : (
           <View style={styles.docList}>
             {form.documents.map((doc) => (
-              <View key={doc.id} style={[styles.docRow, { borderColor: colors.border }]}>
+              <Pressable
+                key={doc.id}
+                style={[styles.docRow, { borderColor: colors.border }]}
+                onPress={() => handleOpenDocument(doc.id, doc.name)}
+              >
                 <MaterialIcons name="insert-drive-file" size={20} color={colors.secondary} />
                 <View style={styles.docInfo}>
                   <Text variant="label3" weight="semiBold" numberOfLines={1}>
                     {doc.name}
                   </Text>
                   <Text variant="caption1" weight="regular" color={colors.textSecondary}>
-                    {doc.size}
+                    {doc.size ? `${doc.size} · Tap to view` : 'Tap to view'}
                   </Text>
                 </View>
                 <Pressable
@@ -133,7 +172,7 @@ const AttachmentsTab = memo<AttachmentsTabProps>(
                 >
                   <MaterialIcons name="close" size={18} color={colors.danger} />
                 </Pressable>
-              </View>
+              </Pressable>
             ))}
           </View>
         )}
