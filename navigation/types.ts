@@ -141,6 +141,12 @@ export type NotificationParams = undefined;
 export type RequestParams = undefined;
 export type AddRequestParams = undefined;
 export type NewsletterParams = undefined;
+  /**
+   * What the file actually is. Health-profile attachments are photos, not PDFs,
+   * and a PDF renderer shows nothing for them. Omit it and the viewer guesses
+   * from the URL, then falls back to the other renderer if that guess fails.
+   */
+  kind?: "pdf" | "image";
 
 export type RootStackParamList = {
   Auth: undefined;
