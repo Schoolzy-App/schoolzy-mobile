@@ -13,6 +13,8 @@ export interface AnnouncementData {
   id: string;
   title: string;
   subtitle: string;
+  /** "03/10/2026" — shown above the time. */
+  date?: string;
   time: string;
   /** Override icon bg color */
   iconColor?: string;
@@ -25,7 +27,8 @@ interface AnnouncementItemProps extends AnnouncementData {
 }
 
 const AnnouncementItem = memo<AnnouncementItemProps>((props) => {
-  const { id, title, subtitle, time, iconColor, onPress, onSelect } = props;
+  const { id, title, subtitle, date, time, iconColor, onPress, onSelect } =
+    props;
     const { colors } = useTheme();
     const styles = useStyles(createStyles);
 
@@ -65,15 +68,28 @@ const AnnouncementItem = memo<AnnouncementItemProps>((props) => {
           </Text>
         </View>
 
-        {/* Time */}
-        <Text
-          variant="caption1"
-          weight="regular"
-          color={colors.textSecondary}
-          style={{ marginTop: 2 }}
-        >
-          {time}
-        </Text>
+        {/* Date above time — a time alone says nothing on a list that
+            spans weeks. */}
+        <View style={styles.timestamp}>
+          {date ? (
+            <Text
+              variant="caption1"
+              weight="medium"
+              color={colors.textSecondary}
+            >
+              {date}
+            </Text>
+          ) : null}
+          {time ? (
+            <Text
+              variant="caption2"
+              weight="regular"
+              color={colors.textSecondary}
+            >
+              {time}
+            </Text>
+          ) : null}
+        </View>
       </Pressable>
     );
 });
@@ -91,6 +107,11 @@ const createStyles = (colors: ColorPalette) =>
       borderRadius: 12,
       borderColor: colors.border,
       borderWidth: 1,
+    },
+    timestamp: {
+      alignItems: "flex-end",
+      marginTop: 2,
+      gap: 2,
     },
     content: {
       flex: 1,

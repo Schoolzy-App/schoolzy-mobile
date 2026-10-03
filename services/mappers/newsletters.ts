@@ -1,6 +1,6 @@
 import type { AnnouncementData } from "@/components/AnnouncementItem";
 import type { NewsletterDto } from "@/types/api";
-import { formatTime } from "@/utils/format";
+import { formatDate, formatTime } from "@/utils/format";
 
 /** Newsletter row plus the fields the PDF viewer needs. */
 export interface NewsletterListItem extends AnnouncementData {
@@ -16,6 +16,7 @@ export function toNewsletterItem(dto: NewsletterDto): NewsletterListItem {
     newsletterId: dto.id,
     title: dto.name ?? "",
     subtitle: dto.description ?? "",
+    date: formatDate(dto.date),
     time: formatTime(dto.date),
     fileUrl: dto.fileUrl,
   };
