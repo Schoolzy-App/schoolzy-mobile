@@ -22,6 +22,7 @@ import WellnessScreen from "@/screens/main/WellnessScreen";
 import ChatWithSchoolScreen from "../screens/main/ChatWithSchoolScreen";
 import NotificationScreen from "../screens/main/NotificationScreen";
 import PdfScreen from "../screens/main/PdfScreen";
+import RequestDetailsScreen from "../screens/main/RequestDetailsScreen";
 import RequestScreen from "../screens/main/RequestScreen";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -38,6 +39,10 @@ export default function RootNavigator() {
           <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
           <Stack.Screen name="ChatWithSchool" component={ChatWithSchoolScreen} />
           <Stack.Screen name="Request" component={RequestScreen} />
+          <Stack.Screen
+            name="RequestDetails"
+            component={RequestDetailsScreen}
+          />
           <Stack.Screen name="AddRequest" component={AddRequestScreen} />
           <Stack.Screen name="StudentProfile" component={StudentProfileScreen} />
           <Stack.Screen name="Reports" component={ReportsScreen} />

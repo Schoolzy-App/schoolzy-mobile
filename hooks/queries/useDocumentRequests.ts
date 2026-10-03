@@ -1,8 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { documentRequestsApi } from "@/services/api";
-import { selectGroupedRequests } from "@/services/mappers";
-import type { GroupedRequests } from "@/services/mappers";
+import {
+  selectGroupedRequests,
+  selectRequestDetail,
+} from "@/services/mappers";
+import type { GroupedRequests, RequestDetail } from "@/services/mappers";
 import type {
   CreateDocumentRequestInput,
   CreateDocumentRequestResponseDto,
@@ -30,9 +33,10 @@ export function useDocumentRequests(enabled = true) {
 
 /** GET /api/mobile/document-requests/{id} */
 export function useDocumentRequest(id?: number) {
-  return useQuery<MobileDocumentRequestDetailDto>({
+  return useQuery<MobileDocumentRequestDetailDto, Error, RequestDetail>({
     queryKey: queryKeys.documentRequests.detail(id ?? 0),
     queryFn: () => documentRequestsApi.detail(id as number),
+    select: selectRequestDetail,
     enabled: typeof id === "number",
   });
 }

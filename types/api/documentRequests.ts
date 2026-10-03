@@ -9,6 +9,15 @@ import type { IsoDateTime, UploadFile } from "./common";
  * For anything user-facing, prefer the server-provided `statusDisplay` string
  * over mapping these numbers yourself — it is already localized upstream.
  */
+/**
+ * ⚠️ INFERRED AND KNOWN WRONG from `Completed` onward. Observed against the live
+ * API: a request labelled "Completed" carries the value below for `Rejected`,
+ * and "Rejected" carries the one for `Cancelled`.
+ *
+ * Mapping therefore goes through `statusDisplay` first — see `toUiStatus` in
+ * `services/mappers/documentRequests.ts`. Replace these with the real values
+ * once the backend confirms them, and the text matching becomes belt-and-braces.
+ */
 export const DocumentRequestStatus = {
   Pending: 1,
   Assigned: 2,

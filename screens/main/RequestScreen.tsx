@@ -7,7 +7,6 @@ import { RequestItem } from "@/components";
 import { Button, QueryState, ScreenTemplate, Text } from "@/components/ui";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useDocumentRequests, useStyles } from "@/hooks";
-import { documentRequestsApi } from "@/services/api";
 import type { RootStackParamList } from "@/navigation/types";
 import type { Request } from "@/types/request";
 
@@ -24,19 +23,17 @@ export default function RequestScreen() {
    * ⚠️ The list payload only carries `filesCount`; file ids live on the detail
    * endpoint, so the detail is fetched on demand before opening the viewer.
    */
+  /**
+   * Opens the detail rather than jumping straight into the first file. The
+   * detail carries what the list can't: the rejection reason, the school's
+   * notes, the coordinator, and every attached document rather than just one.
+   */
   const handleOpenRequest = useCallback(
-    async (request: Request) => {
-      if (request.filesCount === 0) return;
-      const detail = await documentRequestsApi.detail(request.requestId);
-      const file = detail.files?.[0];
-      if (!file) return;
-
-      navigation.navigate("Pdf", {
-        title: file.fileName ?? request.documentLabel,
-        uri: documentRequestsApi.getFileUrl(file.id),
-        headers: await documentRequestsApi.getFileHeaders(),
-      });
-    },
+    (request: Request) =>
+      navigation.navigate("RequestDetails", {
+        requestId: request.requestId,
+        title: request.documentLabel,
+      }),
     [navigation],
   );
 
@@ -58,24 +55,17 @@ export default function RequestScreen() {
           emptyMessage="No requests yet"
           onRetry={refetch}
         >
-          {/* ── Accepted (shown first — these are actionable) ───── */}
-          <RequestSection
-            title="Accepted"
-            requests={data?.accepted ?? []}
-            emptyText="No accepted requests yet"
-            onSelect={handleOpenRequest}
-          />
-
           {/* ── Pending ─────────────────────────────────────────── */}
           <RequestSection
             title="Pending"
             requests={data?.pending ?? []}
             emptyText="No pending requests"
+            onSelect={handleOpenRequest}
           />
 
-          {/* ── Rejected / cancelled ────────────────────────────── */}
+          {/* ── Closed: completed, rejected and cancelled ───────── */}
           {data?.closed.length ? (
-            <RequestSection title="Closed" requests={data.closed} />
+            <RequestSection title="Closed" requests={data.closed} onSelect={handleOpenRequest} />
           ) : null}
         </QueryState>
       </View>

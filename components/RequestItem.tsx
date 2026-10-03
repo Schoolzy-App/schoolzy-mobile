@@ -21,7 +21,7 @@ export interface RequestItemProps {
 
 const STATUS_COLOR: Record<RequestStatus, string> = {
   pending: "#E8A923", // warning
-  accepted: "#22863A", // success
+  completed: "#22863A", // success — the document is ready
   rejected: "#CA1616", // danger
   cancelled: "#81828B", // grey
 };
@@ -30,7 +30,6 @@ const RequestItem = memo<RequestItemProps>(({ request, onSelect, onPress }) => {
   const { colors } = useTheme();
   const styles = useStyles(createStyles);
   const accent = STATUS_COLOR[request.status];
-  const isAccepted = request.status === "accepted";
 
   const handlePress = useCallback(() => {
     if (onSelect) {
@@ -79,7 +78,7 @@ const RequestItem = memo<RequestItemProps>(({ request, onSelect, onPress }) => {
             {request.statusLabel}
           </Text>
         </View>
-        {isAccepted && pressable ? (
+        {pressable ? (
           <MaterialIcons
             name="chevron-right"
             size={20}

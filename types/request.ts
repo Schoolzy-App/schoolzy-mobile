@@ -2,8 +2,11 @@
 /**
  * UI-level status. The API models six states (see `DocumentRequestStatus`);
  * they collapse to these four for display purposes.
+ *
+ * `completed`, `rejected` and `cancelled` are all terminal — the screen shows
+ * them together under "Closed".
  */
-export type RequestStatus = "pending" | "accepted" | "rejected" | "cancelled";
+export type RequestStatus = "pending" | "completed" | "rejected" | "cancelled";
 
 // ─── Request instance — represents a submitted document request ─────────────
 export interface Request {

@@ -129,24 +129,30 @@ export type ConfirmDepositParams = {
   payingFor?: string;
 };
 
+export type RequestDetailsParams = {
+  requestId: number;
+  /** Shown in the header until the request loads. */
+  title?: string;
+};
+
 export type PdfParams = {
   title: string;
   /** Absolute URL of the document to render. Falls back to the bundled sample. */
   uri?: string;
   /** Auth headers for protected file endpoints. */
   headers?: Record<string, string>;
-};
-
-export type NotificationParams = undefined;
-export type RequestParams = undefined;
-export type AddRequestParams = undefined;
-export type NewsletterParams = undefined;
   /**
    * What the file actually is. Health-profile attachments are photos, not PDFs,
    * and a PDF renderer shows nothing for them. Omit it and the viewer guesses
    * from the URL, then falls back to the other renderer if that guess fails.
    */
   kind?: "pdf" | "image";
+};
+
+export type NotificationParams = undefined;
+export type RequestParams = undefined;
+export type AddRequestParams = undefined;
+export type NewsletterParams = undefined;
 
 export type RootStackParamList = {
   Auth: undefined;
@@ -154,6 +160,7 @@ export type RootStackParamList = {
   ChangePassword: undefined;
   ChatWithSchool: undefined;
   Request: RequestParams;
+  RequestDetails: RequestDetailsParams;
   AddRequest: AddRequestParams;
   StudentProfile: StudentProfileParams;
   Reports: ReportsParams;

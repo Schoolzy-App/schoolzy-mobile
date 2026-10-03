@@ -13,8 +13,16 @@ export { selectLatestStates } from "./latest";
 export { toNewsletterItem, selectNewsletters } from "./newsletters";
 export type { NewsletterListItem } from "./newsletters";
 
-export { toRequest, selectGroupedRequests } from "./documentRequests";
-export type { GroupedRequests } from "./documentRequests";
+export {
+  toRequest,
+  selectGroupedRequests,
+  selectRequestDetail,
+} from "./documentRequests";
+export type {
+  GroupedRequests,
+  RequestDetail,
+  RequestFile,
+} from "./documentRequests";
 
 export { selectAgenda } from "./agenda";
 export type { AgendaSummary } from "./agenda";
