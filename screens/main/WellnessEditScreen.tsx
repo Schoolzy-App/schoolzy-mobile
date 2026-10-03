@@ -184,6 +184,7 @@ export default function WellnessEditScreen({ navigation, route }: Props) {
         return (
           <AttachmentsTab
             data={draft.attachments}
+            studentSeasonId={studentSeasonId}
             onSave={(value: AttachmentsState) => update("attachments", value)}
           />
         );

@@ -6,6 +6,7 @@ import axios, {
 } from "axios";
 
 import { ApiError, type ApiResponse, type AuthTokens } from "@/types/api";
+import { createIdempotencyKey } from "@/utils/idempotency";
 import { createLogger } from "@/utils/logger";
 
 import {
@@ -56,6 +57,25 @@ api.interceptors.request.use((config) => {
   // Only the /api/mobile/* surface declares the api-version query parameter.
   if (config.url && isMobileRoute(config.url)) {
     config.params = { "api-version": API_VERSION, ...(config.params ?? {}) };
+  }
+
+  /**
+   * Idempotency-Key on every mutating request.
+   *
+   * The backend rejects commands without one ("Invalid Idempotency-Key", 400) —
+   * it is not limited to payments. Adding it here covers every write, including
+   * ones added later, and is harmless on endpoints that ignore it.
+   *
+   * Callers that implement the full retry policy (payments, cafeteria checkout)
+   * set their own key and manage its lifetime; theirs is never overwritten. The
+   * 401-refresh retry re-sends this same config, so a retried request keeps the
+   * key it first went out with — which is exactly what the policy requires.
+   */
+  const method = config.method?.toUpperCase();
+  if (method && method !== "GET" && method !== "HEAD") {
+    if (!config.headers.get("Idempotency-Key")) {
+      config.headers.set("Idempotency-Key", createIdempotencyKey());
+    }
   }
 
   (config as RetriableConfig)._startedAt = Date.now();

@@ -2,7 +2,6 @@ import { MaterialIcons } from '@expo/vector-icons';
 import React, { memo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import type { ColorPalette } from '@/apps';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useStyles } from '@/hooks';
 import type { Medication } from '@/types/wellness';
@@ -39,10 +38,20 @@ const MedicationCard = memo<MedicationCardProps>(({ item, onEdit, onDelete }) =>
             </Text>
           </View>
 
+          {/* The whole card is already a tap target for editing, but that was
+              invisible — delete was the only icon, so the card looked read-only. */}
+          <Pressable
+            onPress={onEdit}
+            hitSlop={8}
+            accessibilityLabel="Edit"
+            style={[styles.iconBtn, { backgroundColor: colors.primary + '15' }]}
+          >
+            <MaterialIcons name="edit" size={18} color={colors.primary} />
+          </Pressable>
           <Pressable
             onPress={onDelete}
             hitSlop={8}
-            style={[styles.deleteBtn, { backgroundColor: colors.danger + '15' }]}
+            style={[styles.iconBtn, { backgroundColor: colors.danger + '15' }]}
           >
             <MaterialIcons name="delete-outline" size={18} color={colors.danger} />
           </Pressable>
@@ -61,7 +70,7 @@ const MedicationCard = memo<MedicationCardProps>(({ item, onEdit, onDelete }) =>
 MedicationCard.displayName = 'MedicationCard';
 export default MedicationCard;
 
-const createStyles = (colors: ColorPalette) =>
+const createStyles = () =>
   StyleSheet.create({
     card: {
       gap: 6,
@@ -75,7 +84,7 @@ const createStyles = (colors: ColorPalette) =>
       flex: 1,
       gap: 2,
     },
-    deleteBtn: {
+    iconBtn: {
       width: 30,
       height: 30,
       borderRadius: 8,
