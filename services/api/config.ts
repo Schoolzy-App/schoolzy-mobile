@@ -1,6 +1,7 @@
 import Constants from "expo-constants";
 
 import { AppConfig } from "@/apps";
+import type { NewsletterItemSource } from "@/types/api";
 
 /**
  * Base URL resolution, highest priority first:
@@ -60,6 +61,12 @@ export const ROUTES = {
       `/api/mobile/students/${studentSeasonId}/agenda`,
     reports: (studentSeasonId: number) =>
       `/api/mobile/students/${studentSeasonId}/reports`,
+    /**
+     * Report files used to arrive as an absolute `fileUrl` on another host.
+     * They are now served from here and require the bearer token.
+     */
+    reportFile: (studentSeasonId: number, reportId: number) =>
+      `/api/mobile/students/${studentSeasonId}/reports/${reportId}/file`,
   },
   documentRequests: {
     createOptions: "/api/mobile/document-requests/create-options",
@@ -72,8 +79,13 @@ export const ROUTES = {
   },
   newsletters: {
     list: "/api/mobile/newsletters",
-    file: (newsletterId: number) =>
-      `/api/mobile/newsletters/${newsletterId}/file`,
+    /**
+     * Source-scoped: the list mixes real newsletters with student reports, and
+     * their ids come from different tables and can collide. The backend needs
+     * `source` to know which table to look in.
+     */
+    file: (source: NewsletterItemSource, id: number) =>
+      `/api/mobile/newsletters/${source}/${id}/file`,
   },
   healthProfile: {
     overview: (studentSeasonId: number) =>

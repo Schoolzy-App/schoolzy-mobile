@@ -18,7 +18,7 @@ export default function NewsletterScreen({ navigation }: Props) {
     async (item: NewsletterListItem) => {
       navigation.navigate("Pdf", {
         title: item.title,
-        uri: item.fileUrl ?? newslettersApi.getFileUrl(item.newsletterId),
+        uri: newslettersApi.getFileUrl(item.source, item.newsletterId),
         headers: await newslettersApi.getFileHeaders(),
       });
     },

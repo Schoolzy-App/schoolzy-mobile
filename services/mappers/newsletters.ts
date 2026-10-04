@@ -1,13 +1,17 @@
 import type { AnnouncementData } from "@/components/AnnouncementItem";
-import type { NewsletterDto } from "@/types/api";
+import type { NewsletterDto, NewsletterItemSource } from "@/types/api";
 import { formatDate, formatTime } from "@/utils/format";
 
-/** Newsletter row plus the fields the PDF viewer needs. */
+/** Newsletter row plus the fields the viewer needs. */
 export interface NewsletterListItem extends AnnouncementData {
-  /** Numeric API id — used to build the file URL. */
+  /** Numeric API id — only meaningful together with `source`. */
   newsletterId: number;
-  /** Direct URL when the API supplies one; otherwise fall back to the file endpoint. */
-  fileUrl: string | null;
+  /**
+   * Which table the row came from: a real newsletter, or a student report
+   * published to parents. Both are needed to build the file URL, and the id
+   * alone is ambiguous because the two tables allocate ids independently.
+   */
+  source: NewsletterItemSource;
 }
 
 export function toNewsletterItem(dto: NewsletterDto): NewsletterListItem {
@@ -18,7 +22,7 @@ export function toNewsletterItem(dto: NewsletterDto): NewsletterListItem {
     subtitle: dto.description ?? "",
     date: formatDate(dto.date),
     time: formatTime(dto.date),
-    fileUrl: dto.fileUrl,
+    source: dto.source,
   };
 }
 

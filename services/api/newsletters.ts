@@ -1,8 +1,8 @@
-import type { NewsletterDto } from "@/types/api";
+import type { NewsletterDto, NewsletterItemSource } from "@/types/api";
 
 import { request } from "./client";
 import { API_BASE_URL, API_VERSION, ROUTES } from "./config";
-import { tokenStorage } from "./tokenStorage";
+import { fileAuthHeaders } from "./fileAuth";
 
 export const newslettersApi = {
   /** GET /api/mobile/newsletters */
@@ -14,18 +14,16 @@ export const newslettersApi = {
   },
 
   /**
-   * GET /api/mobile/newsletters/{newsletterId}/file returns raw bytes.
-   * Prefer `NewsletterDto.fileUrl` when the API supplies one; fall back to this.
+   * GET /api/mobile/newsletters/{source}/{id}/file returns raw bytes.
+   *
+   * `source` is not optional: the list mixes newsletters with student reports
+   * whose ids come from different tables, so the id alone is ambiguous and the
+   * backend picks the file location from `source`.
    */
-  getFileUrl(newsletterId: number): string {
-    return `${API_BASE_URL}${ROUTES.newsletters.file(newsletterId)}?api-version=${API_VERSION}`;
+  getFileUrl(source: NewsletterItemSource, id: number): string {
+    return `${API_BASE_URL}${ROUTES.newsletters.file(source, id)}?api-version=${API_VERSION}`;
   },
 
   /** Auth headers for the binary endpoint above. */
-  async getFileHeaders(): Promise<Record<string, string>> {
-    const tokens = tokenStorage.getCached() ?? (await tokenStorage.load());
-    return tokens?.accessToken
-      ? { Authorization: `Bearer ${tokens.accessToken}` }
-      : {};
-  },
+  getFileHeaders: fileAuthHeaders,
 };
