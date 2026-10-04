@@ -8,7 +8,7 @@ import type {
 
 import { request } from "./client";
 import { API_BASE_URL, API_VERSION, ROUTES } from "./config";
-import { tokenStorage } from "./tokenStorage";
+import { fileAuthHeaders } from "./fileAuth";
 
 export const healthProfileApi = {
   /** GET /api/mobile/health-profile/{studentSeasonId} */
@@ -78,10 +78,5 @@ export const healthProfileApi = {
     )}?api-version=${API_VERSION}`;
   },
 
-  async getAttachmentHeaders(): Promise<Record<string, string>> {
-    const tokens = tokenStorage.getCached() ?? (await tokenStorage.load());
-    return tokens?.accessToken
-      ? { Authorization: `Bearer ${tokens.accessToken}` }
-      : {};
-  },
+  getAttachmentHeaders: fileAuthHeaders,
 };

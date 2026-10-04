@@ -10,7 +10,7 @@ import type {
 import { request } from "./client";
 import { appendFile } from "./multipart";
 import { API_BASE_URL, API_VERSION, ROUTES } from "./config";
-import { tokenStorage } from "./tokenStorage";
+import { fileAuthHeaders } from "./fileAuth";
 
 
 export const documentRequestsApi = {
@@ -87,10 +87,5 @@ export const documentRequestsApi = {
   },
 
   /** Auth headers for the binary endpoints above. */
-  async getFileHeaders(): Promise<Record<string, string>> {
-    const tokens = tokenStorage.getCached() ?? (await tokenStorage.load());
-    return tokens?.accessToken
-      ? { Authorization: `Bearer ${tokens.accessToken}` }
-      : {};
-  },
+  getFileHeaders: fileAuthHeaders,
 };
