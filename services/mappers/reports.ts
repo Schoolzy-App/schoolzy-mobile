@@ -11,8 +11,11 @@ import { dayOfMonth, shortWeekday } from "@/utils/format";
 export interface StudentReport extends ReportData {
   /** Category key as a string, so it can drive the chip filter. */
   categoryKey: string;
-  /** ⚠️ Already absolute — never prefix the API base URL. */
-  fileUrl: string;
+  /**
+   * Numeric API id. The payload no longer carries a `fileUrl`; the viewer
+   * builds the URL from this plus the student — see `getReportFileUrl`.
+   */
+  reportId: number;
 }
 
 export interface StudentReports {
@@ -38,7 +41,7 @@ function toReport(
     day: shortWeekday(dto.date),
     categoryKey: String(categoryId),
     type: String(categoryId),
-    fileUrl: dto.fileUrl ?? "",
+    reportId: dto.id,
   };
 }
 

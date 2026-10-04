@@ -5,7 +5,8 @@ import type {
 } from "@/types/api";
 
 import { request } from "./client";
-import { ROUTES } from "./config";
+import { API_BASE_URL, API_VERSION, ROUTES } from "./config";
+import { fileAuthHeaders } from "./fileAuth";
 
 export const studentsApi = {
   /** GET /api/mobile/students — the signed-in parent's children. */
@@ -31,4 +32,17 @@ export const studentsApi = {
       url: ROUTES.students.reports(studentSeasonId),
     });
   },
+
+  /**
+   * GET /api/mobile/students/{studentSeasonId}/reports/{reportId}/file returns
+   * raw bytes. The list payload no longer carries a `fileUrl`, and unlike the
+   * old one this endpoint is bearer-protected — pass `getReportFileHeaders()`
+   * alongside it.
+   */
+  getReportFileUrl(studentSeasonId: number, reportId: number): string {
+    return `${API_BASE_URL}${ROUTES.students.reportFile(studentSeasonId, reportId)}?api-version=${API_VERSION}`;
+  },
+
+  /** Auth headers for the binary endpoint above. */
+  getReportFileHeaders: fileAuthHeaders,
 };

@@ -5,6 +5,7 @@ import { ReportItem, ReportTypeFilter } from "@/components";
 import { QueryState, ScreenTemplate, Text } from "@/components/ui";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useStudentReports, useStyles } from "@/hooks";
+import { studentsApi } from "@/services/api";
 import type { StudentReport } from "@/services/mappers";
 import type { RootStackScreenProps } from "@/navigation/types";
 
@@ -36,14 +37,20 @@ export default function ReportsScreen({ navigation, route }: Props) {
   }, [data?.reports, selectedType]);
 
   const handleOpen = useCallback(
-    (report: StudentReport) => {
-      // `fileUrl` is already absolute — passed through untouched.
+    async (report: StudentReport) => {
+      // The payload carries no URL any more: the file is built from the
+      // student and report ids, and the endpoint needs the bearer token. With
+      // no student there is no URL to build — and no reports either, so the
+      // list this runs from is empty.
+      if (typeof studentSeasonId !== "number") return;
+
       navigation.navigate("Pdf", {
         title: report.title,
-        uri: report.fileUrl || undefined,
+        uri: studentsApi.getReportFileUrl(studentSeasonId, report.reportId),
+        headers: await studentsApi.getReportFileHeaders(),
       });
     },
-    [navigation],
+    [navigation, studentSeasonId],
   );
 
   return (

@@ -4,18 +4,19 @@ import type { IsoDateTime } from "./common";
  * Student report DTOs — `GET /api/mobile/students/{studentSeasonId}/reports`.
  */
 
-/** A single report document. */
+/**
+ * A single report document.
+ *
+ * ⚠️ There is no `fileUrl` — it was removed from this payload. The file comes
+ * from `GET /api/mobile/students/{studentSeasonId}/reports/{id}/file`, which
+ * is bearer-protected; see `studentsApi.getReportFileUrl`.
+ */
 export interface StudentReportDto {
   id: number;
   name: string | null;
   date: IsoDateTime | null;
   /** Optional — may be null. */
   description: string | null;
-  /**
-   * ⚠️ Already a complete URL. The guide is explicit that the client must NOT
-   * prefix it with the API base URL — reports are served from a different host.
-   */
-  fileUrl: string | null;
 }
 
 /** Reports grouped by category. `reports` may legitimately be empty. */
