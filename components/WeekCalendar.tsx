@@ -65,6 +65,13 @@ function getDaysInMonth(year: number, month: number) {
 export interface WeekCalendarProps {
   /** Dates that should appear disabled (greyed out, not selectable) */
   disabledDates?: Date[];
+  /**
+   * Weekdays that are always disabled, as `Date.getDay()` values (0 = Sunday).
+   * Prefer this over `disabledDates` for a recurring rule: the strip can show
+   * any week, so a fixed list of dates only covers whichever week it was built
+   * from.
+   */
+  disabledWeekdays?: number[];
   /** Dates to mark with a small dot indicator (e.g. absence) */
   markedDates?: Date[];
   /** Color of the marked-date dot. Defaults to the theme's secondary color. */
@@ -78,24 +85,18 @@ export interface WeekCalendarProps {
    * Defaults to true. Set false when only the current week strip is needed.
    */
   showMonthPicker?: boolean;
-  /**
-   * When true, the 7-day strip anchors to the week containing `selectedDate`
-   * (starting Sunday) instead of always starting at today. Useful when the
-   * caller lets the user jump to historical/future dates via the month picker.
-   */
-  anchorToSelected?: boolean;
 }
 
 // ─── Component ──────────────────────────────────────────────────────────────
 const WeekCalendar = memo<WeekCalendarProps>(
   ({
     disabledDates = [],
+    disabledWeekdays = [],
     markedDates = [],
     markedColor,
     onSelectDate,
     selectedDate: controlledDate,
     showMonthPicker: monthPickerEnabled = true,
-    anchorToSelected = false,
   }) => {
     const { colors } = useTheme();
     const styles = useStyles(createStyles);
@@ -110,14 +111,17 @@ const WeekCalendar = memo<WeekCalendarProps>(
     const [pickerYear, setPickerYear] = useState(selected.getFullYear());
     const [pickerMonth, setPickerMonth] = useState(selected.getMonth());
 
-    // Build the 7-day window. By default it starts from today; when
-    // `anchorToSelected` is on it spans the Sunday→Saturday week that contains
-    // the currently selected date.
+    /**
+     * The Sunday→Saturday week containing the selected date.
+     *
+     * It follows the selection rather than starting at today, so picking a date
+     * from another week in the month picker brings that week into view instead
+     * of leaving the strip on the current one — which read as the header and
+     * the strip disagreeing about which day was selected.
+     */
     const weekDays = useMemo(() => {
-      const start = new Date(anchorToSelected ? selected : today);
-      if (anchorToSelected) {
-        start.setDate(start.getDate() - start.getDay()); // back to Sunday
-      }
+      const start = new Date(selected);
+      start.setDate(start.getDate() - start.getDay()); // back to Sunday
       const days: Date[] = [];
       for (let i = 0; i < 7; i++) {
         const d = new Date(start);
@@ -125,11 +129,13 @@ const WeekCalendar = memo<WeekCalendarProps>(
         days.push(d);
       }
       return days;
-    }, [today, selected, anchorToSelected]);
+    }, [selected]);
 
     const isDisabled = useCallback(
-      (date: Date) => disabledDates.some((d) => isSameDay(d, date)),
-      [disabledDates],
+      (date: Date) =>
+        disabledWeekdays.includes(date.getDay()) ||
+        disabledDates.some((d) => isSameDay(d, date)),
+      [disabledDates, disabledWeekdays],
     );
 
     const isMarked = useCallback(
@@ -151,11 +157,13 @@ const WeekCalendar = memo<WeekCalendarProps>(
     const handleMonthDaySelect = useCallback(
       (day: number) => {
         const date = new Date(pickerYear, pickerMonth, day);
+        // The grid greys these out too; bail in case one is tapped anyway.
+        if (isDisabled(date)) return;
         setInternalSelected(date);
         onSelectDate?.(date);
         setShowMonthPicker(false);
       },
-      [pickerYear, pickerMonth, onSelectDate],
+      [pickerYear, pickerMonth, onSelectDate, isDisabled],
     );
 
     return (
@@ -420,6 +428,7 @@ const WeekCalendar = memo<WeekCalendarProps>(
                         const isSelectedDay = isSameDay(dayDate, selected);
                         const isToday = isSameDay(dayDate, today);
                         const marked = isMarked(dayDate);
+                        const dayDisabled = isDisabled(dayDate);
                         cells.push(
                           <View key={d} style={styles.dayGridCell}>
                             <Pressable
@@ -432,8 +441,10 @@ const WeekCalendar = memo<WeekCalendarProps>(
                                   borderWidth: 1.5,
                                   borderColor: colors.primary,
                                 },
+                                dayDisabled && styles.dayCellDisabled,
                               ]}
                               onPress={() => handleMonthDaySelect(d)}
+                              disabled={dayDisabled}
                             >
                               {marked ? (
                                 <View
@@ -452,9 +463,11 @@ const WeekCalendar = memo<WeekCalendarProps>(
                                 color={
                                   isSelectedDay
                                     ? colors.buttonText
-                                    : isToday
-                                      ? colors.primary
-                                      : colors.textPrimary
+                                    : dayDisabled
+                                      ? colors.textSecondary
+                                      : isToday
+                                        ? colors.primary
+                                        : colors.textPrimary
                                 }
                               >
                                 {d}

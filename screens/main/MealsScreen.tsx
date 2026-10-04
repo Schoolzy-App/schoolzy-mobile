@@ -255,7 +255,6 @@ export default function MealsScreen({ route }: Props) {
         <WeekCalendar
           selectedDate={selectedDate}
           onSelectDate={handleSelectDate}
-          anchorToSelected
         />
       </View>
 
