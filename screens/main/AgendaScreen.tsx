@@ -8,20 +8,30 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useAgenda, useStyles } from "@/hooks";
 import type { RootStackScreenProps } from "@/navigation/types";
 
-// ─── Disabled dates (weekend — Sat & Sun from the 7-day window) ─────────────
 const today = new Date();
-const DISABLED_DATES: Date[] = (() => {
-  const dates: Date[] = [];
-  for (let i = 0; i < 7; i++) {
-    const d = new Date(today);
-    d.setDate(today.getDate() + i);
-    // Disable Saturdays (6) and Sundays (0)
-    if (d.getDay() === 0 || d.getDay() === 6) {
-      dates.push(d);
-    }
-  }
-  return dates;
-})();
+
+/**
+ * Weekend — Sunday (0) and Saturday (6).
+ *
+ * Expressed as weekdays rather than a list of dates: the strip follows the
+ * selected date, so a list built from this week would leave the weekend
+ * selectable in every other week.
+ */
+const DISABLED_WEEKDAYS = [0, 6];
+
+function isSameDay(a: Date, b: Date) {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+
+const DAY_LABEL: Intl.DateTimeFormatOptions = {
+  weekday: "long",
+  day: "numeric",
+  month: "short",
+};
 
 type Props = RootStackScreenProps<"Agenda">;
 
@@ -53,6 +63,8 @@ export default function AgendaScreen({ route }: Props) {
     setSelectedDate(date);
   }, []);
 
+  const isToday = isSameDay(selectedDate, today);
+
   return (
     <ScreenTemplate
       title={
@@ -69,19 +81,28 @@ export default function AgendaScreen({ route }: Props) {
         <WeekCalendar
           selectedDate={selectedDate}
           onSelectDate={handleSelectDate}
-          disabledDates={DISABLED_DATES}
+          disabledWeekdays={DISABLED_WEEKDAYS}
           markedDates={absentDates}
         />
 
-        {/* ── Legend: dot color → absence ─────────────────────── */}
-        <View style={styles.legendRow}>
-          <View
-            style={[styles.legendDot, { backgroundColor: colors.secondary }]}
-          />
-          <Text variant="label3" weight="regular" color={colors.textSecondary}>
-            Absence
-          </Text>
-        </View>
+        {/* ── Legend ──────────────────────────────────────────────
+            Only when a day is actually dotted. Shown unconditionally it
+            read as the selected day's status, which contradicted the
+            "Present" card beside it. */}
+        {absentDates.length ? (
+          <View style={styles.legendRow}>
+            <View
+              style={[styles.legendDot, { backgroundColor: colors.secondary }]}
+            />
+            <Text
+              variant="label3"
+              weight="regular"
+              color={colors.textSecondary}
+            >
+              Absence
+            </Text>
+          </View>
+        ) : null}
       </View>
 
       {/* ── Stats Cards ──────────────────────────────────────────── */}
@@ -99,8 +120,10 @@ export default function AgendaScreen({ route }: Props) {
           <Text variant="label2" weight="semiBold">
             {data?.attendanceStatus || "—"}
           </Text>
+          {/* Attendance is fetched for the selected day, so labelling it
+              "Today" was wrong as soon as another day was picked. */}
           <Text variant="label3" weight="regular" color={colors.textSecondary}>
-            Today
+            {isToday ? "Today" : selectedDate.toLocaleDateString(undefined, DAY_LABEL)}
           </Text>
         </View>
       </View>
