@@ -6,6 +6,7 @@ import { CircularProgress, DynamicStateItem, WeekCalendar } from "@/components";
 import { BottomSection, QueryState, ScreenTemplate, Text } from "@/components/ui";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useAgenda, useStyles } from "@/hooks";
+import type { AttendanceState } from "@/services/mappers";
 import type { RootStackScreenProps } from "@/navigation/types";
 
 const today = new Date();
@@ -32,6 +33,27 @@ const DAY_LABEL: Intl.DateTimeFormatOptions = {
   day: "numeric",
   month: "short",
 };
+
+/**
+ * Colour for an attendance status. "unknown" keeps the default text colour —
+ * the API's status is free text, and a status we don't recognise shouldn't be
+ * painted as either good or bad news.
+ */
+function statusColor(
+  state: AttendanceState | undefined,
+  colors: ColorPalette,
+): string {
+  switch (state) {
+    case "present":
+      return colors.success;
+    case "absent":
+      return colors.danger;
+    case "late":
+      return colors.warning;
+    default:
+      return colors.textPrimary;
+  }
+}
 
 type Props = RootStackScreenProps<"Agenda">;
 
@@ -83,6 +105,7 @@ export default function AgendaScreen({ route }: Props) {
           onSelectDate={handleSelectDate}
           disabledWeekdays={DISABLED_WEEKDAYS}
           markedDates={absentDates}
+          markedColor={colors.danger}
         />
 
         {/* ── Legend ──────────────────────────────────────────────
@@ -92,7 +115,7 @@ export default function AgendaScreen({ route }: Props) {
         {absentDates.length ? (
           <View style={styles.legendRow}>
             <View
-              style={[styles.legendDot, { backgroundColor: colors.secondary }]}
+              style={[styles.legendDot, { backgroundColor: colors.danger }]}
             />
             <Text
               variant="label3"
@@ -117,7 +140,11 @@ export default function AgendaScreen({ route }: Props) {
           />
         </View>
         <View style={styles.statCard}>
-          <Text variant="label2" weight="semiBold">
+          <Text
+            variant="label2"
+            weight="semiBold"
+            color={statusColor(data?.attendanceState, colors)}
+          >
             {data?.attendanceStatus || "—"}
           </Text>
           {/* Attendance is fetched for the selected day, so labelling it

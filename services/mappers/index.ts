@@ -25,7 +25,7 @@ export type {
 } from "./documentRequests";
 
 export { selectAgenda } from "./agenda";
-export type { AgendaSummary } from "./agenda";
+export type { AgendaSummary, AttendanceState } from "./agenda";
 
 export {
   selectHealthProfileEdit,
