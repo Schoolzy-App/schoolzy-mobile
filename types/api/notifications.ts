@@ -50,16 +50,20 @@ export interface PushMessage {
 // ─── Notification inbox ──────────────────────────────────────────────────────
 
 /**
- * `type` is an int enum. Only these three have been observed on dev; the
- * numbering suggests 1–4 exist for other domains.
+ * `type` is an int enum. Only these have been observed on dev; the numbering
+ * suggests 1–4 exist for other domains, and 8–9 are still unknown.
  *
- * ⚠️ `typeLabel` is NOT reliable for routing — notification 456 is labelled
- * "General" but its actionUrl points at a complaint. Route from `actionUrl`.
+ * ⚠️ This is now the ONLY routing signal. `actionUrl` used to carry a web
+ * route and was preferred because it was more reliable — notification 456 was
+ * labelled "General" while its URL pointed at a complaint. That field has been
+ * removed from the payload, so mis-labelled rows now route by their label or
+ * not at all. Mismatches are no longer recoverable on the client.
  */
 export const NotificationType = {
   General: 5,
   DocumentRequest: 6,
   Complaint: 7,
+  MonthlyExamReport: 10,
 } as const;
 
 export type NotificationType =
@@ -77,14 +81,14 @@ export interface NotificationDto {
   title: string | null;
   body: string | null;
   type: NotificationType | number;
-  /** Human label for `type`, e.g. "DocumentRequest". Display only. */
-  typeLabel: string | null;
   /**
-   * Web route for the referenced entity, e.g.
-   * "/Parent/DocumentRequest/Detail/37". The mobile app parses the section and
-   * id out of this — there is no `referenceId` field on the inbox payload.
+   * Human label for `type`, e.g. "DocumentRequest" / "MonthlyExamReport".
+   *
+   * With `actionUrl` gone this drives navigation alongside `type`. The inbox
+   * payload has no `referenceId`, so a row can identify a *section* but never
+   * a specific entity — see `resolveTargetDestination`.
    */
-  actionUrl: string | null;
+  typeLabel: string | null;
   isRead: boolean;
   sentAt: IsoDateTime | null;
   /** Server-rendered relative time, e.g. "22h ago" / "Aug 30". */

@@ -70,7 +70,7 @@ export {
   toNotificationItem,
   selectNotifications,
   selectRecentNotifications,
-  parseActionUrl,
+  toNotificationTarget,
 } from "./notifications";
 export type {
   NotificationListItem,

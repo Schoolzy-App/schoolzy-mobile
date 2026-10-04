@@ -48,8 +48,10 @@ export default function NotificationScreen({ navigation }: Props) {
   );
 
   /**
-   * Tapping marks the row read and routes from the notification's `actionUrl`.
-   * Rows with no mobile destination (complaints) still get marked read.
+   * Tapping marks the row read and routes from the notification's type label —
+   * the payload no longer carries a URL, so this opens the relevant list
+   * rather than the specific record. Rows with no mobile destination
+   * (complaints) still get marked read.
    */
   const handlePress = useCallback(
     (item: NotificationListItem) => {

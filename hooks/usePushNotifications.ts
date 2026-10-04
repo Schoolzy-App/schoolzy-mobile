@@ -34,6 +34,13 @@ export function resolveDestination(message: PushMessage): {
 
   if (type.includes("newsletter")) return { screen: "Newsletter" };
 
+  if (type.includes("report")) {
+    // A push does carry a referenceId, but it is the report's own id — not a
+    // studentSeasonId — so the student-scoped Reports screen can't be opened
+    // from it. The newsletter list shows published reports too.
+    return { screen: "Newsletter" };
+  }
+
   if (type.includes("request") || type.includes("document")) {
     return { screen: "Request" };
   }
@@ -60,9 +67,12 @@ export function resolveDestination(message: PushMessage): {
 }
 
 /**
- * Destination for an inbox notification, whose payload differs from a push:
- * it carries an `actionUrl` ("/Parent/DocumentRequest/Detail/37") rather than
- * a `type`/`referenceId` pair.
+ * Destination for an inbox notification, whose payload differs from a push: it
+ * identifies a section by label and carries no entity id at all.
+ *
+ * ⚠️ The inbox used to carry `actionUrl`, which named both the section and the
+ * record. It has been removed, so a tap can only open a list — never the
+ * specific item the notification is about.
  *
  * ⚠️ Complaints have no screen in the mobile app, so those rows currently have
  * nowhere to go — see the note in NotificationScreen.
@@ -76,6 +86,12 @@ export function resolveTargetDestination(
   if (section.includes("documentrequest")) return { screen: "Request" };
   if (section.includes("newsletter")) return { screen: "Newsletter" };
 
+  // Reports reach parents through the newsletter list, which now carries
+  // student reports alongside real newsletters. Reports also live under a
+  // student's own Reports screen, but that needs a studentSeasonId and the
+  // inbox payload has no entity id to supply one.
+  if (section.includes("report")) return { screen: "Newsletter" };
+
   // Complaints, and anything else, have no mobile destination yet.
   return null;
 }
@@ -85,8 +101,10 @@ function invalidateFor(message: PushMessage) {
   const type = message.data.type?.toLowerCase() ?? "";
   log.debug(`invalidating caches for type="${type || "(none)"}"`);
 
-  if (type.includes("newsletter")) {
+  if (type.includes("newsletter") || type.includes("report")) {
+    // A published report shows up in both places.
     queryClient.invalidateQueries({ queryKey: queryKeys.newsletters.all });
+    queryClient.invalidateQueries({ queryKey: queryKeys.students.all });
   } else if (type.includes("request") || type.includes("document")) {
     queryClient.invalidateQueries({ queryKey: queryKeys.documentRequests.all });
   } else if (type.includes("payment")) {

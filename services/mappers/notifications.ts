@@ -3,32 +3,31 @@ import type { NotificationDto } from "@/types/api";
 import { formatDate } from "@/utils/format";
 
 /**
- * The entity a notification points at, parsed from its `actionUrl`.
+ * The area a notification points at.
  *
- * The inbox has no `referenceId` — it carries a web route such as
- * "/Parent/DocumentRequest/Detail/37". `typeLabel` is deliberately NOT used for
- * routing: notification 456 is labelled "General" while its actionUrl points at
- * a complaint, so the URL is the more reliable signal.
+ * This used to be parsed out of `actionUrl` ("/Parent/DocumentRequest/Detail/37"),
+ * which also yielded the entity id. That field has been removed from the
+ * payload, so the label is all that is left: `id` is always null now, and the
+ * app can open a *section* but not a specific record.
  */
 export interface NotificationTarget {
-  /** Section segment, e.g. "DocumentRequest" / "Complaints". */
+  /** Section, derived from `typeLabel`, e.g. "DocumentRequest". */
   section: string;
-  /** Trailing numeric id, when present. */
+  /**
+   * Always null. Kept so the destination resolver keeps working for pushes,
+   * which still carry a `referenceId`.
+   */
   id: number | null;
 }
 
-const ACTION_URL_RE = /\/Parent\/([^/]+)\/[^/]+\/(\d+)/i;
-
-export function parseActionUrl(
-  actionUrl?: string | null,
+/**
+ * `typeLabel` is the only routing signal the inbox has left. It is a plain
+ * label and may be absent, so the resolver matches it loosely.
+ */
+export function toNotificationTarget(
+  typeLabel?: string | null,
 ): NotificationTarget | null {
-  if (!actionUrl) return null;
-
-  const match = actionUrl.match(ACTION_URL_RE);
-  if (match) return { section: match[1], id: Number(match[2]) };
-
-  // Fall back to the section alone when the URL has no trailing id.
-  const section = actionUrl.split("/").filter(Boolean)[1];
+  const section = typeLabel?.trim();
   return section ? { section, id: null } : null;
 }
 
@@ -51,7 +50,7 @@ export function toNotificationItem(dto: NotificationDto): NotificationListItem {
     time: dto.timeAgo ?? formatDate(dto.sentAt),
     unread: !dto.isRead,
     typeLabel: dto.typeLabel ?? "",
-    target: parseActionUrl(dto.actionUrl),
+    target: toNotificationTarget(dto.typeLabel),
   };
 }
 
