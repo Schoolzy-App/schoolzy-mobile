@@ -1,5 +1,4 @@
-import * as LocalAuthentication from "expo-local-authentication";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import {
   Alert,
   Image,
@@ -16,7 +15,8 @@ import { Button, Input, PasswordInput, Text } from "@/components/ui";
 import { Icons, Images } from "@/constants";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
-import { useStyles } from "@/hooks";
+import { useBiometricSetting, useStyles } from "@/hooks";
+import { authenticateBiometric } from "@/services/biometric";
 import { ApiError } from "@/types/api";
 import type { AuthStackScreenProps } from "@/navigation/types";
 
@@ -32,42 +32,16 @@ export default function LoginScreen({ navigation }: Props) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [biometricAvailable, setBiometricAvailable] = useState(false);
-  const [biometricType, setBiometricType] = useState<
-    "faceid" | "fingerprint" | null
-  >(null);
-
-  // ─── Check biometric support on mount ───────────────────────────────────────
-  useEffect(() => {
-    let cancelled = false;
-
-    (async () => {
-      const [compatible, enrolled] = await Promise.all([
-        LocalAuthentication.hasHardwareAsync(),
-        LocalAuthentication.isEnrolledAsync(),
-      ]);
-      if (cancelled || !compatible || !enrolled) return;
-
-      setBiometricAvailable(true);
-      const types =
-        await LocalAuthentication.supportedAuthenticationTypesAsync();
-      if (cancelled) return;
-
-      if (
-        types.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION)
-      ) {
-        setBiometricType("faceid");
-      } else if (
-        types.includes(LocalAuthentication.AuthenticationType.FINGERPRINT)
-      ) {
-        setBiometricType("fingerprint");
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  /**
+   * Capability and preference together: the button appears only when the
+   * device can do it AND the parent has left it switched on in Account.
+   */
+  const {
+    available: biometricAvailable,
+    label: biometricLabel,
+    enabled: biometricEnabled,
+    ready: biometricReady,
+  } = useBiometricSetting();
 
   const handleForgotPassword = useCallback(
     () => navigation.navigate("ForgotPassword"),
@@ -95,13 +69,7 @@ export default function LoginScreen({ navigation }: Props) {
    * password is never written to the device.
    */
   const handleBiometricLogin = useCallback(async () => {
-    const result = await LocalAuthentication.authenticateAsync({
-      promptMessage: "Authenticate to sign in",
-      fallbackLabel: "Use password",
-      cancelLabel: "Cancel",
-      disableDeviceFallback: false,
-    });
-    if (!result.success) return;
+    if (!(await authenticateBiometric())) return;
 
     const resumed = await resumeSession();
     if (!resumed) {
@@ -112,7 +80,6 @@ export default function LoginScreen({ navigation }: Props) {
     }
   }, [resumeSession]);
 
-  const biometricLabel = biometricType === "faceid" ? "Face ID" : "Fingerprint";
   const canSubmit = !!email && !!password && !isLoggingIn;
 
   return (
@@ -192,9 +159,14 @@ export default function LoginScreen({ navigation }: Props) {
             style={styles.loginButton}
           />
 
-          {/* Biometric login — only when hardware is enrolled AND a stored
-              session exists to resume. */}
-          {biometricAvailable && hasStoredSession && (
+          {/* Biometric login. Four conditions, all required: the probe has
+              finished (so the button doesn't flash in and out), the device is
+              enrolled, the parent hasn't switched it off in Account, and there
+              is a stored session to resume. */}
+          {biometricReady &&
+          biometricAvailable &&
+          biometricEnabled &&
+          hasStoredSession ? (
             <Pressable
               style={styles.biometricButton}
               onPress={handleBiometricLogin}
@@ -204,7 +176,7 @@ export default function LoginScreen({ navigation }: Props) {
                 Sign in with {biometricLabel}
               </Text>
             </Pressable>
-          )}
+          ) : null}
         </View>
       </View>
     </KeyboardAvoidingView>

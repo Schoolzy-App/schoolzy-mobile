@@ -1,9 +1,16 @@
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import React from "react";
-import { StyleSheet, useWindowDimensions, View } from "react-native";
+import {
+  Platform,
+  StyleSheet,
+  Switch,
+  useWindowDimensions,
+  View,
+} from "react-native";
 import type { SvgProps } from "react-native-svg";
 
+import type { ColorPalette } from "@/apps";
 import {
   AccountItem,
   AccountParentCard,
@@ -12,7 +19,7 @@ import { ScreenTemplate, Text } from "@/components/ui";
 import { FeatureFlags, Icons } from "@/constants";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
-import { useCurrentUser, useStyles } from "@/hooks";
+import { useBiometricSetting, useCurrentUser, useStyles } from "@/hooks";
 import type { RootStackParamList } from "@/navigation/types";
 
 type AccountAction = "logout" | "delete-account";
@@ -77,6 +84,7 @@ export default function AccountScreen() {
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { width } = useWindowDimensions();
   const isNarrow = width < NARROW_WIDTH_BREAKPOINT;
+  const biometric = useBiometricSetting();
 
   const handleItemPress = (item: AccountRow) => {
     // Both Logout and Delete account sign the user out
@@ -129,12 +137,42 @@ export default function AccountScreen() {
             </View>
           ))}
         </View>
+
+        {/* Biometric sign-in.
+            Hidden entirely when the device has no enrolled biometric — a
+            switch that cannot do anything is worse than no switch. */}
+        {biometric.ready && biometric.available ? (
+          <View style={styles.settingCard}>
+            <View style={styles.settingRow}>
+              <Icons.LockActive width={22} height={22} color="#4F7DCA" />
+              <View style={styles.settingText}>
+                <Text variant="label2" weight="medium">
+                  Sign in with {biometric.label}
+                </Text>
+                <Text
+                  variant="caption1"
+                  weight="regular"
+                  color={colors.textSecondary}
+                >
+                  {biometric.enabled
+                    ? `Skip typing your password — ${biometric.label} unlocks your saved session.`
+                    : `You'll sign in with your email and password.`}
+                </Text>
+              </View>
+              <Switch
+                value={biometric.enabled}
+                onValueChange={biometric.toggle}
+                trackColor={{ true: colors.primary }}
+              />
+            </View>
+          </View>
+        ) : null}
       </View>
     </ScreenTemplate>
   );
 }
 
-const createStyles = () =>
+const createStyles = (colors: ColorPalette) =>
   StyleSheet.create({
     headerContent: {
       alignItems: "center",
@@ -159,5 +197,33 @@ const createStyles = () =>
     },
     itemCellFull: {
       width: "100%",
+    },
+    /**
+     * A plain View with card styling rather than <Card>: Card renders a
+     * Pressable, and this row isn't pressable as a whole — only the switch is.
+     */
+    settingCard: {
+      width: "100%",
+      padding: 14,
+      borderRadius: 12,
+      backgroundColor: colors.card,
+      ...Platform.select({
+        ios: {
+          shadowColor: colors.shadow,
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 6,
+        },
+        android: { elevation: 3 },
+      }),
+    },
+    settingRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+    },
+    settingText: {
+      flex: 1,
+      gap: 2,
     },
   });
