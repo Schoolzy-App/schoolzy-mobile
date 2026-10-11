@@ -26,14 +26,26 @@ const apsEnvironment: 'development' | 'production' =
 
 const configs: Record<string, ExpoConfig> = {
   brighton: {
-    name: 'Brighton British School',
+    /**
+     * The home-screen name, not the store listing — the store name lives in
+     * App Store Connect and the Play Console and is set there.
+     *
+     * iOS truncates around 12 characters on the home screen, so this shows as
+     * "BBS | Schoo…" under the icon. Kept as asked; shorten it here if that
+     * matters more than the full wording.
+     */
+    name: 'BBS | Schoolzy',
+    // Identifies the EAS project — changing it would orphan the builds.
     slug: 'brighton',
     "owner": "schoolzy-app",
     // Live on the stores is 2.0.0 (versionCode 47). This is a full rewrite —
     // new codebase, live API, push notifications — hence the major bump.
     version: '3.0.0',
     orientation: 'portrait',
-    icon: './assets/brighton/logo.png',
+    // The app icon is its own opaque, full-bleed tile. `logo.png` stays the
+    // transparent in-app mark (login, splash, brand slots) — the two have
+    // different jobs, and the store rejects an icon with alpha.
+    icon: './assets/brighton/app-icon.png',
     scheme: 'brighton',
     userInterfaceStyle,
     platforms: ['ios', 'android'],
