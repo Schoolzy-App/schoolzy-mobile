@@ -20,6 +20,15 @@ export const queryKeys = {
       [...queryKeys.agenda.all, studentSeasonId, date ?? "today"] as const,
   },
 
+  complaints: {
+    all: ["complaints"] as const,
+    list: () => [...queryKeys.complaints.all, "list"] as const,
+    detail: (id: number) =>
+      [...queryKeys.complaints.all, "detail", id] as const,
+    /** The four create-form lookups, cached independently of the list. */
+    lookups: (name: string) =>
+      [...queryKeys.complaints.all, "lookup", name] as const,
+  },
   documentRequests: {
     all: ["documentRequests"] as const,
     list: () => [...queryKeys.documentRequests.all, "list"] as const,

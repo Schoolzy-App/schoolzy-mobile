@@ -4,6 +4,7 @@ export { default as BottomSection } from './BottomSection';
 export { default as Button } from './Button';
 export { default as Card } from './Card';
 export { default as DefaultInput } from './DefaultInput';
+export type { DefaultInputOption } from './DefaultInput';
 export { default as IconContainer } from './IconContainer';
 export { default as Image } from './Image';
 export { default as Input } from './Input';

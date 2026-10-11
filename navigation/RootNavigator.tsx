@@ -6,7 +6,10 @@ import TabNavigator from "./TabNavigator";
 import type { RootStackParamList } from "./types";
 
 import { useAuth } from "@/contexts/AuthContext";
+import AddComplaintScreen from "@/screens/main/AddComplaintScreen";
 import AddRequestScreen from "@/screens/main/AddRequestScreen";
+import ComplaintDetailsScreen from "@/screens/main/ComplaintDetailsScreen";
+import ComplaintsScreen from "@/screens/main/ComplaintsScreen";
 import AgendaScreen from "@/screens/main/AgendaScreen";
 import ChangePasswordScreen from "@/screens/main/ChangePasswordScreen";
 import ConfirmDepositScreen from "@/screens/main/ConfirmDepositScreen";
@@ -38,6 +41,12 @@ export default function RootNavigator() {
           <Stack.Screen name="Main" component={TabNavigator} />
           <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
           <Stack.Screen name="ChatWithSchool" component={ChatWithSchoolScreen} />
+          <Stack.Screen name="Complaints" component={ComplaintsScreen} />
+          <Stack.Screen
+            name="ComplaintDetails"
+            component={ComplaintDetailsScreen}
+          />
+          <Stack.Screen name="AddComplaint" component={AddComplaintScreen} />
           <Stack.Screen name="Request" component={RequestScreen} />
           <Stack.Screen
             name="RequestDetails"

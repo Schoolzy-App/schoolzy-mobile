@@ -24,6 +24,23 @@ export type {
   RequestFile,
 } from "./documentRequests";
 
+export {
+  toComplaint,
+  selectGroupedComplaints,
+  selectComplaintDetail,
+  selectLookupOptions,
+  selectStudentOptions,
+  humanizeStatus,
+} from "./complaints";
+export type {
+  Complaint,
+  ComplaintAttachment,
+  ComplaintDetail,
+  ComplaintState,
+  ComplaintTone,
+  GroupedComplaints,
+} from "./complaints";
+
 export { selectAgenda } from "./agenda";
 export type { AgendaSummary, AttendanceState } from "./agenda";
 

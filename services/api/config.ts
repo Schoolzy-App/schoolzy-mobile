@@ -68,6 +68,20 @@ export const ROUTES = {
     reportFile: (studentSeasonId: number, reportId: number) =>
       `/api/mobile/students/${studentSeasonId}/reports/${reportId}/file`,
   },
+  complaints: {
+    list: "/api/mobile/complaints",
+    create: "/api/mobile/complaints",
+    detail: (id: number) => `/api/mobile/complaints/${id}`,
+    /** Binary — the parent's own attachment. Only when `hasAttachment`. */
+    attachment: (id: number) => `/api/mobile/complaints/${id}/attachment`,
+    /** Binary — the school's reply. Only when `hasResponseAttachment`. */
+    responseAttachment: (id: number) =>
+      `/api/mobile/complaints/${id}/response-attachment`,
+    students: "/api/mobile/complaints/students",
+    categories: "/api/mobile/complaints/categories",
+    priorities: "/api/mobile/complaints/priorities",
+    contactMethods: "/api/mobile/complaints/contact-methods",
+  },
   documentRequests: {
     createOptions: "/api/mobile/document-requests/create-options",
     list: "/api/mobile/document-requests",

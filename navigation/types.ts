@@ -129,6 +129,12 @@ export type ConfirmDepositParams = {
   payingFor?: string;
 };
 
+export type ComplaintDetailsParams = {
+  complaintId: number;
+  /** Shown in the header until the complaint loads. */
+  title?: string;
+};
+
 export type RequestDetailsParams = {
   requestId: number;
   /** Shown in the header until the request loads. */
@@ -150,6 +156,8 @@ export type PdfParams = {
 };
 
 export type NotificationParams = undefined;
+export type ComplaintsParams = undefined;
+export type AddComplaintParams = undefined;
 export type RequestParams = undefined;
 export type AddRequestParams = undefined;
 export type NewsletterParams = undefined;
@@ -159,6 +167,9 @@ export type RootStackParamList = {
   Main: undefined;
   ChangePassword: undefined;
   ChatWithSchool: undefined;
+  Complaints: ComplaintsParams;
+  ComplaintDetails: ComplaintDetailsParams;
+  AddComplaint: AddComplaintParams;
   Request: RequestParams;
   RequestDetails: RequestDetailsParams;
   AddRequest: AddRequestParams;

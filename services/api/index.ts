@@ -5,6 +5,7 @@ export { tokenStorage } from "./tokenStorage";
 export { authApi } from "./auth";
 export { studentsApi } from "./students";
 export { agendaApi } from "./agenda";
+export { complaintsApi, COMPLAINTS_PAGE_SIZE } from "./complaints";
 export { documentRequestsApi } from "./documentRequests";
 export { newslettersApi } from "./newsletters";
 export { healthProfileApi } from "./healthProfile";

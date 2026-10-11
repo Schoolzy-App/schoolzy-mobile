@@ -57,6 +57,13 @@ const ACCOUNT_ITEMS: AccountRow[] = [
   // Only when Requests is not already a bottom-bar tab.
   ...(FeatureFlags.requestsTab ? [] : [REQUESTS_ROW]),
   {
+    id: "complaints",
+    text: "Complaints",
+    icon: Icons.EmergencyRoundIcon,
+    iconColor: "#E8A923",
+    navigationTo: "Complaints",
+  },
+  {
     id: "logout",
     text: "Logout",
     icon: Icons.Logout,

@@ -2,6 +2,7 @@ export * from "./common";
 export * from "./auth";
 export * from "./students";
 export * from "./agenda";
+export * from "./complaints";
 export * from "./documentRequests";
 export * from "./newsletters";
 export * from "./healthProfile";

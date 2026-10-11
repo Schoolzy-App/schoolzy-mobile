@@ -2,6 +2,15 @@ export { queryKeys } from "./queryKeys";
 export { useStudents, useStudentsRaw, useStudentProfile } from "./useStudents";
 export { useAgenda } from "./useAgenda";
 export {
+  useComplaints,
+  useComplaint,
+  useComplaintStudents,
+  useComplaintCategories,
+  useComplaintPriorities,
+  useComplaintContactMethods,
+  useCreateComplaint,
+} from "./useComplaints";
+export {
   useDocumentRequests,
   useDocumentRequest,
   useDocumentRequestOptions,
