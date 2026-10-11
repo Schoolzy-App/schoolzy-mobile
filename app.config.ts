@@ -66,9 +66,6 @@ const configs: Record<string, ExpoConfig> = {
       // differs from the Android package — matching the package name instead is
       // what made EAS register a second, unwanted app.
       bundleIdentifier: 'com.edugistics.bbs',
-      // eas.json uses appVersionSource "remote", so EAS owns this number now.
-      // Kept as a record of what was last built locally.
-      buildNumber: '6',
       supportsTablet: true,
       googleServicesFile: './firebase/brighton/GoogleService-Info.plist',
       entitlements: {
@@ -83,9 +80,6 @@ const configs: Record<string, ExpoConfig> = {
     },
     android: {
       package: 'com.edugistics.brighton',
-      // Live on Play is 47. EAS owns this number now (appVersionSource
-      // "remote"); kept as a record of what was last built locally.
-      versionCode: 48,
       // Required from Android 13 (API 33). Without it the runtime permission
       // prompt never appears and every notification is silently dropped.
       permissions: ['android.permission.POST_NOTIFICATIONS'],
@@ -174,7 +168,6 @@ const configs: Record<string, ExpoConfig> = {
     },
     ios: {
       bundleIdentifier: 'com.schoolzy.schoolzy',
-      buildNumber: '2',
       supportsTablet: true,
       googleServicesFile: './firebase/schoolzy/GoogleService-Info.plist',
       entitlements: {
@@ -189,7 +182,6 @@ const configs: Record<string, ExpoConfig> = {
     },
     android: {
       package: 'com.schoolzy.schoolzy',
-      versionCode: 2,
       // Required from Android 13 (API 33). Without it the runtime permission
       // prompt never appears and every notification is silently dropped.
       permissions: ['android.permission.POST_NOTIFICATIONS'],
@@ -291,7 +283,6 @@ const configs: Record<string, ExpoConfig> = {
 
     ios: {
       bundleIdentifier: 'com.schoolzy.ajial',
-      buildNumber: '1',
       supportsTablet: true,
       googleServicesFile: './firebase/ajial/GoogleService-Info.plist',
       entitlements: {
@@ -306,7 +297,6 @@ const configs: Record<string, ExpoConfig> = {
     },
     android: {
       package: 'com.schoolzy.ajial',
-      versionCode: 1,
       // Required from Android 13 (API 33). Without it the runtime permission
       // prompt never appears and every notification is silently dropped.
       permissions: ['android.permission.POST_NOTIFICATIONS'],
