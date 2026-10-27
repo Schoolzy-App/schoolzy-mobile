@@ -1,14 +1,25 @@
-import React, { useCallback, useMemo } from "react";
+import React, { useCallback } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 
 import type { ColorPalette } from "@/apps";
-import { DynamicStateItem, StudentCard } from "@/components";
-import type { DynamicStateData } from "@/components/DynamicStateItem";
+import {
+  LatestActivityList,
+  NeedsAttentionList,
+  StudentCard,
+  TodayTiles,
+} from "@/components";
 import { BottomSection, QueryState, ScreenTemplate, Text } from "@/components/ui";
 import { Icons } from "@/constants";
-import { useStudentProfile, useStyles } from "@/hooks";
+import {
+  useLatestActivities,
+  useNeedsAttention,
+  useStudentProfile,
+  useStudentToday,
+} from "@/hooks";
+import { useStyles } from "@/hooks";
 import type { RootStackScreenProps } from "@/navigation/types";
-import { selectLatestStates } from "@/services/mappers";
+import { studentsApi } from "@/services/api";
+import type { AttentionItem, LatestActivity } from "@/services/mappers";
 
 // ─── Quick‑action grid config ────────────────────────────────────────────────
 type QuickActionKey =
@@ -48,12 +59,9 @@ export default function StudentProfileScreen({ navigation, route }: Props) {
     avatarIcon = Icons.GirlAvatar,
   } = route.params;
 
-  const {
-    data: profile,
-    isLoading,
-    error,
-    refetch,
-  } = useStudentProfile(studentSeasonId);
+  // Only the header reads this now — Latest comes from the dashboard
+  // endpoint, so the profile request no longer gates any section's state.
+  const { data: profile } = useStudentProfile(studentSeasonId);
 
   // Prefer live profile data; fall back to the params the list passed in so the
   // header renders instantly instead of waiting on the request.
@@ -66,10 +74,11 @@ export default function StudentProfileScreen({ navigation, route }: Props) {
       : Icons.GirlAvatar
     : avatarIcon;
 
-  const latestEvents = useMemo(
-    () => selectLatestStates(profile?.latest, String(studentSeasonId)),
-    [profile?.latest, studentSeasonId],
-  );
+  // Three independent dashboard sections. Separate queries so one slow or
+  // failing section never holds up the others.
+  const today = useStudentToday(studentSeasonId);
+  const attention = useNeedsAttention(studentSeasonId);
+  const latest = useLatestActivities(studentSeasonId);
 
   // ── Dispatch a quick-action tap to the matching screen ──────────────────
   const handleQuickAction = useCallback(
@@ -132,40 +141,19 @@ export default function StudentProfileScreen({ navigation, route }: Props) {
     ],
   );
 
-  // ── Dispatch a "Latest" event tap to its natural destination ────────────
-  const handleEventPress = useCallback(
-    (event: DynamicStateData) => {
-      switch (event.type) {
-        case "medical":
-        case "emergency":
-          navigation.navigate("Wellness", {
-            studentName: displayName,
-            studentSeasonId,
-            year: displayYear,
-            activeBus,
-            allergies,
-            bloodType,
-            attendance,
-            avatarIcon,
-          });
-          return;
-        case "homework":
-          navigation.navigate("Agenda", {
-            studentName: displayName,
-            studentSeasonId,
-          });
-          return;
-        case "payment":
-          navigation.navigate("Finances", {
-            studentName: displayName,
-            studentSeasonId,
-          });
-          return;
-        case "success":
-          // Info-only state — no destination
-          return;
-      }
-    },
+  /** Wellness takes the whole student header, so it gets its own helper. */
+  const goToWellness = useCallback(
+    () =>
+      navigation.navigate("Wellness", {
+        studentName: displayName,
+        studentSeasonId,
+        year: displayYear,
+        activeBus,
+        allergies,
+        bloodType,
+        attendance,
+        avatarIcon,
+      }),
     [
       navigation,
       displayName,
@@ -177,6 +165,81 @@ export default function StudentProfileScreen({ navigation, route }: Props) {
       attendance,
       avatarIcon,
     ],
+  );
+
+  /**
+   * Both dashboard lists route by `navigation.destination`, never by the
+   * activity's `type` — the guides are explicit that type is for display and
+   * destination is the stable contract. Unknown destinations are ignored
+   * rather than crashing, so a new backend value degrades to an inert row.
+   */
+  const handleDestination = useCallback(
+    async (destination: string, id: number, title: string) => {
+      switch (destination) {
+        case "StudentReport":
+          // `id` is the StudentReport id, which is exactly what the report
+          // file endpoint is keyed on — so this opens the document itself
+          // rather than dropping the parent on the reports list.
+          navigation.navigate("Pdf", {
+            title,
+            uri: studentsApi.getReportFileUrl(studentSeasonId, id),
+            headers: await studentsApi.getReportFileHeaders(),
+          });
+          return;
+
+        case "HealthProfile":
+          goToWellness();
+          return;
+
+        case "StudentPayments":
+        case "WalletTopUp":
+          navigation.navigate("Finances", {
+            studentName: displayName,
+            studentSeasonId,
+          });
+          return;
+
+        case "CafeteriaMeals":
+          navigation.navigate("Meals", {
+            studentName: displayName,
+            studentSeasonId,
+          });
+          return;
+
+        // ⚠️ HomeworkDetails, TeacherExamGrade and TeacherExamDetails have no
+        // screens yet — their endpoints are part of a refactor the guide
+        // itself flags as unverified. Agenda is where homework and exams live
+        // today, so taps land somewhere useful instead of doing nothing.
+        case "HomeworkDetails":
+        case "TeacherExamGrade":
+        case "TeacherExamDetails":
+          navigation.navigate("Agenda", {
+            studentName: displayName,
+            studentSeasonId,
+          });
+          return;
+
+        default:
+          return;
+      }
+    },
+    [navigation, studentSeasonId, displayName, goToWellness],
+  );
+
+  const handleAttentionPress = useCallback(
+    (item: AttentionItem) =>
+      handleDestination(item.destination, item.navigationId, item.title),
+    [handleDestination],
+  );
+
+  const handleActivityPress = useCallback(
+    (activity: LatestActivity) =>
+      handleDestination(
+        activity.destination,
+        activity.navigationId,
+        activity.title,
+      ),
+    [handleDestination],
   );
 
   return (
@@ -191,6 +254,48 @@ export default function StudentProfileScreen({ navigation, route }: Props) {
         attendance={attendance}
         avatarIcon={displayAvatar}
       />
+
+      {/* ── Needs Attention ───────────────────────────────────────────
+          Above the module grid: these are the things the parent may need to
+          act on today, so they shouldn't sit below six navigation tiles. */}
+      {attention.isLoading || attention.data ? (
+        <View style={styles.section}>
+          <Text variant="label2" weight="semiBold" style={styles.sectionTitle}>
+            Needs Attention
+          </Text>
+          <View style={styles.sectionBody}>
+            <QueryState
+              isLoading={attention.isLoading}
+              error={attention.error}
+              onRetry={attention.refetch}
+            >
+              <NeedsAttentionList
+                data={attention.data}
+                onSelect={handleAttentionPress}
+              />
+            </QueryState>
+          </View>
+        </View>
+      ) : null}
+
+      {/* ── Today ─────────────────────────────────────────────────────── */}
+      <View style={styles.section}>
+        <Text variant="label2" weight="semiBold" style={styles.sectionTitle}>
+          Today
+        </Text>
+        <QueryState
+          isLoading={today.isLoading}
+          error={today.error}
+          onRetry={today.refetch}
+        >
+          {today.data ? (
+            <TodayTiles
+              tiles={today.data.tiles}
+              isPartial={today.data.isPartial}
+            />
+          ) : null}
+        </QueryState>
+      </View>
 
       {/* ── Quick Actions Grid ────────────────────────────────────────── */}
       <View style={styles.actionsGrid}>
@@ -207,24 +312,16 @@ export default function StudentProfileScreen({ navigation, route }: Props) {
       {/* ── Latest Section ────────────────────────────────────────────── */}
       <BottomSection title={`Latest For ${displayName.split(" ")[0]}`}>
         <QueryState
-          isLoading={isLoading}
-          error={error}
-          isEmpty={!latestEvents.length}
+          isLoading={latest.isLoading}
+          error={latest.error}
+          isEmpty={!latest.data?.length}
           emptyMessage="Nothing new right now"
-          onRetry={refetch}
+          onRetry={latest.refetch}
         >
-          {latestEvents.map((event) => (
-            <View key={event.id} style={styles.latestItem}>
-              <DynamicStateItem
-                {...event}
-                onPress={
-                  event.type === "success"
-                    ? undefined
-                    : () => handleEventPress(event)
-                }
-              />
-            </View>
-          ))}
+          <LatestActivityList
+            activities={latest.data ?? []}
+            onSelect={handleActivityPress}
+          />
         </QueryState>
       </BottomSection>
     </ScreenTemplate>
@@ -269,6 +366,21 @@ const createStyles = (colors: ColorPalette) =>
       borderRadius: 16,
       paddingVertical: 16,
       gap: 8,
+    },
+
+    // ── Dashboard sections ───────────────────────────────────
+    section: {
+      width: "100%",
+      paddingTop: 16,
+      gap: 10,
+    },
+    // Only the title and body are inset: TodayTiles scrolls edge to edge, so
+    // its own padding lives inside the component.
+    sectionTitle: {
+      paddingHorizontal: 16,
+    },
+    sectionBody: {
+      paddingHorizontal: 16,
     },
 
     // ── Latest Section ───────────────────────────────────────

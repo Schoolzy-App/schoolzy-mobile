@@ -1,7 +1,10 @@
 import type {
+  LatestActivitiesDto,
+  NeedsAttentionDto,
   StudentListItemDto,
   StudentProfileDto,
   StudentReportsDto,
+  StudentTodayDto,
 } from "@/types/api";
 
 import { request } from "./client";
@@ -30,6 +33,34 @@ export const studentsApi = {
     return request<StudentReportsDto>({
       method: "GET",
       url: ROUTES.students.reports(studentSeasonId),
+    });
+  },
+
+  // ── Dashboard ─────────────────────────────────────────────────────────
+  // Three independent sections of the profile screen. Today and
+  // needs-attention can each come back partially loaded — see their DTOs.
+
+  /** GET /api/mobile/students/{studentSeasonId}/dashboard/today */
+  dashboardToday(studentSeasonId: number): Promise<StudentTodayDto> {
+    return request<StudentTodayDto>({
+      method: "GET",
+      url: ROUTES.students.dashboardToday(studentSeasonId),
+    });
+  },
+
+  /** GET /api/mobile/students/{studentSeasonId}/dashboard/needs-attention */
+  dashboardNeedsAttention(studentSeasonId: number): Promise<NeedsAttentionDto> {
+    return request<NeedsAttentionDto>({
+      method: "GET",
+      url: ROUTES.students.dashboardNeedsAttention(studentSeasonId),
+    });
+  },
+
+  /** GET /api/mobile/students/{studentSeasonId}/dashboard/latest */
+  dashboardLatest(studentSeasonId: number): Promise<LatestActivitiesDto> {
+    return request<LatestActivitiesDto>({
+      method: "GET",
+      url: ROUTES.students.dashboardLatest(studentSeasonId),
     });
   },
 

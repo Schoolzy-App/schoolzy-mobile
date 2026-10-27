@@ -20,6 +20,15 @@ export const queryKeys = {
       [...queryKeys.agenda.all, studentSeasonId, date ?? "today"] as const,
   },
 
+  dashboard: {
+    all: ["dashboard"] as const,
+    today: (studentSeasonId: number) =>
+      [...queryKeys.dashboard.all, "today", studentSeasonId] as const,
+    needsAttention: (studentSeasonId: number) =>
+      [...queryKeys.dashboard.all, "needsAttention", studentSeasonId] as const,
+    latest: (studentSeasonId: number) =>
+      [...queryKeys.dashboard.all, "latest", studentSeasonId] as const,
+  },
   complaints: {
     all: ["complaints"] as const,
     list: () => [...queryKeys.complaints.all, "list"] as const,

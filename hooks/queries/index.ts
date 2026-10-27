@@ -2,6 +2,11 @@ export { queryKeys } from "./queryKeys";
 export { useStudents, useStudentsRaw, useStudentProfile } from "./useStudents";
 export { useAgenda } from "./useAgenda";
 export {
+  useStudentToday,
+  useNeedsAttention,
+  useLatestActivities,
+} from "./useStudentDashboard";
+export {
   useComplaints,
   useComplaint,
   useComplaintStudents,

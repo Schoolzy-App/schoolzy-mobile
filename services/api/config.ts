@@ -61,6 +61,15 @@ export const ROUTES = {
       `/api/mobile/students/${studentSeasonId}/agenda`,
     reports: (studentSeasonId: number) =>
       `/api/mobile/students/${studentSeasonId}/reports`,
+    /** Summary tiles for the profile screen. */
+    dashboardToday: (studentSeasonId: number) =>
+      `/api/mobile/students/${studentSeasonId}/dashboard/today`,
+    /** Actionable items: overdue installments, empty wallet, unordered meal. */
+    dashboardNeedsAttention: (studentSeasonId: number) =>
+      `/api/mobile/students/${studentSeasonId}/dashboard/needs-attention`,
+    /** Newest activity per source — reports, exams, homework, health. */
+    dashboardLatest: (studentSeasonId: number) =>
+      `/api/mobile/students/${studentSeasonId}/dashboard/latest`,
     /**
      * Report files used to arrive as an absolute `fileUrl` on another host.
      * They are now served from here and require the bearer token.

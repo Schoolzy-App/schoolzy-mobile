@@ -41,6 +41,21 @@ export type {
   GroupedComplaints,
 } from "./complaints";
 
+export {
+  selectTodayTiles,
+  selectNeedsAttention,
+  selectLatestActivities,
+  toLatestActivity,
+} from "./dashboard";
+export type {
+  TodayTile,
+  TileStatus,
+  AttentionItem,
+  NeedsAttention,
+  LatestActivity,
+  HomeworkState,
+} from "./dashboard";
+
 export { selectAgenda } from "./agenda";
 export type { AgendaSummary, AttendanceState } from "./agenda";
 
