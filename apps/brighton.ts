@@ -12,21 +12,25 @@ export const Config = {
   features: DEFAULT_FEATURES as AppFeatures,
 };
 
+// Values follow the approved design handoff (Design-Tokens/colors.json).
+// Anything the palette below has no key for lives in `constants/tokens.ts`.
 export const Colors = {
-  primary: "#821037",
-  secondary: "#4F7DCA",
+  primary: "#800E37",
+  secondary: "#4E7FD0",
   tertiary: "#FFAF44",
 
-  lightGrey: "#F4F4F4",
-  dark: "#1D1D1D",
+  lightGrey: "#F3F3F3",
+  dark: "#1C1C1E",
   darkerGrey: "#272727",
-  grey: "#81828B",
+  // Design "tertiary" text — captions, dates, placeholders. The darker
+  // "secondary" grey (#6C6C70) is `Palette.text.secondary` in tokens.
+  grey: "#8A8A8E",
   white: "#FFFFFF",
-  green: "#36BD0D",
-  red: "#CA1616",
-  blue: "#5F70F2",
-  offWhite: "#ECECEE",
-  success: "#417353",
+  green: "#33C11A",
+  red: "#E53E3E",
+  blue: "#4E73DF",
+  offWhite: "#E6E6E8",
+  success: "#24860F",
 };
 
 export const theme = {
@@ -44,7 +48,7 @@ export const theme = {
     inputBorder: Colors.offWhite,
     shadow: Colors.grey,
 
-    placeholder: "#A0AEC0",
+    placeholder: Colors.grey,
     textPrimary: Colors.dark,
     textSecondary: Colors.grey,
     textPrimaryInverted: Colors.white,
@@ -52,8 +56,8 @@ export const theme = {
     errorText: Colors.red,
 
     success: Colors.success,
-    warning: "#E8A923",
-    danger: "#CB2431",
+    warning: "#9A5A00",
+    danger: Colors.red,
     disabled: "#CBD5E0",
     buttonText: "#FFFFFF",
 
