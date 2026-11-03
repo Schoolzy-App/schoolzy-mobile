@@ -69,6 +69,10 @@ export interface Relative {
   contact: string;
   /** First letter, for the fallback avatar when there is no photo. */
   initial: string;
+  /** Two letters from the server, falling back to the first letter. */
+  initials: string;
+  /** May collect at least one child from school. */
+  canPickUp: boolean;
 }
 
 export function toRelative(dto: RelativeDto): Relative {
@@ -90,6 +94,8 @@ export function toRelative(dto: RelativeDto): Relative {
     photoUrl: resolvePhotoUrl(dto.photoUrl),
     contact: [dto.phone, dto.email].filter(Boolean).join(" · "),
     initial: name.charAt(0).toUpperCase(),
+    initials: dto.initials?.trim() || name.charAt(0).toUpperCase(),
+    canPickUp: (dto.links ?? []).some((link) => !!link.hasPermission),
   };
 }
 

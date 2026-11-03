@@ -90,3 +90,34 @@ notification, and carry the form's questions once those exist.
 `coordinatorNotes`, `resolution` and `rejectionReason` come as HTML from the
 web editor ("<p>test</p>"). The app strips the tags. A plain-text twin, like
 the existing `descriptionText`, would be safer.
+
+## Account (Settings)
+
+The Account handoff (`Account-Handoff/02-API.md`) assumes endpoints that
+don't exist. The screen is built from existing ones instead:
+`parent/profile`, `home/current-user`, `students`,
+`parent-profile/students/guardians`, `parent-profile/relatives`,
+`complaints` (summary) and `document-requests`.
+
+### 13. No notifications on/off setting
+- **Design:** a Notifications tile with a switch ("On · all children").
+- **Today:** there is no `PATCH parent/settings` or any stored preference,
+  so the tile is left out.
+
+### 14. No password-changed date
+- **Design:** "Changed 3 months ago" under Change password.
+- **Today:** nothing returns it, so the line is left out.
+
+### 15. No delete-account endpoint
+- **Design:** a Delete account tile with a destructive confirm.
+- **Today:** there is no `DELETE parent/account`. The old app's button only
+  logged out, which isn't what it says — so the tile is left out. App Store
+  and Play require real in-app deletion for apps with sign-up.
+
+### 16. Complaints "reply waiting"
+- **Design:** "Open · reply waiting" when the school has replied unread.
+- **Today:** there's no unread-reply flag, so the line says "Open".
+
+### 17. One call for the whole screen
+The handoff's `GET parent/account-summary` would replace seven requests
+with one. Worth adding when the endpoints above are.

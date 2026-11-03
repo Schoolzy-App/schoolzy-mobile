@@ -54,6 +54,14 @@ export interface RelativeDto {
    * host, and it is behind auth like every other file endpoint. May be null.
    */
   photoUrl: string | null;
+  /** First letters of the first two words of the name, upper case. */
+  initials?: string;
+  /**
+   * The students this relative is linked to. The backend's list DTO
+   * (FamilyRelativeDto) carries these too, with `hasPermission` = may collect
+   * the student from school.
+   */
+  links?: RelativeLinkDto[] | null;
 }
 
 /** GET /api/mobile/parent-profile/relatives */
@@ -104,7 +112,6 @@ export interface RelativeLinkDto {
 
 export interface RelativeDetailDto extends RelativeDto {
   students?: RelativeLinkDto[] | null;
-  links?: RelativeLinkDto[] | null;
   studentRelatives?: RelativeLinkDto[] | null;
 }
 

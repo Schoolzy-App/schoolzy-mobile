@@ -135,6 +135,19 @@ export function useGuardianStudents(enabled = true) {
   });
 }
 
+/**
+ * The same guardians list unmapped — each child's father and mother by name,
+ * which the Account screen uses to show the other parent.
+ */
+export function useGuardianStudentsRaw(enabled = true) {
+  return useQuery<StudentGuardiansDto[]>({
+    queryKey: queryKeys.parentProfile.guardians(),
+    queryFn: () => parentProfileApi.guardians(),
+    staleTime: LOOKUP_STALE_TIME,
+    enabled,
+  });
+}
+
 export function useGenders(enabled = true) {
   return useQuery<LocalizedLookupDto[], Error, DefaultInputOption[]>({
     queryKey: queryKeys.parentProfile.lookup("genders"),

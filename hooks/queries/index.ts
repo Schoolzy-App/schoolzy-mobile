@@ -15,6 +15,7 @@ export {
   useDeleteRelative,
   useUpdateLinkPermission,
   useGuardianStudents,
+  useGuardianStudentsRaw,
   useGenders,
   useRelativeTypes,
   useNationalities,
