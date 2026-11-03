@@ -135,6 +135,9 @@ export const ROUTES = {
      */
     file: (source: NewsletterItemSource, id: number) =>
       `/api/mobile/newsletters/${source}/${id}/file`,
+    /** Body and attachment; opening it marks the newsletter read. */
+    detail: (source: NewsletterItemSource, id: number) =>
+      `/api/mobile/newsletters/${source}/${id}`,
   },
   healthProfile: {
     overview: (studentSeasonId: number) =>

@@ -71,6 +71,8 @@ export const queryKeys = {
   newsletters: {
     all: ["newsletters"] as const,
     list: () => [...queryKeys.newsletters.all, "list"] as const,
+    detail: (source: number, id: number) =>
+      [...queryKeys.newsletters.all, "detail", source, id] as const,
   },
 
   healthProfile: {

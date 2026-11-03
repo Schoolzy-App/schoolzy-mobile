@@ -1,4 +1,8 @@
-import type { NewsletterDto, NewsletterItemSource } from "@/types/api";
+import type {
+  NewsletterDetailDto,
+  NewsletterDto,
+  NewsletterItemSource,
+} from "@/types/api";
 
 import { request } from "./client";
 import { API_BASE_URL, API_VERSION, ROUTES } from "./config";
@@ -10,6 +14,18 @@ export const newslettersApi = {
     return request<NewsletterDto[]>({
       method: "GET",
       url: ROUTES.newsletters.list,
+    });
+  },
+
+  /**
+   * GET /api/mobile/newsletters/{source}/{id}
+   *
+   * The server marks the newsletter read as part of this call.
+   */
+  detail(source: NewsletterItemSource, id: number): Promise<NewsletterDetailDto> {
+    return request<NewsletterDetailDto>({
+      method: "GET",
+      url: ROUTES.newsletters.detail(source, id),
     });
   },
 

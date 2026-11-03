@@ -10,8 +10,16 @@ export type { StudentProfileSummary } from "./students";
 
 export { selectLatestStates } from "./latest";
 
-export { toNewsletterItem, selectNewsletters } from "./newsletters";
-export type { NewsletterListItem } from "./newsletters";
+export {
+  selectNewsletterDetail,
+  selectNewsletters,
+  toNewsletterItem,
+} from "./newsletters";
+export type {
+  NewsletterDetail,
+  NewsletterKind,
+  NewsletterListItem,
+} from "./newsletters";
 
 export {
   toRequest,

@@ -20,6 +20,7 @@ import ConfirmDepositScreen from "@/screens/main/ConfirmDepositScreen";
 import FinancesScreen from "@/screens/main/FinancesScreen";
 import MealsScreen from "@/screens/main/MealsScreen";
 import NewsletterScreen from "@/screens/main/NewsletterScreen";
+import NewsletterDetailScreen from "@/screens/main/NewsletterDetailScreen";
 import PaymentDetailsScreen from "@/screens/main/PaymentDetailsScreen";
 import ReportsScreen from "@/screens/main/ReportsScreen";
 import StudentProfileScreen from "@/screens/main/StudentProfileScreen";
@@ -80,6 +81,10 @@ export default function RootNavigator() {
           <Stack.Screen name="Pdf" component={PdfScreen} />
           <Stack.Screen name="Notification" component={NotificationScreen} />
           <Stack.Screen name="Newsletter" component={NewsletterScreen} />
+          <Stack.Screen
+            name="NewsletterDetail"
+            component={NewsletterDetailScreen}
+          />
         </Stack.Group>
       ) : (
         // ─── Unauthenticated: only the auth stack is reachable ─────────────

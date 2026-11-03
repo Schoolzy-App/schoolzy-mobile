@@ -174,6 +174,13 @@ export type AddComplaintParams = undefined;
 export type RequestParams = undefined;
 export type AddRequestParams = undefined;
 export type NewsletterParams = undefined;
+export type NewsletterDetailParams = {
+  /** 1 Newsletter (Announcement), 2 StudentReport (Letter). */
+  source: 1 | 2;
+  id: number;
+  /** Shown while the detail loads. */
+  title?: string;
+};
 
 export type RootStackParamList = {
   Auth: undefined;
@@ -203,6 +210,7 @@ export type RootStackParamList = {
   Pdf: PdfParams;
   Notification: NotificationParams;
   Newsletter: NewsletterParams;
+  NewsletterDetail: NewsletterDetailParams;
 };
 
 export type RootStackNavigationProp<T extends keyof RootStackParamList> =

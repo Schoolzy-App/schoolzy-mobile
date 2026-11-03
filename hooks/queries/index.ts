@@ -43,7 +43,7 @@ export {
   useCreateDocumentRequest,
   useUploadDocumentRequestFile,
 } from "./useDocumentRequests";
-export { useNewsletters, useHome } from "./useNewsletters";
+export { useNewsletters, useNewsletterDetail, useHome } from "./useNewsletters";
 export {
   useHealthProfile,
   useHealthProfileEdit,

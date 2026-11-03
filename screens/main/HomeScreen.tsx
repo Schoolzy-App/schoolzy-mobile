@@ -35,6 +35,7 @@ import {
 import type {
   DashboardAttention,
   DashboardChild,
+  DashboardNewsletter,
   DashboardUpcoming,
   GlanceTile,
   QuickAction,
@@ -317,6 +318,18 @@ export default function HomeScreen() {
     [navigation],
   );
 
+  // Dashboard newsletters are always source 1 (announcements) — the same
+  // assumption the API's own `newsletters/{id}` shortcut makes.
+  const handleNewsletter = useCallback(
+    (item: DashboardNewsletter) =>
+      navigation.navigate("NewsletterDetail", {
+        source: 1,
+        id: item.newsletterId,
+        title: item.title,
+      }),
+    [navigation],
+  );
+
   const parentName =
     data?.parent.name || currentUser?.name || user?.name || "";
 
@@ -368,7 +381,7 @@ export default function HomeScreen() {
 
               <NewsletterList
                 items={data.newsletters}
-                onSelect={handleNewsletters}
+                onSelect={handleNewsletter}
                 onSeeAll={handleNewsletters}
               />
 
