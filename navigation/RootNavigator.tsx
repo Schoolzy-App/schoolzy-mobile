@@ -21,6 +21,7 @@ import FinancesScreen from "@/screens/main/FinancesScreen";
 import MealsScreen from "@/screens/main/MealsScreen";
 import NewsletterScreen from "@/screens/main/NewsletterScreen";
 import NewsletterDetailScreen from "@/screens/main/NewsletterDetailScreen";
+import ReportDetailScreen from "@/screens/main/ReportDetailScreen";
 import PaymentDetailsScreen from "@/screens/main/PaymentDetailsScreen";
 import ReportsScreen from "@/screens/main/ReportsScreen";
 import StudentProfileScreen from "@/screens/main/StudentProfileScreen";
@@ -85,6 +86,7 @@ export default function RootNavigator() {
             name="NewsletterDetail"
             component={NewsletterDetailScreen}
           />
+          <Stack.Screen name="ReportDetail" component={ReportDetailScreen} />
         </Stack.Group>
       ) : (
         // ─── Unauthenticated: only the auth stack is reachable ─────────────

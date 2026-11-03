@@ -9,8 +9,9 @@ export const queryKeys = {
     list: () => [...queryKeys.students.all, "list"] as const,
     profile: (studentSeasonId: number) =>
       [...queryKeys.students.all, "profile", studentSeasonId] as const,
-    reports: (studentSeasonId: number) =>
-      [...queryKeys.students.all, "reports", studentSeasonId] as const,
+    /** Paging is the infinite query's; the category chip is part of the key. */
+    reports: (studentSeasonId: number, category?: number) =>
+      [...queryKeys.students.all, "reports", studentSeasonId, category ?? "all"] as const,
   },
 
   agenda: {

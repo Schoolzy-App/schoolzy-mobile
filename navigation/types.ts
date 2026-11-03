@@ -1,5 +1,6 @@
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import type { NativeStackNavigationProp, NativeStackScreenProps } from '@react-navigation/native-stack';
+import type { StudentReport } from '@/services/mappers';
 import type { ChildAvatarIcon } from '@/types/child';
 
 // ─── Auth Stack ──────────────────────────────────────────────────────────────
@@ -174,6 +175,11 @@ export type AddComplaintParams = undefined;
 export type RequestParams = undefined;
 export type AddRequestParams = undefined;
 export type NewsletterParams = undefined;
+export type ReportDetailParams = {
+  studentSeasonId: number;
+  /** The list row itself: the API has no single-report endpoint. */
+  report: StudentReport;
+};
 export type NewsletterDetailParams = {
   /** 1 Newsletter (Announcement), 2 StudentReport (Letter). */
   source: 1 | 2;
@@ -211,6 +217,7 @@ export type RootStackParamList = {
   Notification: NotificationParams;
   Newsletter: NewsletterParams;
   NewsletterDetail: NewsletterDetailParams;
+  ReportDetail: ReportDetailParams;
 };
 
 export type RootStackNavigationProp<T extends keyof RootStackParamList> =

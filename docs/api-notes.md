@@ -48,3 +48,30 @@ today; settle it with the wallet work above.
 - **Design:** "Paid 15/03/2026".
 - **Today:** `due?all=true` gives paid installments a status but no date
   they were paid, so the row shows its due date instead.
+
+## Reports — no status, acknowledge or forms
+
+### 7. No report status or read state
+- **Screen:** Reports → list and detail.
+- **Design:** each report carries a status pill — New, Action needed,
+  Submitted, Acknowledged — and the date block fills with the brand colour
+  when action is needed; titles are bold while new.
+- **Today:** `GET students/{id}/reports` has no status or read flag (unlike
+  newsletters, which have `isRead` and `MobileNewsletterRead`). The app shows
+  every report the same way, with no pill.
+
+### 8. No acknowledge endpoint
+- **Design:** an "Acknowledge" button on letters, IGS, monthly and exam
+  reports, turning into "Acknowledged".
+- **Today:** nothing to call, so the button is left out.
+
+### 9. Admin forms can't be answered
+- **Design:** a Form report (category 6, AdminForm) shows its question as
+  radio options and a "Submit response" button.
+- **Today:** there is no endpoint for a form's questions or for sending an
+  answer. Form reports open like any other report.
+
+### 10. No single-report endpoint
+The detail screen is built from the list row it was opened from. A
+`GET students/{id}/reports/{reportId}` would let it open from a link or a
+notification, and carry the form's questions once those exist.

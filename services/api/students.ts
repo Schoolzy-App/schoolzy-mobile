@@ -5,6 +5,7 @@ import type {
   StudentListItemDto,
   StudentProfileDto,
   StudentReportsDto,
+  StudentReportsParams,
   StudentTodayDto,
 } from "@/types/api";
 
@@ -29,11 +30,19 @@ export const studentsApi = {
     });
   },
 
-  /** GET /api/mobile/students/{studentSeasonId}/reports */
-  reports(studentSeasonId: number): Promise<StudentReportsDto> {
+  /**
+   * GET /api/mobile/students/{studentSeasonId}/reports
+   *
+   * `category` filters `items`; `counts` always cover every category.
+   */
+  reports(
+    studentSeasonId: number,
+    params: StudentReportsParams = {},
+  ): Promise<StudentReportsDto> {
     return request<StudentReportsDto>({
       method: "GET",
       url: ROUTES.students.reports(studentSeasonId),
+      params,
     });
   },
 
