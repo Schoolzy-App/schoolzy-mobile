@@ -1,5 +1,6 @@
+import { BottomTabBarHeightContext } from "@react-navigation/bottom-tabs";
 import { useNavigation } from "@react-navigation/native";
-import React, { FC } from "react";
+import React, { FC, useContext } from "react";
 import {
   Pressable,
   ScrollView,
@@ -14,6 +15,7 @@ import { ColorPalette } from "@/apps";
 import { Icons } from "@/constants";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useStyles } from "@/hooks";
+import { TAB_BAR_HEIGHT } from "@/constants/layout";
 
 import IconContainer from "./IconContainer";
 import Text from "./Text";
@@ -45,6 +47,20 @@ const ScreenTemplate: FC<ScreenTemplateProps> = ({
   const styles = useStyles(createStyles);
   const { colors } = useTheme();
   const navigation = useNavigation();
+
+  /**
+   * The tab bar floats above the content (absolutely positioned), so a screen
+   * inside the tabs has to end above it or its last row is unreachable.
+   * Stack screens aren't under a tab bar and only need the safe area.
+   *
+   * The context is present only inside a tab navigator, which is what makes
+   * it a reliable test — its value isn't used, since the bar is custom and
+   * React Navigation measures the default one.
+   */
+  const insideTabs = useContext(BottomTabBarHeightContext) !== undefined;
+  const bottomClearance = insideTabs
+    ? TAB_BAR_HEIGHT + insets.bottom
+    : insets.bottom;
 
   const handleBack = onBack ?? (() => navigation.goBack());
 
@@ -93,7 +109,7 @@ const ScreenTemplate: FC<ScreenTemplateProps> = ({
       <ScrollView
         contentContainerStyle={[
           styles.content,
-          // { paddingBottom: insets.bottom },
+          { paddingBottom: bottomClearance },
           contentStyle,
         ]}
         bounces={false}
@@ -107,7 +123,12 @@ const ScreenTemplate: FC<ScreenTemplateProps> = ({
         <View
           style={[
             styles.bottom,
-            { paddingBottom: Math.max(insets.bottom, 16) },
+            // A sticky footer inside the tabs sits above the bar too.
+            {
+              paddingBottom: insideTabs
+                ? bottomClearance
+                : Math.max(insets.bottom, 16),
+            },
           ]}
         >
           {bottomContent}
