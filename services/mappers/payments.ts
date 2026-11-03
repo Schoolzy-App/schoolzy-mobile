@@ -21,7 +21,9 @@ import { formatCurrency, formatDate } from "@/utils/format";
 
 // ─── §4 Due payments ─────────────────────────────────────────────────────────
 
-/** One school-fee installment card in the horizontal strip. */
+export type InstallmentStatus = "paid" | "overdue" | "dueToday" | "upcoming";
+
+/** One school-fee installment. */
 export type DueInstallmentCard = PaymentCardData & {
   installmentNumber: number;
   /** Remaining balance, in numbers, for the payment form. */
@@ -31,7 +33,27 @@ export type DueInstallmentCard = PaymentCardData & {
   paidLabel?: string;
   /** 0–1, for the progress bar on partially paid installments. */
   progress: number;
+  status: InstallmentStatus;
+  /** The installment's full amount, shown on a paid row. */
+  fullAmount: string;
 };
+
+const STATUS_BY_CODE: Record<number, InstallmentStatus> = {
+  1: "paid",
+  2: "overdue",
+  3: "dueToday",
+  4: "upcoming",
+};
+
+/**
+ * The server judges status on the school's own today, so its value wins.
+ * Without one (an older response) a settled balance still reads as paid.
+ */
+function installmentStatus(dto: SchoolFeeInstallmentDto): InstallmentStatus {
+  const fromServer = dto.status ? STATUS_BY_CODE[dto.status] : undefined;
+  if (fromServer) return fromServer;
+  return (dto.outstandingAmount ?? 0) <= 0 ? "paid" : "upcoming";
+}
 
 /** One IG account with a balance still owed. */
 export interface IgOutstandingRow {
@@ -77,6 +99,8 @@ function toInstallmentCard(dto: SchoolFeeInstallmentDto): DueInstallmentCard {
       ? `${formatCurrency(paid)} of ${formatCurrency(total)} paid`
       : undefined,
     progress: total > 0 ? Math.min(1, Math.max(0, paid / total)) : 0,
+    status: installmentStatus(dto),
+    fullAmount: formatCurrency(total),
   };
 }
 
@@ -174,6 +198,87 @@ export function selectPaymentHistoryPages(data: {
   pages: PaymentHistoryDto[];
 }): TimelineStep[] {
   return data.pages.flatMap((page) => (page.items ?? []).map(toHistoryStep));
+}
+
+export type PaymentHistoryRowKind = "schoolFees" | "walletTopUp" | "other";
+
+/** One row of the Finances history list (Finance spec §6). */
+export interface PaymentHistoryRow {
+  id: string;
+  kind: PaymentHistoryRowKind;
+  title: string;
+  /** "22/10/2026 · Cash · Subject School Fees" */
+  subtitle: string;
+  /** Every history entry is a payment received, so it reads as incoming. */
+  amount: string;
+  /** Refunds and adjustments on this payment — children, never their own rows. */
+  adjustments: TimelineSubItem[];
+}
+
+export interface PaymentHistoryMonth {
+  /** "OCTOBER 2026" */
+  label: string;
+  rows: PaymentHistoryRow[];
+}
+
+export interface PaymentHistoryList {
+  months: PaymentHistoryMonth[];
+  /** Chip counts from the first page; they ignore the active filter. */
+  counts: { all: number; schoolFees: number; walletTopUp: number; other: number };
+}
+
+const KIND_BY_CODE: Record<number, PaymentHistoryRowKind> = {
+  1: "schoolFees",
+  2: "walletTopUp",
+  3: "other",
+};
+
+function toHistoryRow(dto: PaymentHistoryItemDto): PaymentHistoryRow {
+  return {
+    id: String(dto.id),
+    kind: (dto.kind && KIND_BY_CODE[dto.kind]) || "other",
+    title: entryLabel(dto),
+    subtitle: [formatDate(dto.date), dto.method ?? dto.type, dto.accountName]
+      .filter(Boolean)
+      .join(" · "),
+    amount: formatCurrency(dto.amount),
+    adjustments: (dto.transactions ?? []).map(toSubItem),
+  };
+}
+
+function monthLabel(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  return date
+    .toLocaleDateString("en-GB", { month: "long", year: "numeric" })
+    .toUpperCase();
+}
+
+/**
+ * `select` for the Finances history: every loaded page, newest first, grouped
+ * by month. The server already sorts newest first; grouping keeps that order.
+ */
+export function selectPaymentHistoryList(data: {
+  pages: PaymentHistoryDto[];
+}): PaymentHistoryList {
+  const months: PaymentHistoryMonth[] = [];
+  for (const dto of data.pages.flatMap((page) => page.items ?? [])) {
+    const label = monthLabel(dto.date);
+    const last = months[months.length - 1];
+    if (last && last.label === label) last.rows.push(toHistoryRow(dto));
+    else months.push({ label, rows: [toHistoryRow(dto)] });
+  }
+
+  const counts = data.pages[0]?.counts;
+  return {
+    months,
+    counts: {
+      all: counts?.all ?? 0,
+      schoolFees: counts?.schoolFees ?? 0,
+      walletTopUp: counts?.walletTopUp ?? 0,
+      other: counts?.other ?? 0,
+    },
+  };
 }
 
 // ─── §5 Categories / §6 IG account options ───────────────────────────────────

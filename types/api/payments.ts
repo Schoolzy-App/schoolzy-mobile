@@ -26,9 +26,17 @@ export interface PaymentTransactionDto {
   type: string | null;
 }
 
+/** 1 SchoolFees, 2 WalletTopUp, 3 Other — from the payment category code. */
+export type PaymentHistoryKind = 1 | 2 | 3;
+
 export interface PaymentHistoryItemDto extends PaymentTransactionDto {
   /** IG account name, when the payment was made against one. */
   accountName: string | null;
+  kind?: PaymentHistoryKind;
+  /** "SchoolFees" / "WalletTopUp" / "Other". */
+  kindDisplay?: string;
+  /** How it was paid — "Cash", "Visa", "Wallet". Same value as `type`. */
+  method?: string | null;
   /**
    * Refunds and adjustments derived from this payment. The guide is explicit
    * that these are children, not independent payments — rendering them as
@@ -51,12 +59,23 @@ export interface PaymentHistoryDto {
   pageSize: number;
   totalCount: number;
   totalPages: number;
+  /** One number per filter chip. Ignores the `type` filter. */
+  counts?: PaymentHistoryCountsDto;
+}
+
+export interface PaymentHistoryCountsDto {
+  all: number;
+  schoolFees: number;
+  walletTopUp: number;
+  other: number;
 }
 
 /** Query parameters for the history endpoint. */
 export interface PaymentHistoryParams {
   pageNumber?: number;
   pageSize?: number;
+  /** Filter by kind; omit for all. */
+  type?: PaymentHistoryKind;
 }
 
 /** The backend clamps anything above this to 100. */
@@ -66,8 +85,8 @@ export const PAYMENT_HISTORY_DEFAULT_PAGE_SIZE = 20;
 // ─── §4 Due payments ─────────────────────────────────────────────────────────
 
 /**
- * One school-fee installment. Only installments with an outstanding amount
- * greater than zero are returned.
+ * One school-fee installment. Unpaid ones only, unless the request asks for
+ * `all=true`, which adds the fully paid ones.
  *
  * NOTE: there is no `id` — `installmentNumber` is the only stable identifier.
  */
@@ -78,6 +97,9 @@ export interface SchoolFeeInstallmentDto {
   amount: number;
   paidAmount: number;
   outstandingAmount: number;
+  /** 1 Paid, 2 Overdue, 3 DueToday, 4 Upcoming — judged on the school's today. */
+  status?: 1 | 2 | 3 | 4;
+  statusDisplay?: string;
 }
 
 /** One IG account with a remaining balance. */

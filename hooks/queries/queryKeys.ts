@@ -83,11 +83,14 @@ export const queryKeys = {
 
   payments: {
     all: ["payments"] as const,
-    due: (studentSeasonId: number) =>
-      [...queryKeys.payments.all, "due", studentSeasonId] as const,
-    /** Paging is handled by the infinite query, not the key. */
-    history: (studentSeasonId: number) =>
-      [...queryKeys.payments.all, "history", studentSeasonId] as const,
+    due: (studentSeasonId: number, all = false) =>
+      [...queryKeys.payments.all, "due", studentSeasonId, { all }] as const,
+    /**
+     * Paging is handled by the infinite query, not the key; the kind filter
+     * is part of it, since each chip is its own list.
+     */
+    history: (studentSeasonId: number, type?: number) =>
+      [...queryKeys.payments.all, "history", studentSeasonId, type ?? "all"] as const,
     categories: () => [...queryKeys.payments.all, "categories"] as const,
     igAccountOptions: (studentSeasonId: number) =>
       [...queryKeys.payments.all, "igAccountOptions", studentSeasonId] as const,

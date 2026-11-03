@@ -236,9 +236,12 @@ export const ChildSummaryList = memo<ChildSummaryListProps>(
                   ) : null}
                 </View>
 
-                {child.busAssigned ? (
-                  <BusIcon weight="bold" size={22} color={Palette.nav.active} />
-                ) : null}
+                {/* Lit when the child has a bus, greyed when not. */}
+                <BusIcon
+                  weight="bold"
+                  size={22}
+                  color={child.busAssigned ? Palette.nav.active : Palette.text.chevron}
+                />
               </View>
 
               <View style={styles.childStats}>

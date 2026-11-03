@@ -107,6 +107,7 @@ export {
   selectIgAccountOptions,
   selectPaymentCategories,
   selectPaymentHistory,
+  selectPaymentHistoryList,
   selectPaymentHistoryPages,
 } from "./payments";
 export type {
@@ -114,7 +115,12 @@ export type {
   DuePaymentsSummary,
   IgAccountOption,
   IgOutstandingRow,
+  InstallmentStatus,
   PaymentCategoryOption,
+  PaymentHistoryList,
+  PaymentHistoryMonth,
+  PaymentHistoryRow,
+  PaymentHistoryRowKind,
 } from "./payments";
 
 export {

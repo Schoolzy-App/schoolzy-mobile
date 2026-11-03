@@ -18,8 +18,9 @@ export interface StudentSummaryCardProps {
 /**
  * The student card at the top of the Student Dashboard (spec §3).
  *
- * The design shows a bus status ("Dropped off") under the bus icon; the API
- * only says whether the student has a bus, so the icon stands alone.
+ * The design shows a bus status ("Dropped off") under the bus icon. The app
+ * only tracks whether the student has a bus, so the icon stands alone, lit or
+ * greyed.
  */
 const StudentSummaryCard = memo<StudentSummaryCardProps>(
   ({ name, year, hasBus, attendanceToday }) => {
@@ -59,7 +60,12 @@ const StudentSummaryCard = memo<StudentSummaryCardProps>(
           </View>
         </View>
 
-        {hasBus ? <BusIcon weight="bold" size={22} color={Palette.nav.active} /> : null}
+        {/* Lit when the student has a bus, greyed when not. */}
+        <BusIcon
+          weight="bold"
+          size={22}
+          color={hasBus ? Palette.nav.active : Palette.text.chevron}
+        />
       </View>
     );
   },

@@ -1,24 +1,23 @@
 import React, { useCallback, useMemo, useState } from "react";
-import {
-  ActivityIndicator,
-  FlatList,
-  Pressable,
-  StyleSheet,
-  View,
-} from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
 
 import type { ColorPalette } from "@/apps";
-import { AccountWalletCard, PaymentCard, TimelineStepper } from "@/components";
+import FilterChips from "@/components/FilterChips";
 import {
-  QueryState,
-  ScreenTemplate,
-  SegmentedTabs,
-  Text,
-} from "@/components/ui";
+  FeesSummaryCard,
+  FinanceSectionTitle,
+  HistoryMonths,
+  IgAccountList,
+  InstallmentList,
+  WalletCard,
+} from "@/components/finance/FinanceSections";
+import { QueryState, ScreenTemplate, Text } from "@/components/ui";
+import { Palette, Radius, Spacing, Type } from "@/constants/tokens";
 import { useTheme } from "@/contexts/ThemeContext";
 import {
   useDuePayments,
   usePaymentHistory,
+  useStudentFinancialSummary,
   useStyles,
   useWalletBalance,
 } from "@/hooks";
@@ -28,10 +27,22 @@ import type {
   PaymentPrefill,
   RootStackScreenProps,
 } from "@/navigation/types";
+import type { PaymentHistoryKind } from "@/types/api";
+import { formatCurrency } from "@/utils/format";
 
 const FEE_TAB_LABELS: Record<PaymentFeeKind, string> = {
-  school: "School Fees",
-  ig: "IG Fees",
+  school: "School fees",
+  ig: "IG fees",
+};
+
+type HistoryFilter = "all" | "schoolFees" | "walletTopUp" | "other";
+
+/** Chip → the history endpoint's `type`. */
+const HISTORY_TYPE: Record<HistoryFilter, PaymentHistoryKind | undefined> = {
+  all: undefined,
+  schoolFees: 1,
+  walletTopUp: 2,
+  other: 3,
 };
 
 type Props = RootStackScreenProps<"Finances">;
@@ -42,18 +53,24 @@ export default function FinancesScreen({ navigation, route }: Props) {
   const { studentName, studentSeasonId } = route.params;
   const firstName = studentName.split(" ")[0];
 
+  // `all` brings the paid installments too, so the list shows the whole year.
   const {
     data: due,
     isLoading: dueLoading,
     error: dueError,
     refetch: refetchDue,
-  } = useDuePayments(studentSeasonId);
+  } = useDuePayments(studentSeasonId, true);
 
   // The wallet belongs to the student, so it lives here rather than on the
   // parent's Account screen.
   const { data: wallet, isLoading: walletLoading } =
     useWalletBalance(studentSeasonId);
 
+  // Paid / total for the progress bar — the due list can't give the year's
+  // total once installments are settled.
+  const { data: summary } = useStudentFinancialSummary(studentSeasonId);
+
+  const [historyFilter, setHistoryFilter] = useState<HistoryFilter>("all");
   const {
     data: history,
     isLoading: historyLoading,
@@ -62,17 +79,15 @@ export default function FinancesScreen({ navigation, route }: Props) {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = usePaymentHistory(studentSeasonId);
+  } = usePaymentHistory(studentSeasonId, HISTORY_TYPE[historyFilter]);
 
   const installments = due?.installments ?? [];
   const igAccounts = due?.ig ?? [];
-  // Both sections empty means nothing is owed — distinct from a failed load.
+  // Both sections empty means nothing was ever set up — distinct from a failed load.
   const nothingDue = !installments.length && !igAccounts.length;
 
-  // ── School / IG tabs ──────────────────────────────────────────────────
-  // Driven by what this student actually owes, not by the category list —
-  // Finances doesn't load categories, and a stream with nothing due has
-  // nothing to show.
+  // ── School / IG ───────────────────────────────────────────────────────
+  // Driven by what this student actually has, not by the category list.
   const [feeKind, setFeeKind] = useState<PaymentFeeKind | null>(null);
 
   const feeKinds = useMemo<PaymentFeeKind[]>(() => {
@@ -82,37 +97,35 @@ export default function FinancesScreen({ navigation, route }: Props) {
     return kinds;
   }, [installments.length, igAccounts.length]);
 
-  const tabs = useMemo(
-    () => feeKinds.map((k) => ({ value: k, label: FEE_TAB_LABELS[k] })),
-    [feeKinds],
-  );
-
-  // Falls back to the first available stream, so the tab stays valid when the
-  // data changes underneath it. Derived, so no effect and no extra render.
+  // Falls back to the first available stream, so the choice stays valid when
+  // the data changes underneath it. Derived, so no effect and no extra render.
   const activeKind: PaymentFeeKind | null =
     feeKind && feeKinds.includes(feeKind) ? feeKind : (feeKinds[0] ?? null);
 
-  const outstandingLabel =
-    activeKind === "ig" ? due?.igOutstanding : due?.schoolOutstanding;
+  const overdueValue = installments
+    .filter((i) => i.status === "overdue")
+    .reduce((sum, i) => sum + i.amountValue, 0);
 
-  // The payment screen picks its own category and amount, so it is reachable
-  // even with nothing outstanding — tapping a due item just pre-fills it.
-  const canPay = typeof studentSeasonId === "number";
+  const progress =
+    summary && summary.total > 0
+      ? Math.min(1, Math.max(0, summary.paid / summary.total))
+      : undefined;
 
+  // ── Payment ───────────────────────────────────────────────────────────
+  // Pay opens the payment screen, pre-filled with the item tapped.
   const openPayment = useCallback(
     (prefill?: PaymentPrefill) => {
-      if (!canPay) return;
+      if (typeof studentSeasonId !== "number") return;
       navigation.navigate("PaymentDetails", {
         studentName,
         studentSeasonId,
         prefill,
       });
     },
-    [canPay, navigation, studentName, studentSeasonId],
+    [navigation, studentName, studentSeasonId],
   );
 
-  /** One stable callback for the whole strip, keyed by installment. */
-  const handleSelectInstallment = useCallback(
+  const handlePayInstallment = useCallback(
     (card: DueInstallmentCard) =>
       openPayment({
         kind: "school",
@@ -123,7 +136,7 @@ export default function FinancesScreen({ navigation, route }: Props) {
     [openPayment],
   );
 
-  const handleSelectIg = useCallback(
+  const handlePayIg = useCallback(
     (account: IgOutstandingRow) =>
       openPayment({
         kind: "ig",
@@ -134,58 +147,41 @@ export default function FinancesScreen({ navigation, route }: Props) {
     [openPayment],
   );
 
-  /* Paired with the commented-out "Make a Payment" CTA below — restore both
-     together to allow a payment when nothing is outstanding.
-  const handleNewPayment = useCallback(() => openPayment(), [openPayment]);
-  */
-
   const handleLoadMore = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) fetchNextPage();
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  // Stable renderer — FlatList would otherwise re-render every card on any
-  // state change in this screen.
-  const renderInstallment = useCallback(
-    ({ item }: { item: DueInstallmentCard }) => (
-      <PaymentCard {...item} onPress={() => handleSelectInstallment(item)} />
-    ),
-    [handleSelectInstallment],
+  // ── History chips ─────────────────────────────────────────────────────
+  // "Other" (books, bus, …) only appears when there is something under it.
+  const counts = history?.counts;
+  const historyChips = useMemo(
+    () => [
+      { value: "all" as const, label: "All", count: counts?.all },
+      { value: "schoolFees" as const, label: "School fees", count: counts?.schoolFees },
+      { value: "walletTopUp" as const, label: "Wallet", count: counts?.walletTopUp },
+      ...(counts?.other || historyFilter === "other"
+        ? [{ value: "other" as const, label: "Other", count: counts?.other }]
+        : []),
+    ],
+    [counts, historyFilter],
   );
 
   return (
     <ScreenTemplate
+      scrollHeader
+      headerStyle={styles.header}
       title={
-        <Text variant="label1" weight="medium" color={colors.buttonText}>
+        <Text style={Type.headerTitleModule} color={Palette.text.onBrand}>
           Finances for{" "}
-          <Text variant="label1" weight="bold" color={colors.buttonText}>
+          <Text style={[Type.headerTitleModule, Type.bold]} color={Palette.text.onBrand}>
             {firstName}
           </Text>
         </Text>
       }
-      /* Free-form payments are parked for now — every payment starts by
-         tapping an outstanding item above, which pre-fills its stream and
-         amount. Restore this to allow a payment with nothing due:
-
-      bottomContent={
-        <Pressable
-          style={[
-            styles.cta,
-            { backgroundColor: colors.primary },
-            !canPay && styles.ctaDisabled,
-          ]}
-          onPress={handleNewPayment}
-          disabled={!canPay}
-        >
-          <Text variant="label1" weight="bold" color={colors.buttonText}>
-            Make a Payment
-          </Text>
-        </Pressable>
-      }
-      */
     >
-      {/* ── Wallet ───────────────────────────────────────────────── */}
-      <View style={styles.walletSection}>
-        <AccountWalletCard
+      <View style={styles.body}>
+        {/* ── Wallet ───────────────────────────────────────────────── */}
+        <WalletCard
           title={`${firstName}'s Wallet`}
           amount={wallet?.amountText ?? "0"}
           negative={wallet?.isNegative}
@@ -196,212 +192,118 @@ export default function FinancesScreen({ navigation, route }: Props) {
                 ? undefined
                 : "Balance unavailable right now"
           }
-          actionText="Top up"
-          // ⚠️ There is no top-up endpoint: the wallet API exposes only the two
-          // balance reads. Enable this the moment one exists.
-          disabled
+          // No top-up endpoint yet (docs/api-notes.md §1), so Top up stays
+          // disabled.
+          onActivity={() => setHistoryFilter("walletTopUp")}
         />
-      </View>
 
-      <QueryState
-        isLoading={dueLoading}
-        error={dueError}
-        isEmpty={nothingDue}
-        emptyMessage="No outstanding payments"
-        onRetry={refetchDue}
-      >
-        {/* ── School / IG tabs ────────────────────────────────────── */}
-        {tabs.length > 1 && activeKind ? (
-          <View style={styles.tabsWrapper}>
-            <SegmentedTabs tabs={tabs} value={activeKind} onChange={setFeeKind} />
-          </View>
-        ) : null}
-
-        {/* ── Outstanding for the active stream ───────────────────── */}
-        <View style={styles.totalBlock}>
-          <Text variant="label3" weight="regular" color={colors.textSecondary}>
-            {activeKind === "ig" ? "IG fees outstanding" : "School fees outstanding"}
-          </Text>
-          <Text variant="h4" weight="bold">
-            {outstandingLabel}
-          </Text>
-        </View>
-
-        {/* ── School Fees ─────────────────────────────────────────── */}
-        {activeKind === "school" ? (
-          <View style={styles.cardsSection}>
-            <Text
-              variant="caption1"
-              weight="regular"
-              color={colors.textSecondary}
-              style={styles.sectionTitle}
-            >
-              Tap an installment to pay it
-            </Text>
-            <FlatList
-              data={installments}
-              horizontal
-              keyExtractor={keyExtractor}
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.cardsList}
-              renderItem={renderInstallment}
-            />
-          </View>
-        ) : null}
-
-        {/* ── IG Outstanding ──────────────────────────────────────── */}
-        {activeKind === "ig" ? (
-          <View style={styles.igSection}>
-            <Text variant="caption1" weight="regular" color={colors.textSecondary}>
-              Tap an account to pay it
-            </Text>
-            {igAccounts.map((account) => (
-              <IgAccountRow
-                key={account.id}
-                account={account}
-                onSelect={handleSelectIg}
-              />
-            ))}
-          </View>
-        ) : null}
-      </QueryState>
-
-      {/* ── Payment History ───────────────────────────────────────── */}
-      <View style={styles.historySection}>
-        <Text variant="label1" weight="semiBold" style={styles.historyTitle}>
-          Payment History
-        </Text>
         <QueryState
-          isLoading={historyLoading}
-          error={historyError}
-          isEmpty={!history?.length}
-          emptyMessage="No payments recorded yet"
-          onRetry={refetchHistory}
+          isLoading={dueLoading}
+          error={dueError}
+          isEmpty={nothingDue}
+          emptyMessage="No fees set up yet"
+          onRetry={refetchDue}
         >
-          <TimelineStepper items={history ?? []} />
+          <View style={styles.section}>
+            {/* ── School / IG ──────────────────────────────────────── */}
+            {feeKinds.length > 1 && activeKind ? (
+              <FilterChips
+                options={feeKinds.map((k) => ({ value: k, label: FEE_TAB_LABELS[k] }))}
+                value={activeKind}
+                onChange={setFeeKind}
+              />
+            ) : null}
 
-          {hasNextPage ? (
-            <Pressable
-              style={[styles.loadMore, { borderColor: colors.border }]}
-              onPress={handleLoadMore}
-              disabled={isFetchingNextPage}
-            >
-              {isFetchingNextPage ? (
-                <ActivityIndicator size="small" color={colors.primary} />
-              ) : (
-                <Text variant="label3" weight="medium" color={colors.primary}>
-                  Load more
-                </Text>
-              )}
-            </Pressable>
-          ) : null}
+            {activeKind === "school" ? (
+              <>
+                <FeesSummaryCard
+                  label="School fees outstanding"
+                  outstanding={due?.schoolOutstanding ?? ""}
+                  overdue={overdueValue > 0 ? `${formatCurrency(overdueValue)} overdue` : undefined}
+                  progress={progress}
+                  paidLabel={summary ? `Paid ${formatCurrency(summary.paid)}` : undefined}
+                  totalLabel={summary ? `Total ${formatCurrency(summary.total)}` : undefined}
+                />
+                <FinanceSectionTitle title="Installments" hint="Tap Pay to pay one" />
+                <InstallmentList items={installments} onPay={handlePayInstallment} />
+              </>
+            ) : null}
+
+            {activeKind === "ig" ? (
+              <>
+                {/* IG accounts carry no total or paid amount, so no bar. */}
+                <FeesSummaryCard
+                  label="IG fees outstanding"
+                  outstanding={due?.igOutstanding ?? ""}
+                />
+                <FinanceSectionTitle title="IG accounts" hint="Tap Pay to pay one" />
+                <IgAccountList items={igAccounts} onPay={handlePayIg} />
+              </>
+            ) : null}
+          </View>
         </QueryState>
-      </View>
 
-    </ScreenTemplate>
-  );
-}
-
-const keyExtractor = (item: DueInstallmentCard) => item.id;
-
-/**
- * An IG account with a balance. Unlike a school-fee installment it has no due
- * date — the subjects it covers are what identifies it to a parent.
- */
-function IgAccountRow({
-  account,
-  onSelect,
-}: {
-  account: IgOutstandingRow;
-  onSelect: (account: IgOutstandingRow) => void;
-}) {
-  const { colors } = useTheme();
-  const styles = useStyles(createStyles);
-
-  return (
-    <Pressable style={styles.igRow} onPress={() => onSelect(account)}>
-      <View style={styles.igInfo}>
-        <Text variant="label2" weight="medium" numberOfLines={1}>
-          {account.accountName}
-        </Text>
-        {account.subjectsLabel ? (
-          <Text
-            variant="caption1"
-            weight="regular"
-            color={colors.textSecondary}
-            numberOfLines={2}
+        {/* ── Payment History ──────────────────────────────────────── */}
+        <View style={styles.section}>
+          <View style={styles.historyTitle}>
+            <Text style={Type.financeSection}>Payment History</Text>
+          </View>
+          <FilterChips
+            size="sm"
+            options={historyChips}
+            value={historyFilter}
+            onChange={setHistoryFilter}
+          />
+          <QueryState
+            isLoading={historyLoading}
+            error={historyError}
+            isEmpty={!history?.months.length}
+            emptyMessage="No payments recorded yet"
+            onRetry={refetchHistory}
           >
-            {account.subjectsLabel}
-          </Text>
-        ) : null}
+            <HistoryMonths months={history?.months ?? []} />
+
+            {hasNextPage ? (
+              <Pressable
+                style={styles.loadMore}
+                onPress={handleLoadMore}
+                disabled={isFetchingNextPage}
+              >
+                {isFetchingNextPage ? (
+                  <ActivityIndicator size="small" color={colors.primary} />
+                ) : (
+                  <Text style={Type.link} color={colors.primary}>
+                    Load more
+                  </Text>
+                )}
+              </Pressable>
+            ) : null}
+          </QueryState>
+        </View>
       </View>
-      <Text variant="label2" weight="bold">
-        {account.amount}
-      </Text>
-    </Pressable>
+    </ScreenTemplate>
   );
 }
 
 const createStyles = (colors: ColorPalette) =>
   StyleSheet.create({
-    walletSection: {
+    header: {
+      borderBottomLeftRadius: Radius.header,
+      borderBottomRightRadius: Radius.header,
+    },
+    body: {
       width: "100%",
-      paddingHorizontal: 16,
-      paddingTop: 16,
+      paddingHorizontal: Spacing.screenX,
+      paddingTop: Spacing.contentTop.modules,
+      paddingBottom: Spacing.bottomInset.modulesScroll,
+      gap: 15,
     },
-    tabsWrapper: {
+    section: {
       width: "100%",
-      paddingHorizontal: 16,
-      paddingTop: 16,
-    },
-    totalBlock: {
-      width: "100%",
-      paddingHorizontal: 16,
-      paddingTop: 16,
-      gap: 2,
-    },
-    cardsSection: {
-      width: "100%",
-      paddingTop: 16,
-      gap: 12,
-    },
-    sectionTitle: {
-      paddingHorizontal: 16,
-    },
-    cardsList: {
-      paddingHorizontal: 16,
-      gap: 12,
-    },
-    igSection: {
-      width: "100%",
-      paddingHorizontal: 16,
-      paddingTop: 20,
-      gap: 12,
-    },
-    igRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      gap: 12,
-      backgroundColor: colors.surface,
-      borderRadius: 16,
-      borderWidth: 1,
-      borderColor: colors.border,
-      padding: 14,
-    },
-    igInfo: {
-      flex: 1,
-      gap: 2,
-    },
-    historySection: {
-      width: "100%",
-      paddingHorizontal: 16,
-      paddingTop: 20,
-      paddingBottom: 24,
-      gap: 12,
+      gap: 15,
     },
     historyTitle: {
-      marginBottom: 4,
+      paddingTop: 6,
     },
     loadMore: {
       alignSelf: "center",
@@ -410,18 +312,10 @@ const createStyles = (colors: ColorPalette) =>
       paddingHorizontal: 20,
       borderRadius: 24,
       borderWidth: 1,
+      borderColor: Palette.border.default,
+      backgroundColor: colors.surface,
       alignItems: "center",
       justifyContent: "center",
       marginTop: 8,
     },
-    ctaDisabled: {
-      opacity: 0.5,
-    },
-    cta: {
-      borderRadius: 32,
-      paddingVertical: 16,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-
   });
