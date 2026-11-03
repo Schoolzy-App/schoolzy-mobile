@@ -23,6 +23,7 @@ export {
 } from "./useParentProfile";
 export {
   useStudentToday,
+  useStudentFinancialSummary,
   useNeedsAttention,
   useLatestActivities,
 } from "./useStudentDashboard";

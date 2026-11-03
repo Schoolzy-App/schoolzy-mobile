@@ -25,6 +25,8 @@ export { default as CustomizeQuickActions } from './home/CustomizeQuickActions';
 export { default as TodayTiles } from './dashboard/TodayTiles';
 export { default as NeedsAttentionList } from './dashboard/NeedsAttentionList';
 export { default as LatestActivityList } from './dashboard/LatestActivityList';
+export { default as StudentSummaryCard } from './dashboard/StudentSummaryCard';
+export { default as FinanceSummaryCard } from './dashboard/FinanceSummaryCard';
 export { default as RelativeItem } from './RelativeItem';
 export { default as RequestItem } from './RequestItem';
 export { default as ScreenshotUpload } from './ScreenshotUpload';

@@ -1,6 +1,7 @@
 import type {
   LatestActivitiesDto,
   NeedsAttentionDto,
+  StudentFinancialSummaryDto,
   StudentListItemDto,
   StudentProfileDto,
   StudentReportsDto,
@@ -61,6 +62,16 @@ export const studentsApi = {
     return request<LatestActivitiesDto>({
       method: "GET",
       url: ROUTES.students.dashboardLatest(studentSeasonId),
+    });
+  },
+
+  /** GET /api/mobile/students/{studentSeasonId}/dashboard/financial-summary */
+  dashboardFinancialSummary(
+    studentSeasonId: number,
+  ): Promise<StudentFinancialSummaryDto> {
+    return request<StudentFinancialSummaryDto>({
+      method: "GET",
+      url: ROUTES.students.dashboardFinancialSummary(studentSeasonId),
     });
   },
 

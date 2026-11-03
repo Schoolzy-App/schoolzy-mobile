@@ -13,6 +13,8 @@ export interface StudentListItemDto {
    * so the list keeps working either way — when absent the avatar falls back.
    */
   gender?: string | null;
+  /** Today's attendance status as the school recorded it ("Present"); null when nothing is recorded yet. */
+  attendance?: string | null;
 }
 
 /** Latest health-profile touch point. */
@@ -61,4 +63,12 @@ export interface StudentProfileDto {
   className: string | null;
   healthProfileId: number | null;
   latest: StudentLatestUpdatesDto;
+  /** Modules the school has switched on for this student. */
+  features?: StudentFeaturesDto;
+}
+
+export interface StudentFeaturesDto {
+  meals: boolean;
+  mealOrdering: boolean;
+  finance: boolean;
 }

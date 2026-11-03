@@ -72,6 +72,8 @@ export interface StudentProfileSummary {
   year: string;
   healthProfileId: number | null;
   latest: StudentProfileDto["latest"];
+  /** Defaults to on when the server sends none, so nothing hides by mistake. */
+  features: { meals: boolean; finance: boolean };
 }
 
 export function selectStudentProfile(
@@ -85,5 +87,9 @@ export function selectStudentProfile(
     year: formatYear(dto.gradeName, dto.className),
     healthProfileId: dto.healthProfileId,
     latest: dto.latest,
+    features: {
+      meals: dto.features?.meals ?? true,
+      finance: dto.features?.finance ?? true,
+    },
   };
 }

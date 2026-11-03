@@ -47,6 +47,8 @@ export const queryKeys = {
       [...queryKeys.dashboard.all, "needsAttention", studentSeasonId] as const,
     latest: (studentSeasonId: number) =>
       [...queryKeys.dashboard.all, "latest", studentSeasonId] as const,
+    financialSummary: (studentSeasonId: number) =>
+      [...queryKeys.dashboard.all, "financialSummary", studentSeasonId] as const,
   },
   complaints: {
     all: ["complaints"] as const,

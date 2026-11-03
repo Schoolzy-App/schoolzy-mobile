@@ -70,6 +70,9 @@ export const ROUTES = {
     /** Newest activity per source — reports, exams, homework, health. */
     dashboardLatest: (studentSeasonId: number) =>
       `/api/mobile/students/${studentSeasonId}/dashboard/latest`,
+    /** School-fee totals: outstanding, overdue, next installment. */
+    dashboardFinancialSummary: (studentSeasonId: number) =>
+      `/api/mobile/students/${studentSeasonId}/dashboard/financial-summary`,
     /**
      * Report files used to arrive as an absolute `fileUrl` on another host.
      * They are now served from here and require the bearer token.
