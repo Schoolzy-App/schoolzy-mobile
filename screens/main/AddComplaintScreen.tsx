@@ -1,9 +1,7 @@
 import * as ImagePicker from "expo-image-picker";
 import {
   ArrowRightIcon,
-  CheckCircleIcon,
   CheckIcon,
-  CircleIcon,
   EnvelopeSimpleIcon,
   FileImageIcon,
   FlagIcon,
@@ -22,6 +20,7 @@ import {
   PRIORITY_COLOR,
 } from "@/components/complaints/ComplaintParts";
 import {
+  ChildOption,
   ErrorBanner,
   Field,
   InfoHint,
@@ -452,44 +451,6 @@ export default function AddComplaintScreen({ navigation }: Props) {
 
 // ─── Pieces ──────────────────────────────────────────────────────────────────
 
-function ChildOption({
-  name,
-  index,
-  selected,
-  onPress,
-}: {
-  name: string;
-  index: number;
-  selected: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      style={[styles.child, selected && { borderColor: Palette.action.primary }]}
-    >
-      <View
-        style={[
-          styles.childAvatar,
-          { backgroundColor: Palette.avatar.children[index % Palette.avatar.children.length] },
-        ]}
-      >
-        <Text style={styles.childInitial} color={Palette.text.onBrand}>
-          {name.trim().charAt(0).toUpperCase()}
-        </Text>
-      </View>
-      <Text style={[Type.cardTitle, styles.flex]} numberOfLines={1}>
-        {name}
-      </Text>
-      {selected ? (
-        <CheckCircleIcon weight="fill" size={22} color={Palette.action.primary} />
-      ) : (
-        <CircleIcon size={22} color={Palette.text.chevron} />
-      )}
-    </Pressable>
-  );
-}
-
 function SubmittedView({
   complaintId,
   onView,
@@ -561,30 +522,6 @@ const styles = StyleSheet.create({
   },
   stack: {
     gap: 8,
-  },
-  child: {
-    minHeight: Size.childOption,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: Radius.option,
-    borderWidth: Size.inputBorderWidth,
-    borderColor: Palette.form.inputBorder,
-    backgroundColor: Palette.surface.card,
-  },
-  childAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  childInitial: {
-    fontSize: 16,
-    fontWeight: "600",
-    lineHeight: 19,
   },
   upload: {
     minHeight: 64,

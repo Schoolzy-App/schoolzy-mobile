@@ -1,4 +1,6 @@
 import {
+  CheckCircleIcon,
+  CircleIcon,
   type Icon,
   InfoIcon,
   LockSimpleIcon,
@@ -145,6 +147,97 @@ export function OptionTile({
   );
 }
 
+// ─── Radio card ──────────────────────────────────────────────────────────────
+
+/** A title-and-description choice with a radio ring (one of a set). */
+export function RadioCard({
+  title,
+  description,
+  selected,
+  onPress,
+  invalid,
+}: {
+  title: string;
+  description?: string | null;
+  selected: boolean;
+  onPress: () => void;
+  invalid?: boolean;
+}) {
+  const accent = Palette.action.primary;
+  return (
+    <Pressable
+      onPress={onPress}
+      style={[
+        styles.radioCard,
+        selected && { borderColor: accent, backgroundColor: Palette.action.tint7 },
+        !selected && invalid && { borderColor: Palette.form.optionErrorBorder },
+      ]}
+    >
+      <View style={styles.flex}>
+        <Text style={Type.cardHeading}>{title}</Text>
+        {description ? (
+          <Text style={Type.meta} color={Palette.text.secondary}>
+            {description}
+          </Text>
+        ) : null}
+      </View>
+      {selected ? (
+        <CheckCircleIcon weight="fill" size={22} color={accent} />
+      ) : (
+        <CircleIcon size={22} color={Palette.text.chevron} />
+      )}
+    </Pressable>
+  );
+}
+
+// ─── Child option ────────────────────────────────────────────────────────────
+
+/** A child to file against: initial avatar, name, radio (Complaints §3). */
+export function ChildOption({
+  name,
+  index,
+  selected,
+  onPress,
+  invalid,
+}: {
+  name: string;
+  /** Position in the list — picks the avatar colour. */
+  index: number;
+  selected: boolean;
+  onPress: () => void;
+  invalid?: boolean;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={[
+        styles.child,
+        selected && { borderColor: Palette.action.primary },
+        !selected && invalid && { borderColor: Palette.form.optionErrorBorder },
+      ]}
+    >
+      <View
+        style={[
+          styles.childAvatar,
+          { backgroundColor: Palette.avatar.children[index % Palette.avatar.children.length] },
+        ]}
+      >
+        <Text style={styles.childInitial} color={Palette.text.onBrand}>
+          {name.trim().charAt(0).toUpperCase()}
+        </Text>
+      </View>
+      <Text style={[Type.cardTitle, styles.flex]} numberOfLines={1}>
+        {name}
+      </Text>
+      {selected ? (
+        <CheckCircleIcon weight="fill" size={22} color={Palette.action.primary} />
+      ) : (
+        <CircleIcon size={22} color={Palette.text.chevron} />
+      )}
+    </Pressable>
+  );
+}
+
 // ─── Step progress ───────────────────────────────────────────────────────────
 
 export function StepProgress({
@@ -282,6 +375,41 @@ const styles = StyleSheet.create({
   },
   semibold: {
     fontWeight: "600",
+  },
+  radioCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 13,
+    paddingHorizontal: 14,
+    borderRadius: Radius.option,
+    borderWidth: Size.inputBorderWidth,
+    borderColor: Palette.form.inputBorder,
+    backgroundColor: Palette.surface.card,
+  },
+  child: {
+    minHeight: Size.childOption,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: Radius.option,
+    borderWidth: Size.inputBorderWidth,
+    borderColor: Palette.form.inputBorder,
+    backgroundColor: Palette.surface.card,
+  },
+  childAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  childInitial: {
+    fontSize: 16,
+    fontWeight: "600",
+    lineHeight: 19,
   },
   steps: {
     gap: 10,
