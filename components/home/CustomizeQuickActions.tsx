@@ -1,12 +1,25 @@
-import { MaterialIcons } from "@expo/vector-icons";
+import {
+  CaretDownIcon,
+  CaretUpIcon,
+  DotsSixVerticalIcon,
+  MinusCircleIcon,
+  PlusCircleIcon,
+  PushPinIcon,
+  QuestionIcon,
+} from "phosphor-react-native";
 import React, { memo, useCallback, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import type { ColorPalette } from "@/apps";
-import { Button, Modal, Text } from "@/components/ui";
+import FormButton from "@/components/FormButton";
+import { Modal, Text } from "@/components/ui";
+import { Opacity, Palette, Radius, Spacing, Type } from "@/constants/tokens";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useStyles } from "@/hooks";
 import type { DashboardChild, QuickAction } from "@/services/mappers";
+
+import { moduleStyle } from "./moduleStyle";
 
 /** One row of the draft list. */
 export interface QuickActionDraft {
@@ -56,6 +69,7 @@ const CustomizeQuickActions = memo<CustomizeQuickActionsProps>(
   }) => {
     const { colors } = useTheme();
     const styles = useStyles(createStyles);
+    const insets = useSafeAreaInsets();
 
     /**
      * `null` means untouched, so the saved list shows through. Derived rather
@@ -169,95 +183,68 @@ const CustomizeQuickActions = memo<CustomizeQuickActionsProps>(
     const handleSave = useCallback(() => onSave(draft), [onSave, draft]);
 
     return (
-      <Modal isVisible={visible} closeModal={handleClose}>
-        <View style={styles.sheet}>
-          <View style={styles.header}>
-            <Text variant="label1" weight="semiBold">
-              Customize Quick Actions
-            </Text>
+      <Modal isVisible={visible} closeModal={handleClose} bare>
+        {/* ── Header (white, under the sheet's handle) ───────────── */}
+        <View style={styles.header}>
+          <View style={styles.titleRow}>
+            <Text style={Type.sheetTitle}>Customize Quick Actions</Text>
             <Pressable onPress={onReset} hitSlop={8}>
-              <Text variant="label3" weight="semiBold" color={colors.primary}>
+              <Text style={Type.buttonSmall} color={colors.primary}>
                 Reset
               </Text>
             </Pressable>
           </View>
-
-          <Text variant="caption1" weight="regular" color={colors.textSecondary}>
+          <Text style={Type.meta} color={Palette.text.tertiary}>
             Choose what appears on Home · {draft.length} of {max}
           </Text>
+        </View>
 
-          <ScrollView
-            style={styles.scroll}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.scrollBody}
-          >
-            {/* ── On Home ──────────────────────────────────────── */}
-            <Text variant="caption1" weight="semiBold" color={colors.textSecondary}>
-              ON HOME
+        <ScrollView
+          style={styles.scroll}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollBody}
+        >
+          {/* ── On Home ──────────────────────────────────────── */}
+          <GroupLabel title="On Home" />
+          {draft.length === 0 ? (
+            <Text style={[Type.meta, styles.emptyNote]} color={Palette.text.tertiary}>
+              No shortcuts selected. Home will keep the section with nothing in it.
             </Text>
-
-            {draft.length === 0 ? (
-              <Text
-                variant="label3"
-                weight="regular"
-                color={colors.textSecondary}
-                style={styles.emptyNote}
-              >
-                No shortcuts selected. Home will keep the section with nothing in it.
-              </Text>
-            ) : (
-              draft.map((item, index) => {
+          ) : (
+            <View style={styles.listCard}>
+              {draft.map((item, index) => {
                 const action = byCode[item.code];
                 const studentScoped = action?.isStudentScoped ?? false;
                 const pinName = nameOf(item.pinnedStudentId);
+                const { Icon, color } = moduleStyle(item.code, action?.label);
 
                 return (
-                  <View key={item.code} style={styles.row}>
+                  <View key={item.code} style={[styles.row, index > 0 && styles.divided]}>
+                    <DotsSixVerticalIcon weight="bold" size={16} color={Palette.text.chevron} />
+                    <Icon weight="fill" size={20} color={color ?? colors.primary} />
                     <View style={styles.rowText}>
-                      <View style={styles.rowTitle}>
-                        <Text variant="label3" weight="semiBold" numberOfLines={1}>
-                          {action?.label ?? item.code}
-                        </Text>
-                        {!studentScoped ? (
-                          <View
-                            style={[
-                              styles.badge,
-                              { backgroundColor: colors.background },
-                            ]}
-                          >
-                            <Text
-                              variant="caption2"
-                              weight="medium"
-                              color={colors.textSecondary}
-                            >
-                              You
-                            </Text>
-                          </View>
-                        ) : null}
-                      </View>
-
-                      {/* Only student shortcuts need a child. */}
+                      <Text style={Type.rowLabel} numberOfLines={1}>
+                        {action?.label ?? item.code}
+                      </Text>
+                      {/* Only student shortcuts need a child. Tapping cycles
+                          Ask each time → each child → back. */}
                       {studentScoped && students.length ? (
                         <Pressable
                           style={[
                             styles.pin,
-                            {
-                              backgroundColor: pinName
-                                ? colors.primary + "15"
-                                : colors.background,
-                            },
+                            pinName && { backgroundColor: `${colors.primary}14` },
                           ]}
                           onPress={() => cyclePin(index)}
+                          hitSlop={4}
                         >
-                          <MaterialIcons
-                            name={pinName ? "push-pin" : "help-outline"}
-                            size={12}
-                            color={pinName ? colors.primary : colors.textSecondary}
-                          />
+                          {pinName ? (
+                            <PushPinIcon weight="fill" size={11} color={colors.primary} />
+                          ) : (
+                            <QuestionIcon size={11} color={Palette.text.secondary} />
+                          )}
                           <Text
-                            variant="caption2"
-                            weight="medium"
-                            color={pinName ? colors.primary : colors.textSecondary}
+                            style={Type.tiny}
+                            color={pinName ? colors.primary : Palette.text.secondary}
                           >
                             {pinName || "Ask each time"}
                           </Text>
@@ -265,97 +252,91 @@ const CustomizeQuickActions = memo<CustomizeQuickActionsProps>(
                       ) : null}
                     </View>
 
-                    <View style={styles.rowActions}>
-                      <Pressable
-                        hitSlop={6}
-                        onPress={() => move(index, -1)}
-                        disabled={index === 0}
-                      >
-                        <MaterialIcons
-                          name="keyboard-arrow-up"
-                          size={22}
-                          color={index === 0 ? colors.border : colors.textSecondary}
-                        />
-                      </Pressable>
-                      <Pressable
-                        hitSlop={6}
-                        onPress={() => move(index, 1)}
-                        disabled={index === draft.length - 1}
-                      >
-                        <MaterialIcons
-                          name="keyboard-arrow-down"
-                          size={22}
-                          color={
-                            index === draft.length - 1
-                              ? colors.border
-                              : colors.textSecondary
-                          }
-                        />
-                      </Pressable>
-                      <Pressable hitSlop={6} onPress={() => remove(index)}>
-                        <MaterialIcons
-                          name="remove-circle-outline"
-                          size={20}
-                          color={colors.danger}
-                        />
-                      </Pressable>
-                    </View>
+                    <CircleButton
+                      onPress={() => move(index, -1)}
+                      disabled={index === 0}
+                    >
+                      <CaretUpIcon
+                        weight="bold"
+                        size={16}
+                        color={index === 0 ? DISABLED : Palette.text.tertiary}
+                      />
+                    </CircleButton>
+                    <CircleButton
+                      onPress={() => move(index, 1)}
+                      disabled={index === draft.length - 1}
+                    >
+                      <CaretDownIcon
+                        weight="bold"
+                        size={16}
+                        color={index === draft.length - 1 ? DISABLED : Palette.text.tertiary}
+                      />
+                    </CircleButton>
+                    <CircleButton onPress={() => remove(index)}>
+                      <MinusCircleIcon weight="fill" size={20} color={Palette.nav.badge} />
+                    </CircleButton>
                   </View>
                 );
-              })
-            )}
-
-            {/* ── Available ────────────────────────────────────── */}
-            {groups.map((group) => (
-              <View key={group.title} style={styles.group}>
-                <Text
-                  variant="caption1"
-                  weight="semiBold"
-                  color={colors.textSecondary}
-                >
-                  {group.title.toUpperCase()}
-                </Text>
-                {group.items.map((action) => (
-                  <Pressable
-                    key={action.code}
-                    style={[styles.addRow, full && styles.disabled]}
-                    onPress={() => add(action.code)}
-                    disabled={full}
-                  >
-                    <MaterialIcons
-                      name="add-circle-outline"
-                      size={18}
-                      color={full ? colors.border : colors.primary}
-                    />
-                    <Text variant="label3" weight="regular" numberOfLines={1}>
-                      {action.label}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
-            ))}
-
-            <Text
-              variant="caption1"
-              weight="regular"
-              color={colors.textSecondary}
-              style={styles.footnote}
-            >
-              {full
-                ? `That's the maximum of ${max}. Remove one to add another.`
-                : "Child shortcuts ask which child each time. Tap the chip to pin one to a single child and skip that step."}
-            </Text>
-          </ScrollView>
-
-          <View style={styles.footer}>
-            <Pressable style={styles.cancel} onPress={handleClose}>
-              <Text variant="label2" weight="medium" color={colors.textSecondary}>
-                Cancel
-              </Text>
-            </Pressable>
-            <View style={styles.saveWrap}>
-              <Button text="Save" onPress={handleSave} isLoading={isSaving} />
+              })}
             </View>
+          )}
+
+          {/* ── Available ────────────────────────────────────── */}
+          {groups.map((group) => (
+            <View key={group.title} style={styles.group}>
+              <GroupLabel title={group.title} />
+              <View style={styles.listCard}>
+                {group.items.map((action, index) => {
+                  const { Icon, color } = moduleStyle(action.code, action.label);
+                  return (
+                    <Pressable
+                      key={action.code}
+                      style={({ pressed }) => [
+                        styles.row,
+                        index > 0 && styles.divided,
+                        full && styles.disabled,
+                        pressed && { backgroundColor: Palette.surface.pressedRow },
+                      ]}
+                      onPress={() => add(action.code)}
+                      disabled={full}
+                    >
+                      <PlusCircleIcon weight="fill" size={20} color={colors.primary} />
+                      <Icon weight="fill" size={20} color={color ?? colors.primary} />
+                      <Text style={[Type.rowLabel, styles.rowText]} numberOfLines={1}>
+                        {action.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
+          ))}
+
+          <Text style={[Type.caption, styles.footnote]} color={Palette.text.tertiary}>
+            {full
+              ? `That's the maximum of ${max}. Remove one to add another.`
+              : "Child shortcuts ask which child each time. Tap the chip to pin one to a single child and skip that step."}
+          </Text>
+        </ScrollView>
+
+        {/* ── Footer ─────────────────────────────────────────── */}
+        <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 30) }]}>
+          <View style={styles.flex}>
+            <FormButton
+              label="Cancel"
+              variant="secondary"
+              height={44}
+              onPress={handleClose}
+            />
+          </View>
+          <View style={styles.flex}>
+            <FormButton
+              label="Save"
+              height={44}
+              color={colors.primary}
+              loading={isSaving}
+              onPress={handleSave}
+            />
           </View>
         </View>
       </Modal>
@@ -366,95 +347,128 @@ const CustomizeQuickActions = memo<CustomizeQuickActionsProps>(
 CustomizeQuickActions.displayName = "CustomizeQuickActions";
 export default CustomizeQuickActions;
 
+/** Up/down arrows at the ends of the list. */
+const DISABLED = "#E0E0E3";
+
+function GroupLabel({ title }: { title: string }) {
+  const styles = useStyles(createStyles);
+  return (
+    <Text style={styles.groupLabel} color={Palette.text.tertiary}>
+      {title.toUpperCase()}
+    </Text>
+  );
+}
+
+/** 30×30 round button, grey while pressed. */
+function CircleButton({
+  children,
+  onPress,
+  disabled,
+}: {
+  children: React.ReactNode;
+  onPress: () => void;
+  disabled?: boolean;
+}) {
+  const styles = useStyles(createStyles);
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      hitSlop={4}
+      style={({ pressed }) => [styles.circle, pressed && styles.circlePressed]}
+    >
+      {children}
+    </Pressable>
+  );
+}
+
 const createStyles = (colors: ColorPalette) =>
   StyleSheet.create({
-    sheet: {
-      width: "100%",
-      gap: 10,
+    flex: {
+      flex: 1,
     },
     header: {
+      backgroundColor: colors.surface,
+      paddingHorizontal: Spacing.screenX,
+      paddingBottom: 14,
+      gap: 4,
+    },
+    titleRow: {
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
     },
     scroll: {
-      maxHeight: 420,
+      flexGrow: 0,
     },
     scrollBody: {
+      padding: Spacing.screenX,
       gap: 10,
-      paddingBottom: 4,
     },
     emptyNote: {
       paddingVertical: 10,
+    },
+    groupLabel: {
+      fontSize: 12,
+      fontWeight: "600",
+      lineHeight: 15,
+      letterSpacing: 12 * 0.04,
+      paddingHorizontal: 2,
+    },
+    listCard: {
+      backgroundColor: colors.surface,
+      borderRadius: Radius.card,
+      paddingHorizontal: 12,
     },
     row: {
       flexDirection: "row",
       alignItems: "center",
       gap: 10,
-      padding: 12,
-      borderRadius: 12,
-      borderWidth: 1,
-      borderColor: colors.border,
-      backgroundColor: colors.surface,
+      paddingVertical: 10,
+    },
+    divided: {
+      borderTopWidth: 1,
+      borderTopColor: Palette.border.divider,
     },
     rowText: {
       flex: 1,
-      gap: 6,
-    },
-    rowTitle: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 8,
-    },
-    badge: {
-      paddingHorizontal: 8,
-      paddingVertical: 2,
-      borderRadius: 8,
+      gap: 4,
     },
     pin: {
       alignSelf: "flex-start",
       flexDirection: "row",
       alignItems: "center",
       gap: 4,
-      paddingHorizontal: 8,
-      paddingVertical: 4,
-      borderRadius: 10,
+      paddingHorizontal: 7,
+      paddingVertical: 2,
+      borderRadius: Radius.pill,
+      backgroundColor: Palette.form.neutralChip,
     },
-    rowActions: {
-      flexDirection: "row",
+    circle: {
+      width: 30,
+      height: 30,
+      borderRadius: 15,
       alignItems: "center",
-      gap: 6,
+      justifyContent: "center",
+    },
+    circlePressed: {
+      backgroundColor: Palette.border.divider,
     },
     group: {
-      gap: 8,
-      paddingTop: 4,
-    },
-    addRow: {
-      flexDirection: "row",
-      alignItems: "center",
       gap: 10,
-      paddingVertical: 10,
-      paddingHorizontal: 12,
-      borderRadius: 12,
-      backgroundColor: colors.background,
+      paddingTop: 4,
     },
     disabled: {
-      opacity: 0.45,
+      opacity: Opacity.disabled,
     },
     footnote: {
-      paddingTop: 4,
+      paddingHorizontal: 2,
     },
     footer: {
       flexDirection: "row",
-      alignItems: "center",
-      gap: 12,
-      paddingTop: 4,
-    },
-    cancel: {
-      paddingHorizontal: 16,
-      paddingVertical: 14,
-    },
-    saveWrap: {
-      flex: 1,
+      gap: 10,
+      paddingTop: 12,
+      paddingHorizontal: Spacing.screenX,
+      backgroundColor: colors.surface,
     },
   });
