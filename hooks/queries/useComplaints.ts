@@ -24,24 +24,26 @@ import { queryKeys } from "./queryKeys";
 /**
  * GET /api/mobile/complaints — paged, newest first.
  *
- * Grouping into open/closed happens in `select`, so the screen never
- * re-filters on render.
+ * `status` is the chip filter; each chip is its own cached list. Summary and
+ * chip counts ride on every page and ignore the filter.
  */
-export function useComplaints(enabled = true) {
+export function useComplaints(status?: number, enabled = true) {
   return useInfiniteQuery<
     ComplaintPage,
     Error,
     GroupedComplaints,
-    ReturnType<typeof queryKeys.complaints.list>,
+    ReturnType<typeof queryKeys.complaints.listByStatus>,
     number
   >({
-    queryKey: queryKeys.complaints.list(),
+    queryKey: queryKeys.complaints.listByStatus(status),
     queryFn: ({ pageParam }) =>
-      complaintsApi.list(pageParam, COMPLAINTS_PAGE_SIZE),
+      complaintsApi.list(pageParam, COMPLAINTS_PAGE_SIZE, status),
     initialPageParam: 1,
     getNextPageParam: (last) =>
       last.hasMore ? last.pageNumber + 1 : undefined,
     select: selectGroupedComplaints,
+    // Switching chips keeps the previous list until the new one arrives.
+    placeholderData: (previous) => previous,
     enabled,
   });
 }

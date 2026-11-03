@@ -53,7 +53,10 @@ export const queryKeys = {
   },
   complaints: {
     all: ["complaints"] as const,
+    /** Prefix of every filtered list — invalidating it refreshes them all. */
     list: () => [...queryKeys.complaints.all, "list"] as const,
+    listByStatus: (status?: number) =>
+      [...queryKeys.complaints.list(), status ?? "all"] as const,
     detail: (id: number) =>
       [...queryKeys.complaints.all, "detail", id] as const,
     /** The four create-form lookups, cached independently of the list. */

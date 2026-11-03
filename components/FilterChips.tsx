@@ -20,6 +20,8 @@ export interface FilterChipsProps<T extends string> {
   onChange: (value: T) => void;
   /** "md" on Newsletter and Reports, "sm" on Finance history. */
   size?: "md" | "sm";
+  /** Selected fill; defaults to the brand. Complaints use action blue. */
+  accent?: string;
 }
 
 /**
@@ -31,10 +33,12 @@ export default function FilterChips<T extends string>({
   value,
   onChange,
   size = "md",
+  accent,
 }: FilterChipsProps<T>) {
   const { colors } = useTheme();
   const styles = useStyles(createStyles);
   const small = size === "sm";
+  const selectedColor = accent ?? colors.primary;
   const chipSize = small ? Size.chipSmall : Size.chip;
 
   return (
@@ -59,8 +63,8 @@ export default function FilterChips<T extends string>({
                 borderRadius: small ? Radius.chipSmall : Radius.chip,
               },
               selected && {
-                backgroundColor: colors.primary,
-                borderColor: colors.primary,
+                backgroundColor: selectedColor,
+                borderColor: selectedColor,
               },
               pressed && styles.pressed,
             ]}

@@ -11,8 +11,11 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { ArrowLeftIcon } from "phosphor-react-native";
+
 import { ColorPalette } from "@/apps";
 import { Icons } from "@/constants";
+import { Palette, Type } from "@/constants/tokens";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useStyles } from "@/hooks";
 import { TAB_BAR_HEIGHT } from "@/constants/layout";
@@ -32,6 +35,12 @@ type ScreenTemplateProps = {
    * screens scroll as one piece; form screens keep a fixed header.
    */
   scrollHeader?: boolean;
+  /**
+   * "form" is the design's form-screen shell (Complaints, Update
+   * Information, Relatives): an arrow-left back button, a 17/600 title and
+   * a white sticky footer with a top border.
+   */
+  variant?: "module" | "form";
   Top?: React.ReactElement;
   showHeader?: boolean;
   title?: string | React.ReactElement;
@@ -45,6 +54,7 @@ const ScreenTemplate: FC<ScreenTemplateProps> = ({
   headerContent,
   headerStyle,
   scrollHeader = false,
+  variant = "module",
   Top,
   contentStyle,
   showHeader = true,
@@ -72,19 +82,30 @@ const ScreenTemplate: FC<ScreenTemplateProps> = ({
     : insets.bottom;
 
   const handleBack = onBack ?? (() => navigation.goBack());
+  const isForm = variant === "form";
 
   const titleContent = title ? (
     <View style={styles.titleRow}>
       <Pressable onPress={handleBack} hitSlop={12}>
         <IconContainer size={40} color={colors.surface}>
-          <Icons.BackIcon width={20} height={20} color={colors.textPrimary} />
+          {isForm ? (
+            <ArrowLeftIcon weight="bold" size={18} color={colors.textPrimary} />
+          ) : (
+            <Icons.BackIcon width={20} height={20} color={colors.textPrimary} />
+          )}
         </IconContainer>
       </Pressable>
       <View style={styles.titleCenter}>
         {typeof title === "string" ? (
-          <Text variant="label1" weight="medium" color={colors.buttonText}>
-            {title}
-          </Text>
+          isForm ? (
+            <Text style={Type.headerTitle} color={colors.buttonText} numberOfLines={1}>
+              {title}
+            </Text>
+          ) : (
+            <Text variant="label1" weight="medium" color={colors.buttonText}>
+              {title}
+            </Text>
+          )
         ) : (
           title
         )}
@@ -136,6 +157,7 @@ const ScreenTemplate: FC<ScreenTemplateProps> = ({
         <View
           style={[
             styles.bottom,
+            isForm && styles.formFooter,
             // A sticky footer inside the tabs sits above the bar too.
             {
               paddingBottom: insideTabs
@@ -188,5 +210,10 @@ const createStyles = (colors: ColorPalette) =>
       paddingHorizontal: 16,
       paddingTop: 12,
       backgroundColor: colors.background,
+    },
+    formFooter: {
+      backgroundColor: colors.surface,
+      borderTopWidth: 1,
+      borderTopColor: Palette.form.footerBorder,
     },
   });

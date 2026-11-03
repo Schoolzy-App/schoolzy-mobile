@@ -83,10 +83,31 @@ export interface MobileComplaintListItemDto {
   createdDate: string | null;
   followUpDate: string | null;
   assignedCoordinatorName: string | null;
+  /** True once the school has responded — every status past Submitted. */
+  hasSchoolReply?: boolean;
+}
+
+/** The four summary tiles. "Pending" is Submitted + Under Review. */
+export interface ComplaintSummaryDto {
+  total: number;
+  pending: number;
+  inProgress: number;
+  resolved: number;
+}
+
+/** One number per status chip. Ignores the `status` filter. */
+export interface ComplaintStatusCountsDto {
+  all: number;
+  submitted: number;
+  underReview: number;
+  inProgress: number;
+  resolved: number;
+  closed: number;
+  rejected: number;
 }
 
 /**
- * GET /api/mobile/complaints?pageNumber=&pageSize=
+ * GET /api/mobile/complaints?pageNumber=&pageSize=&status=
  *
  * ⚠️ The guide documents the query parameters but never shows the envelope's
  * `data` for the list, so whether it is a bare array or a page object is
@@ -103,6 +124,8 @@ export type ComplaintListResponseDto =
       pageSize?: number;
       totalPages?: number;
       totalCount?: number;
+      summary?: ComplaintSummaryDto | null;
+      statusCounts?: ComplaintStatusCountsDto | null;
     };
 
 /** Normalized page, whichever shape the server actually sends. */
@@ -111,6 +134,10 @@ export interface ComplaintPage {
   pageNumber: number;
   /** True when another page is worth requesting. */
   hasMore: boolean;
+  /** Complaints matching the filter, across every page; null when unknown. */
+  totalCount: number | null;
+  summary: ComplaintSummaryDto | null;
+  statusCounts: ComplaintStatusCountsDto | null;
 }
 
 // ─── Detail ─────────────────────────────────────────────────────────────────
@@ -144,6 +171,9 @@ export interface MobileComplaintDetailDto {
   attachmentFileName: string | null;
   hasResponseAttachment: boolean;
   responseAttachmentFileName: string | null;
+  hasSchoolReply?: boolean;
+  /** `description` with its HTML stripped by the server. */
+  descriptionText?: string;
 }
 
 // ─── Create ─────────────────────────────────────────────────────────────────

@@ -75,3 +75,18 @@ today; settle it with the wallet work above.
 The detail screen is built from the list row it was opened from. A
 `GET students/{id}/reports/{reportId}` would let it open from a link or a
 notification, and carry the form's questions once those exist.
+
+## Complaints
+
+### 11. No complaint reference number
+- **Design:** every complaint shows a reference like "CMP-2026-0026" (list
+  card, detail, success screen).
+- **Today:** neither the list nor the detail carries one, and the format
+  appears nowhere in the backend. The app shows the id ("#26") instead.
+- **To decide:** add a `reference` field, so the app shows whatever format
+  the school uses.
+
+### 12. School notes arrive as HTML
+`coordinatorNotes`, `resolution` and `rejectionReason` come as HTML from the
+web editor ("<p>test</p>"). The app strips the tags. A plain-text twin, like
+the existing `descriptionText`, would be safer.
