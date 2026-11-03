@@ -31,6 +31,7 @@ import MailActive from '@/components/icons/MailActiveIcon';
 import MailInactive from '@/assets/icons/mail-inactive.svg';
 import MealsIcon from '@/assets/icons/meals.svg';
 import MotherAvatar from '@/assets/icons/mother-avatar.svg';
+import NewsletterIcon from '@/assets/icons/newsletter.svg';
 import NotificationIcon from '@/components/icons/NotificationIcon';
 import ReportIcon from '@/components/icons/ReportIcon';
 import Tick from '@/assets/icons/tick.svg';
@@ -68,6 +69,7 @@ export const Icons = {
   FinanceIcon,
   WellnessRoundIcon,
   WellnessIcon,
+  NewsletterIcon,
   NotificationIcon,
   MealsIcon,
   BusActiveIcon,

@@ -77,6 +77,29 @@ export const ROUTES = {
     reportFile: (studentSeasonId: number, reportId: number) =>
       `/api/mobile/students/${studentSeasonId}/reports/${reportId}/file`,
   },
+  parentDashboard: {
+    /** The whole Home screen in one request. `date` is optional. */
+    root: "/api/v1/parent/dashboard",
+    quickActions: "/api/v1/parent/dashboard/quick-actions",
+    quickActionsCatalog: "/api/v1/parent/dashboard/quick-actions/catalog",
+  },
+  parentProfile: {
+    relatives: "/api/mobile/parent-profile/relatives",
+    relative: (relativeId: number) =>
+      `/api/mobile/parent-profile/relatives/${relativeId}`,
+    /** linkId is the StudentRelatives row id, not the relative's id. */
+    linkPermission: (linkId: number) =>
+      `/api/mobile/parent-profile/relatives/links/${linkId}/permission`,
+    genders: "/api/mobile/parent-profile/genders",
+    /** Names for the RelativeType enum, which Swagger exposes only as ints. */
+    relativeTypes: "/api/mobile/parent-profile/relative-types",
+    guardians: "/api/mobile/parent-profile/students/guardians",
+  },
+  parent: {
+    /** "My Information" — the signed-in parent's own record. */
+    profile: "/api/mobile/parent/profile",
+    nationalities: "/api/mobile/parent/nationalities",
+  },
   complaints: {
     list: "/api/mobile/complaints",
     create: "/api/mobile/complaints",

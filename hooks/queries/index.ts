@@ -2,6 +2,26 @@ export { queryKeys } from "./queryKeys";
 export { useStudents, useStudentsRaw, useStudentProfile } from "./useStudents";
 export { useAgenda } from "./useAgenda";
 export {
+  useParentDashboard,
+  useQuickActions,
+  useQuickActionsCatalog,
+  useSaveQuickActions,
+  useResetQuickActions,
+} from "./useParentDashboard";
+export {
+  useRelatives,
+  useRelative,
+  useSaveRelative,
+  useDeleteRelative,
+  useUpdateLinkPermission,
+  useGuardianStudents,
+  useGenders,
+  useRelativeTypes,
+  useNationalities,
+  useParentInfo,
+  useUpdateParentInfo,
+} from "./useParentProfile";
+export {
   useStudentToday,
   useNeedsAttention,
   useLatestActivities,

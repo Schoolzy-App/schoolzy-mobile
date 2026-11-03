@@ -7,6 +7,10 @@ import type { RootStackParamList } from "./types";
 
 import { useAuth } from "@/contexts/AuthContext";
 import AddComplaintScreen from "@/screens/main/AddComplaintScreen";
+import AddRelativeScreen from "@/screens/main/AddRelativeScreen";
+import EditParentInfoScreen from "@/screens/main/EditParentInfoScreen";
+import ParentProfileScreen from "@/screens/main/ParentProfileScreen";
+import RelativeDetailsScreen from "@/screens/main/RelativeDetailsScreen";
 import AddRequestScreen from "@/screens/main/AddRequestScreen";
 import ComplaintDetailsScreen from "@/screens/main/ComplaintDetailsScreen";
 import ComplaintsScreen from "@/screens/main/ComplaintsScreen";
@@ -41,6 +45,16 @@ export default function RootNavigator() {
           <Stack.Screen name="Main" component={TabNavigator} />
           <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
           <Stack.Screen name="ChatWithSchool" component={ChatWithSchoolScreen} />
+          <Stack.Screen name="ParentProfile" component={ParentProfileScreen} />
+          <Stack.Screen
+            name="EditParentInfo"
+            component={EditParentInfoScreen}
+          />
+          <Stack.Screen
+            name="RelativeDetails"
+            component={RelativeDetailsScreen}
+          />
+          <Stack.Screen name="AddRelative" component={AddRelativeScreen} />
           <Stack.Screen name="Complaints" component={ComplaintsScreen} />
           <Stack.Screen
             name="ComplaintDetails"

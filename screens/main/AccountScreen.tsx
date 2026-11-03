@@ -57,6 +57,13 @@ const ACCOUNT_ITEMS: AccountRow[] = [
   // Only when Requests is not already a bottom-bar tab.
   ...(FeatureFlags.requestsTab ? [] : [REQUESTS_ROW]),
   {
+    id: "parent-profile",
+    text: "My Profile",
+    icon: Icons.FatherAvatar,
+    iconColor: "#4F7DCA",
+    navigationTo: "ParentProfile",
+  },
+  {
     id: "complaints",
     text: "Complaints",
     icon: Icons.EmergencyRoundIcon,

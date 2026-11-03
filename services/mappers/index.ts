@@ -56,6 +56,42 @@ export type {
   HomeworkState,
 } from "./dashboard";
 
+export {
+  selectParentDashboard,
+  selectQuickActions,
+  toAttentionStates,
+} from "./parentDashboard";
+export type {
+  ParentDashboard,
+  DashboardParent,
+  DashboardChild,
+  DashboardAttention,
+  DashboardNewsletter,
+  DashboardUpcoming,
+  GlanceTile,
+  QuickAction,
+} from "./parentDashboard";
+
+export {
+  selectRelatives,
+  selectRelativeDetail,
+  selectGuardianStudents,
+  selectParentInfo,
+  parentInfoFields,
+  lookupLabel,
+  lookupMap,
+  selectLookupOptions as selectParentLookupOptions,
+  toRelative,
+} from "./parentProfile";
+export type {
+  Relative,
+  RelativeDetail,
+  RelativeLink,
+  GuardianStudent,
+  ParentInfo,
+  ParentInfoField,
+} from "./parentProfile";
+
 export { selectAgenda } from "./agenda";
 export type { AgendaSummary, AttendanceState } from "./agenda";
 

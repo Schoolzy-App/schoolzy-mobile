@@ -20,6 +20,25 @@ export const queryKeys = {
       [...queryKeys.agenda.all, studentSeasonId, date ?? "today"] as const,
   },
 
+  parentDashboard: {
+    all: ["parentDashboard"] as const,
+    root: (date?: string) =>
+      [...queryKeys.parentDashboard.all, "root", date ?? "today"] as const,
+    quickActions: () =>
+      [...queryKeys.parentDashboard.all, "quickActions"] as const,
+    catalog: () => [...queryKeys.parentDashboard.all, "catalog"] as const,
+  },
+  parentProfile: {
+    all: ["parentProfile"] as const,
+    relatives: () => [...queryKeys.parentProfile.all, "relatives"] as const,
+    relative: (id: number) =>
+      [...queryKeys.parentProfile.all, "relative", id] as const,
+    guardians: () => [...queryKeys.parentProfile.all, "guardians"] as const,
+    lookup: (name: string) =>
+      [...queryKeys.parentProfile.all, "lookup", name] as const,
+    /** The signed-in parent's own record. */
+    info: () => [...queryKeys.parentProfile.all, "info"] as const,
+  },
   dashboard: {
     all: ["dashboard"] as const,
     today: (studentSeasonId: number) =>

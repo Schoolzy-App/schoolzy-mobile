@@ -8,6 +8,8 @@ export { agendaApi } from "./agenda";
 export { complaintsApi, COMPLAINTS_PAGE_SIZE } from "./complaints";
 export { documentRequestsApi } from "./documentRequests";
 export { newslettersApi } from "./newsletters";
+export { parentDashboardApi } from "./parentDashboard";
+export { parentProfileApi, resolvePhotoUrl } from "./parentProfile";
 export { healthProfileApi } from "./healthProfile";
 export { paymentsApi } from "./payments";
 export { cafeteriaApi } from "./cafeteria";

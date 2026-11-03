@@ -4,6 +4,8 @@ export * from "./students";
 export * from "./agenda";
 export * from "./complaints";
 export * from "./dashboard";
+export * from "./parentDashboard";
+export * from "./parentProfile";
 export * from "./documentRequests";
 export * from "./newsletters";
 export * from "./healthProfile";
