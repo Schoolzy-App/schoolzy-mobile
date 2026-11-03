@@ -1,4 +1,10 @@
-import { MaterialIcons } from "@expo/vector-icons";
+import {
+  BusIcon,
+  CalendarBlankIcon,
+  CaretRightIcon,
+  NewspaperIcon,
+  PlusIcon,
+} from "phosphor-react-native";
 import React, { memo } from "react";
 import {
   Dimensions,
@@ -9,56 +15,66 @@ import {
 } from "react-native";
 
 import type { ColorPalette } from "@/apps";
-import { IconContainer, Modal, Text } from "@/components/ui";
-import { Icons } from "@/constants";
+import { Modal, Text } from "@/components/ui";
+import {
+  IconSize,
+  Opacity,
+  Palette,
+  Radius,
+  Shadow,
+  Size,
+  Spacing,
+  Type,
+} from "@/constants/tokens";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useStyles } from "@/hooks";
 import type {
   DashboardChild,
+  DashboardNewsletter,
   DashboardUpcoming,
   GlanceTile,
   QuickAction,
 } from "@/services/mappers";
 
+import { moduleStyle } from "./moduleStyle";
+
 /**
- * The Home dashboard's list sections.
+ * The Home dashboard's list sections, laid out per the Parent Dashboard spec
+ * (Design-Handoff/Documentation/Parent-Dashboard.md).
  *
  * Grouped in one file because they are all thin presentational lists over the
- * same payload; splitting them would be five files of boilerplate.
+ * same payload; splitting them would be six files of boilerplate.
  */
 
+/** Width inside the screen's horizontal padding. */
+const contentWidth = () => Dimensions.get("window").width - Spacing.screenX * 2;
+
+function SectionTitle({
+  title,
+  action,
+  onAction,
+}: {
+  title: string;
+  action?: string;
+  onAction?: () => void;
+}) {
+  const { colors } = useTheme();
+  const styles = useStyles(createStyles);
+  return (
+    <View style={styles.sectionHeader}>
+      <Text style={Type.sectionTitle}>{title}</Text>
+      {action && onAction ? (
+        <Pressable onPress={onAction} hitSlop={8}>
+          <Text style={Type.link} color={colors.primary}>
+            {action}
+          </Text>
+        </Pressable>
+      ) : null}
+    </View>
+  );
+}
+
 // ─── Quick actions ───────────────────────────────────────────────────────────
-
-/** Catalogue `colorKey` → accent. Unknown keys fall back to the brand blue. */
-const GROUP_COLOR: Record<string, string> = {
-  finance: "#4F7DCA",
-  reports: "#821037",
-  wellness: "#36BD0D",
-  agenda: "#4F7DCA",
-  timesheet: "#81828B",
-  meals: "#E8A923",
-};
-
-const ACTION_ICON: Record<string, keyof typeof MaterialIcons.glyphMap> = {
-  "add-request": "add-circle-outline",
-  "add-complaint": "chat-bubble-outline",
-  requests: "send",
-  newsletter: "newspaper",
-  "update-data": "account-circle",
-  "change-password": "lock-outline",
-  "pay-fees": "payments",
-  finance: "account-balance",
-  wallet: "account-balance-wallet",
-  "top-up": "arrow-circle-up",
-  reports: "assignment",
-  wellness: "favorite-border",
-  agenda: "menu-book",
-  attendance: "check-circle-outline",
-  meals: "restaurant",
-  timesheet: "schedule",
-  homework: "edit-note",
-  bus: "directions-bus",
-};
 
 export interface QuickActionsRowProps {
   actions: QuickAction[];
@@ -73,43 +89,41 @@ export interface QuickActionsRowProps {
   onCustomise?: () => void;
 }
 
+const QUICK_COLUMNS = 3;
+
 export const QuickActionsRow = memo<QuickActionsRowProps>(
   ({ actions, ready = true, pinnedNames, onSelect, onCustomise }) => {
     const { colors } = useTheme();
     const styles = useStyles(createStyles);
+    const gap = Spacing.gridGap.quickActions;
+    // Floored: a fractional width can round up past the row and wrap the
+    // third tile onto its own line.
+    const tileWidth = Math.floor(
+      (contentWidth() - gap * (QUICK_COLUMNS - 1)) / QUICK_COLUMNS,
+    );
 
     return (
       <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text variant="label2" weight="semiBold">
-            Quick Actions
-          </Text>
-          {onCustomise ? (
-            <Pressable onPress={onCustomise} hitSlop={8}>
-              <Text variant="label3" weight="semiBold" color={colors.primary}>
-                Edit
-              </Text>
-            </Pressable>
-          ) : null}
-        </View>
+        <SectionTitle title="Quick Actions" action="Edit" onAction={onCustomise} />
 
         {!ready ? null : actions.length === 0 ? (
-          // The section stays, so Edit is still reachable — it just says
-          // there is nothing here rather than disappearing.
-          <Text
-            variant="label3"
-            weight="regular"
-            color={colors.textSecondary}
-            style={styles.emptyActions}
+          // The section stays, so Edit is still reachable — it just offers
+          // to add shortcuts rather than disappearing.
+          <Pressable
+            onPress={onCustomise}
+            style={({ pressed }) => [styles.emptyActions, pressed && styles.pressed]}
           >
-            No quick actions added.
-          </Text>
+            <PlusIcon weight="bold" size={IconSize.inline} color={Palette.text.tertiary} />
+            <Text style={[Type.meta, styles.medium]} color={Palette.text.tertiary}>
+              Add shortcuts
+            </Text>
+          </Pressable>
         ) : (
-          // A fixed 3x2 grid rather than a scroller: the maximum is six, so
-          // they all fit and nothing hides off the edge.
-          <View style={styles.actionGrid}>
+          // A fixed 3-column grid rather than a scroller: the maximum is six,
+          // so they all fit and nothing hides off the edge.
+          <View style={[styles.wrapGrid, { gap }]}>
             {actions.map((action) => {
-              const accent = GROUP_COLOR[action.colorKey] ?? colors.secondary;
+              const { Icon, color } = moduleStyle(action.code, action.label);
               const pinned =
                 action.pinnedStudentId !== null
                   ? pinnedNames?.[action.pinnedStudentId]
@@ -118,33 +132,34 @@ export const QuickActionsRow = memo<QuickActionsRowProps>(
               return (
                 <Pressable
                   key={action.id}
-                  style={[styles.actionTile, { width: quickTileWidth() }]}
+                  style={({ pressed }) => [
+                    styles.actionTile,
+                    { width: tileWidth },
+                    pressed && styles.pressed,
+                  ]}
                   onPress={() => onSelect?.(action)}
                 >
-                  <View
-                    style={[styles.actionIcon, { backgroundColor: accent + "18" }]}
-                  >
-                    <MaterialIcons
-                      name={ACTION_ICON[action.code] ?? "bolt"}
-                      size={20}
-                      color={accent}
-                    />
-                  </View>
-                  <Text variant="caption1" weight="medium" numberOfLines={1}>
-                    {action.label}
-                  </Text>
-                  {/* Pinned actions skip the child prompt, so the name is
-                      shown to make that obvious before tapping. */}
-                  {pinned ? (
-                    <Text
-                      variant="caption2"
-                      weight="regular"
-                      color={colors.textSecondary}
-                      numberOfLines={1}
-                    >
-                      {pinned}
+                  <Icon
+                    weight="fill"
+                    size={IconSize.quickAction}
+                    color={color ?? colors.primary}
+                  />
+                  <View style={styles.actionText}>
+                    <Text style={Type.quickLabel} numberOfLines={1}>
+                      {action.label}
                     </Text>
-                  ) : null}
+                    {/* Pinned actions skip the child prompt, so the name is
+                        shown to make that obvious before tapping. */}
+                    {pinned ? (
+                      <Text
+                        style={[Type.tiny, styles.regular]}
+                        color={Palette.text.tertiary}
+                        numberOfLines={1}
+                      >
+                        {pinned}
+                      </Text>
+                    ) : null}
+                  </View>
                 </Pressable>
               );
             })}
@@ -156,111 +171,83 @@ export const QuickActionsRow = memo<QuickActionsRowProps>(
 );
 QuickActionsRow.displayName = "QuickActionsRow";
 
-/** Three to a row, inside the screen's 16pt gutters. */
-const QUICK_COLUMNS = 3;
-const QUICK_GAP = 10;
-
-function quickTileWidth(): number {
-  const available = Dimensions.get("window").width - 32;
-  return (available - QUICK_GAP * (QUICK_COLUMNS - 1)) / QUICK_COLUMNS;
-}
-
 // ─── Children ────────────────────────────────────────────────────────────────
 
 export interface ChildSummaryListProps {
-  title: string;
   /** Named `students`, not `children` — that prop name is React's. */
   students: DashboardChild[];
-  /**
-   * Gender per studentSeasonId, which picks both the avatar and its circle
-   * colour. The dashboard payload carries neither, so the caller resolves it
-   * from the students list; anything missing falls back to the same default
-   * the students mapper uses.
-   */
-  genders?: Record<number, "male" | "female">;
   showFinance?: boolean;
   onSelect?: (child: DashboardChild) => void;
 }
 
 export const ChildSummaryList = memo<ChildSummaryListProps>(
-  ({ title, students, genders, showFinance, onSelect }) => {
-    const { colors } = useTheme();
+  ({ students, showFinance, onSelect }) => {
     const styles = useStyles(createStyles);
+    // One child fills the row; with two or more each card is 68% wide so the
+    // next one peeks in and the row reads as scrollable.
+    const cardWidth =
+      students.length > 1 ? contentWidth() * 0.68 : contentWidth();
 
     return (
       <View style={styles.section}>
-        <Text variant="label2" weight="semiBold" style={styles.sectionInset}>
-          {title}
-        </Text>
+        <SectionTitle title={students.length === 1 ? "My Child" : "My Children"} />
 
-        {/* Horizontal, like the rest of the app's child rows: a family of
-            four would otherwise push everything below it off the screen.
-            Cards are sized so the next one peeks in and the row reads as
-            scrollable without a visible indicator. */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
+          snapToInterval={students.length > 1 ? cardWidth + Spacing.listGap.childCards : undefined}
+          decelerationRate="fast"
+          style={styles.bleed}
           contentContainerStyle={styles.childRow}
         >
-        {students.map((child) => {
-          const gender = genders?.[child.studentSeasonId] ?? "female";
-          const Avatar =
-            gender === "male" ? Icons.BoyAvatar : Icons.GirlAvatar;
-          // Greyed when the child has no bus, matching the old child row.
-          const Bus = child.busAssigned
-            ? Icons.BusActiveIcon
-            : Icons.BusInactiveIcon;
-
-          return (
-          <Pressable
-            key={child.id}
-            style={[styles.childCard, { width: childCardWidth(students.length) }]}
-            onPress={() => onSelect?.(child)}
-          >
-            <View style={styles.childHeader}>
-              {/* Circled, as elsewhere in the app: orange behind a boy,
-                  blue behind a girl. */}
-              <IconContainer
-                size={48}
-                color={gender === "male" ? colors.tertiary : colors.secondary}
-              >
-                <Avatar width={42} height={42} />
-              </IconContainer>
-
-              <View style={styles.childText}>
-                <Text variant="label1" weight="semiBold" numberOfLines={1}>
-                  {child.name}
-                </Text>
-                <Text
-                  variant="label3"
-                  weight="regular"
-                  color={colors.textSecondary}
-                  numberOfLines={1}
+          {students.map((child, index) => (
+            <Pressable
+              key={child.id}
+              style={({ pressed }) => [
+                styles.childCard,
+                { width: cardWidth },
+                pressed && styles.pressedCard,
+              ]}
+              onPress={() => onSelect?.(child)}
+            >
+              <View style={styles.childHeader}>
+                <View
+                  style={[
+                    styles.childAvatar,
+                    {
+                      backgroundColor:
+                        Palette.avatar.children[index % Palette.avatar.children.length],
+                    },
+                  ]}
                 >
-                  {[child.grade, child.attendanceToday]
-                    .filter(Boolean)
-                    .join(" · ")}
-                </Text>
+                  <Text style={styles.childInitial} color={Palette.text.onBrand}>
+                    {child.initial}
+                  </Text>
+                </View>
+
+                <View style={styles.flex}>
+                  <Text style={Type.cardTitle} numberOfLines={1}>
+                    {child.name}
+                  </Text>
+                  {child.grade ? (
+                    <Text style={Type.meta} color={Palette.text.tertiary} numberOfLines={1}>
+                      {child.grade}
+                    </Text>
+                  ) : null}
+                </View>
+
+                {child.busAssigned ? (
+                  <BusIcon weight="bold" size={22} color={Palette.nav.active} />
+                ) : null}
               </View>
 
-              {/* Bus replaces the chevron: the whole card is tappable, so
-                  the arrow only repeated what the card already implied,
-                  while the bus is information. */}
-              <Bus width={22} height={22} />
-            </View>
-
-            <View style={[styles.childDivider, { backgroundColor: colors.border }]} />
-
-            <View style={styles.childStats}>
-              <Stat value={child.attendance} label="Attendance" />
-              <Stat value={child.reports} label="Reports" />
-              {showFinance ? (
-                <Stat value={child.wallet} label="Wallet" />
-              ) : null}
-            </View>
-          </Pressable>
-          );
-        })}
+              <View style={styles.childStats}>
+                <Stat value={child.attendance} label="Attendance" />
+                <Stat value={child.reports} label="Reports" />
+                {showFinance ? <Stat value={child.wallet} label="Wallet" /> : null}
+              </View>
+            </Pressable>
+          ))}
         </ScrollView>
       </View>
     );
@@ -268,78 +255,15 @@ export const ChildSummaryList = memo<ChildSummaryListProps>(
 );
 ChildSummaryList.displayName = "ChildSummaryList";
 
-/**
- * One child fills the row; two or more leave half of the next card showing,
- * which is what makes the row legible as scrollable.
- */
-function childCardWidth(count: number): number {
-  const available = Dimensions.get("window").width - 32;
-  if (count <= 1) return available;
-  return (available - 10) / 1.6;
-}
-
 function Stat({ value, label }: { value: string; label: string }) {
-  const { colors } = useTheme();
-  const styles = useStyles(createStyles);
   return (
-    <View style={styles.stat}>
-      {/* The number is the point of the row, so it reads at body size in the
-          primary text colour rather than as caption-grey. */}
-      <Text variant="label2" weight="bold" color={colors.textPrimary}>
-        {value}
-      </Text>
-      <Text variant="caption1" weight="medium" color={colors.textSecondary}>
-        {label}
-      </Text>
-    </View>
+    <Text style={Type.caption} color={Palette.text.tertiary} numberOfLines={1}>
+      <Text style={Type.statusChipText}>{value}</Text> {label}
+    </Text>
   );
 }
 
 // ─── At a Glance ─────────────────────────────────────────────────────────────
-
-/**
- * The app's own module icons, so a row about meals carries the same mark and
- * colour as Meals does everywhere else. These SVGs have their colour baked
- * in, which is the point — a generic glyph in a tinted circle made every row
- * look alike.
- *
- * Matched on substring because the server's codes aren't a published list:
- * "meal" and "meals", "payment" and "next-payment" should all land the same.
- */
-function renderModuleIcon(
-  code: string,
-  label: string,
-  size: number,
-  accent: string,
-): React.ReactElement {
-  const key = `${code} ${label}`.toLowerCase();
-  const p = { width: size, height: size };
-
-  // Returns the element, not the component: assigning a component to a local
-  // and rendering it would create a new type on every render.
-  if (/meal|cafeteria|lunch/.test(key)) return <Icons.MealsIcon {...p} />;
-  // The newspaper mark the artifact uses. `Announcement` is the same shape
-  // but filled white for a coloured circle, so it vanishes on a white row —
-  // this one takes a tint.
-  if (/newsletter|announce/.test(key)) {
-    return <Icons.NewsletterIcon {...p} color={accent} />;
-  }
-  if (/wallet/.test(key)) return <Icons.WalletIcon {...p} />;
-  if (/pay|installment|fee|outstanding|invoice|finance/.test(key)) {
-    return <Icons.FinanceIcon {...p} />;
-  }
-  if (/wellness|health|clinic|medical/.test(key)) {
-    return <Icons.WellnessIcon {...p} />;
-  }
-  if (/attendance|present|absent/.test(key)) {
-    return <Icons.GoodRoundIcon {...p} />;
-  }
-  if (/report|request|complaint/.test(key)) return <Icons.ReportIcon {...p} />;
-  if (/homework|agenda|exam|class|timetable|timesheet/.test(key)) {
-    return <Icons.AgendaIcon {...p} />;
-  }
-  return <Icons.AgendaRoundIcon {...p} />;
-}
 
 export interface GlanceGridProps {
   tiles: GlanceTile[];
@@ -349,38 +273,40 @@ export interface GlanceGridProps {
 export const GlanceGrid = memo<GlanceGridProps>(({ tiles, onSelect }) => {
   const { colors } = useTheme();
   const styles = useStyles(createStyles);
+  const gap = Spacing.gridGap.atAGlance;
+  const tileWidth = Math.floor((contentWidth() - gap) / 2);
 
   return (
     <View style={styles.section}>
-      <Text variant="label2" weight="semiBold">
-        At a Glance
-      </Text>
+      <SectionTitle title="At a Glance" />
 
-      <View style={styles.grid}>
+      <View style={[styles.wrapGrid, { gap }]}>
         {tiles.map((tile) => {
           // "unavailable" means the server couldn't work it out — greyed, not
           // shown as a number.
           const unavailable = tile.state === "unavailable";
+          const { Icon, color } = moduleStyle(tile.code, tile.label);
+          const accent = color ?? colors.primary;
 
           return (
             <Pressable
               key={tile.id}
-              style={[styles.glanceTile, unavailable && styles.dim]}
+              style={({ pressed }) => [
+                styles.glanceTile,
+                { width: tileWidth },
+                unavailable && styles.dim,
+                pressed && styles.pressed,
+              ]}
               onPress={() => onSelect?.(tile)}
             >
-              <View style={styles.glanceIcon}>
-                {renderModuleIcon(tile.code, tile.label, 24, colors.secondary)}
+              <View style={[styles.iconCircle, { backgroundColor: `${accent}1A` }]}>
+                <Icon weight="fill" size={IconSize.inCircle34} color={accent} />
               </View>
-              <View style={styles.glanceText}>
-                <Text variant="label3" weight="bold" numberOfLines={1}>
+              <View style={styles.flex}>
+                <Text style={Type.cardTitle} numberOfLines={1}>
                   {tile.value}
                 </Text>
-                <Text
-                  variant="caption2"
-                  weight="regular"
-                  color={colors.textSecondary}
-                  numberOfLines={1}
-                >
+                <Text style={Type.caption} color={Palette.text.tertiary} numberOfLines={1}>
                   {tile.label}
                 </Text>
               </View>
@@ -393,12 +319,78 @@ export const GlanceGrid = memo<GlanceGridProps>(({ tiles, onSelect }) => {
 });
 GlanceGrid.displayName = "GlanceGrid";
 
+// ─── Latest newsletters ──────────────────────────────────────────────────────
+
+export interface NewsletterListProps {
+  items: DashboardNewsletter[];
+  onSelect?: (item: DashboardNewsletter) => void;
+  onSeeAll?: () => void;
+}
+
+export const NewsletterList = memo<NewsletterListProps>(
+  ({ items, onSelect, onSeeAll }) => {
+    const { colors } = useTheme();
+    const styles = useStyles(createStyles);
+
+    if (!items.length) return null;
+
+    return (
+      <View style={styles.section}>
+        <SectionTitle title="Latest Newsletters" action="See all" onAction={onSeeAll} />
+
+        <View style={styles.list}>
+          {items.map((item) => (
+            <Pressable
+              key={item.id}
+              style={({ pressed }) => [
+                styles.newsRow,
+                pressed && { backgroundColor: Palette.surface.pressedRow },
+              ]}
+              onPress={() => onSelect?.(item)}
+            >
+              {/* The payload has no newsletter kind, so every row uses the
+                  brand colour the design gives newsletters elsewhere. */}
+              <View
+                style={[
+                  styles.iconCircle,
+                  styles.newsIcon,
+                  { backgroundColor: colors.primary },
+                ]}
+              >
+                <NewspaperIcon weight="fill" size={IconSize.inCircle34} color={Palette.text.onBrand} />
+              </View>
+              <View style={styles.flex}>
+                <Text style={Type.itemTitle} numberOfLines={1}>
+                  {item.title}
+                </Text>
+                <Text style={Type.caption} color={Palette.text.tertiary} numberOfLines={1}>
+                  {item.date}
+                </Text>
+              </View>
+            </Pressable>
+          ))}
+        </View>
+      </View>
+    );
+  },
+);
+NewsletterList.displayName = "NewsletterList";
+
 // ─── Today ───────────────────────────────────────────────────────────────────
 
 export interface TodayListProps {
   tiles: GlanceTile[];
   date: string;
   onSelect?: (tile: GlanceTile) => void;
+}
+
+/** Value colour: muted when there's nothing to show, green when all is well. */
+function todayValueColor(tile: GlanceTile): string {
+  if (tile.state === "empty" || tile.state === "unavailable") {
+    return Palette.text.tertiary;
+  }
+  if (/all present/i.test(tile.value)) return Palette.status.success.fg;
+  return Palette.text.primary;
 }
 
 export const TodayList = memo<TodayListProps>(({ tiles, date, onSelect }) => {
@@ -408,45 +400,46 @@ export const TodayList = memo<TodayListProps>(({ tiles, date, onSelect }) => {
   if (!tiles.length) return null;
 
   return (
-    <View style={styles.section}>
+    <View style={[styles.todayCard, Shadow.card]}>
       <View style={styles.sectionHeader}>
-        <Text variant="label2" weight="semiBold">
-          Today
-        </Text>
+        <Text style={Type.cardHeading}>Today</Text>
         {date ? (
-          <Text variant="label3" weight="medium" color={colors.textSecondary}>
+          <Text style={Type.caption} color={Palette.text.tertiary}>
             {date}
           </Text>
         ) : null}
       </View>
 
-      <View style={styles.plainCard}>
-        {tiles.map((tile, index) => (
-          <Pressable
-            key={tile.id}
-            style={[
-              styles.todayRow,
-              index > 0 && styles.divided,
-              index > 0 && { borderTopColor: colors.border },
-            ]}
-            onPress={() => onSelect?.(tile)}
-          >
-            {renderModuleIcon(tile.code, tile.label, 22, colors.secondary)}
-            <Text variant="label3" weight="regular" style={styles.todayLabel}>
-              {tile.label}
-            </Text>
-            <Text variant="label3" weight="semiBold">
-              {tile.value}
-            </Text>
-            {/* Lighter than the text: the row is the affordance, the arrow is
-                only a hint. */}
-            <MaterialIcons
-              name="chevron-right"
-              size={18}
-              color={colors.border}
-            />
-          </Pressable>
-        ))}
+      <View>
+        {tiles.map((tile, index) => {
+          const { Icon, color } = moduleStyle(tile.code, tile.label);
+          return (
+            <Pressable
+              key={tile.id}
+              style={({ pressed }) => [
+                styles.todayRow,
+                index > 0 && styles.divided,
+                pressed && styles.pressed,
+              ]}
+              onPress={() => onSelect?.(tile)}
+            >
+              <View style={styles.todayIcon}>
+                <Icon weight="fill" size={IconSize.row} color={color ?? colors.primary} />
+              </View>
+              <Text style={[Type.rowLabel, styles.flex]} numberOfLines={1}>
+                {tile.label}
+              </Text>
+              <Text
+                style={[Type.meta, styles.medium]}
+                color={todayValueColor(tile)}
+                numberOfLines={1}
+              >
+                {tile.value}
+              </Text>
+              <CaretRightIcon weight="bold" size={IconSize.chevron} color={Palette.text.chevron} />
+            </Pressable>
+          );
+        })}
       </View>
     </View>
   );
@@ -466,79 +459,55 @@ export const UpcomingList = memo<UpcomingListProps>(({ items, onSelect }) => {
 
   return (
     <View style={styles.section}>
-      <Text variant="label2" weight="semiBold">
-        Upcoming
-      </Text>
+      <SectionTitle title="Upcoming" />
 
-      <View style={styles.plainCard}>
+      <View style={styles.upcomingCard}>
         {items.length === 0 ? (
           <View style={styles.emptyRow}>
-            <MaterialIcons
-              name="event-busy"
-              size={18}
-              color={colors.textSecondary}
-            />
-            <Text variant="label3" weight="regular" color={colors.textSecondary}>
+            <CalendarBlankIcon size={18} color={Palette.text.tertiary} />
+            <Text style={Type.meta} color={Palette.text.tertiary}>
               No upcoming events
             </Text>
           </View>
         ) : (
-          items.map((item, index) => (
-            <Pressable
-              key={item.id}
-              style={[
-                styles.upcomingRow,
-                index > 0 && styles.divided,
-                index > 0 && { borderTopColor: colors.border },
-              ]}
-              onPress={() => onSelect?.(item)}
-            >
-              {/* No chip — the artifact uses a bare centred column with the
-                  month tinted by event type and the day carrying the size. */}
-              <View style={styles.dateColumn}>
-                <Text
-                  variant="caption2"
-                  weight="semiBold"
-                  color={upcomingTint(item.type, colors)}
-                >
-                  {item.month.toUpperCase()}
-                </Text>
-                <Text variant="label1" weight="semiBold">
-                  {item.day}
-                </Text>
-              </View>
-
-              <View style={styles.upcomingText}>
-                <Text variant="label3" weight="semiBold" numberOfLines={1}>
-                  {item.title}
-                </Text>
-                {item.subtitle ? (
-                  <Text
-                    variant="caption1"
-                    weight="regular"
-                    color={colors.textSecondary}
-                    numberOfLines={1}
-                  >
-                    {item.subtitle}
+          items.map((item, index) => {
+            const { color } = moduleStyle(item.type, item.title);
+            return (
+              <Pressable
+                key={item.id}
+                style={({ pressed }) => [
+                  styles.upcomingRow,
+                  index > 0 && styles.divided,
+                  pressed && styles.pressed,
+                ]}
+                onPress={() => onSelect?.(item)}
+              >
+                <View style={styles.dateColumn}>
+                  <Text style={Type.monthAbbr} color={color ?? colors.primary}>
+                    {item.month.toUpperCase()}
                   </Text>
-                ) : null}
-              </View>
-            </Pressable>
-          ))
+                  <Text style={styles.day}>{item.day}</Text>
+                </View>
+
+                <View style={styles.flex}>
+                  <Text style={[Type.rowLabel, styles.medium]} numberOfLines={1}>
+                    {item.title}
+                  </Text>
+                  {item.subtitle ? (
+                    <Text style={Type.caption} color={Palette.text.tertiary} numberOfLines={1}>
+                      {item.subtitle}
+                    </Text>
+                  ) : null}
+                </View>
+              </Pressable>
+            );
+          })
         )}
       </View>
     </View>
   );
 });
 UpcomingList.displayName = "UpcomingList";
-
-/** Month tint by event type — money reads differently from an exam. */
-function upcomingTint(type: string, colors: ColorPalette): string {
-  const t = type.toLowerCase();
-  if (/pay|installment|fee|invoice/.test(t)) return colors.primary;
-  if (/exam|test|quiz/.test(t)) return colors.secondary;
-  return colors.textSecondary;
-}
 
 // ─── Child picker ────────────────────────────────────────────────────────────
 
@@ -557,46 +526,48 @@ export interface ChildPickerProps {
  */
 export const ChildPicker = memo<ChildPickerProps>(
   ({ visible, actionLabel, students, onSelect, onClose }) => {
-    const { colors } = useTheme();
     const styles = useStyles(createStyles);
 
     return (
       <Modal isVisible={visible} closeModal={onClose}>
         <View style={styles.sheet}>
-          <Text variant="label1" weight="semiBold">
+          <Text style={Type.sheetTitle}>
             {actionLabel ? `${actionLabel} for…` : "Choose a child"}
           </Text>
 
-          {students.map((child) => (
+          {students.map((child, index) => (
             <Pressable
               key={child.id}
-              style={[styles.pickRow, { borderColor: colors.border }]}
+              style={({ pressed }) => [
+                styles.pickRow,
+                pressed && { backgroundColor: Palette.surface.pressedRow },
+              ]}
               onPress={() => onSelect(child)}
             >
-              <View style={[styles.initial, { backgroundColor: colors.secondary }]}>
-                <Text variant="label3" weight="bold" color={colors.buttonText}>
+              <View
+                style={[
+                  styles.pickAvatar,
+                  {
+                    backgroundColor:
+                      Palette.avatar.children[index % Palette.avatar.children.length],
+                  },
+                ]}
+              >
+                <Text style={Type.cardHeading} color={Palette.text.onBrand}>
                   {child.initial}
                 </Text>
               </View>
-              <View style={styles.childText}>
-                <Text variant="label3" weight="semiBold" numberOfLines={1}>
+              <View style={styles.flex}>
+                <Text style={Type.listTitleRead} numberOfLines={1}>
                   {child.name}
                 </Text>
                 {child.grade ? (
-                  <Text
-                    variant="caption1"
-                    weight="regular"
-                    color={colors.textSecondary}
-                  >
+                  <Text style={Type.caption} color={Palette.text.tertiary}>
                     {child.grade}
                   </Text>
                 ) : null}
               </View>
-              <MaterialIcons
-                name="chevron-right"
-                size={20}
-                color={colors.textSecondary}
-              />
+              <CaretRightIcon weight="bold" size={IconSize.chevron} color={Palette.text.chevron} />
             </Pressable>
           ))}
         </View>
@@ -612,143 +583,188 @@ const createStyles = (colors: ColorPalette) =>
   StyleSheet.create({
     section: {
       width: "100%",
-      gap: 10,
+      gap: Spacing.sectionTitleToContent,
     },
     sectionHeader: {
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
     },
-
-    // Quick actions
-    actionGrid: {
+    flex: {
+      flex: 1,
+    },
+    medium: {
+      fontWeight: "500",
+    },
+    regular: {
+      fontWeight: "400",
+    },
+    pressed: {
+      opacity: Opacity.pressed,
+    },
+    pressedCard: {
+      opacity: Opacity.pressedCard,
+    },
+    dim: {
+      opacity: 0.6,
+    },
+    wrapGrid: {
       flexDirection: "row",
       flexWrap: "wrap",
-      gap: QUICK_GAP,
     },
+    iconCircle: {
+      width: Size.iconCircle.sm,
+      height: Size.iconCircle.sm,
+      borderRadius: Size.iconCircle.sm / 2,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    divided: {
+      borderTopWidth: 1,
+      borderTopColor: Palette.border.divider,
+    },
+
+    // Quick actions
     actionTile: {
-      minHeight: 92,
+      height: Size.quickActionTile,
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 7,
+      backgroundColor: colors.surface,
+      borderRadius: Radius.card,
+      paddingHorizontal: 6,
+    },
+    actionText: {
+      alignItems: "center",
+      maxWidth: "100%",
+    },
+    emptyActions: {
+      height: Size.quickActionTile,
+      flexDirection: "row",
       alignItems: "center",
       justifyContent: "center",
       gap: 6,
-      backgroundColor: colors.surface,
-      borderRadius: 16,
-      paddingVertical: 12,
-      paddingHorizontal: 8,
-    },
-    actionIcon: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    emptyActions: {
-      paddingVertical: 6,
+      borderRadius: Radius.card,
+      borderWidth: 1.5,
+      borderStyle: "dashed",
+      borderColor: Palette.border.dashed,
     },
 
-    // Children
-    sectionInset: {
-      paddingHorizontal: 0,
+    // Children — the row bleeds to the screen edge so cards scroll under it
+    bleed: {
+      marginHorizontal: -Spacing.screenX,
     },
     childRow: {
-      gap: 10,
-      paddingRight: 4,
+      gap: Spacing.listGap.childCards,
+      paddingHorizontal: Spacing.screenX,
+      // Room for the card shadow, which a ScrollView would otherwise clip.
+      paddingBottom: 4,
     },
     childCard: {
       backgroundColor: colors.surface,
-      borderRadius: 16,
-      padding: 14,
-      gap: 12,
+      borderRadius: Radius.card,
+      ...Spacing.cardPadding.default,
+      ...Shadow.card,
     },
     childHeader: {
       flexDirection: "row",
       alignItems: "center",
       gap: 10,
     },
-    initial: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
+    childAvatar: {
+      width: Size.avatar.child,
+      height: Size.avatar.child,
+      borderRadius: Size.avatar.child / 2,
       alignItems: "center",
       justifyContent: "center",
     },
-    childText: {
-      flex: 1,
-      gap: 2,
-    },
-    childDivider: {
-      height: 1,
-      width: "100%",
+    childInitial: {
+      fontSize: 18,
+      fontWeight: "600",
+      lineHeight: 22,
     },
     childStats: {
       flexDirection: "row",
-      gap: 18,
-    },
-    stat: {
-      gap: 1,
+      gap: 14,
+      marginTop: 11,
+      paddingTop: 10,
+      borderTopWidth: 1,
+      borderTopColor: Palette.border.divider,
     },
 
     // At a Glance
-    grid: {
-      flexDirection: "row",
-      flexWrap: "wrap",
-      gap: 10,
-    },
     glanceTile: {
-      width: "48%",
       flexDirection: "row",
       alignItems: "center",
-      gap: 10,
+      gap: 11,
       backgroundColor: colors.surface,
-      borderRadius: 16,
-      padding: 12,
-    },
-    dim: {
-      opacity: 0.6,
-    },
-    glanceIcon: {
-      width: 34,
-      height: 34,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    glanceText: {
-      flex: 1,
-      gap: 1,
-    },
-
-    // Shared card for Today / Upcoming
-    plainCard: {
-      backgroundColor: colors.surface,
-      borderRadius: 16,
+      borderRadius: Radius.card,
+      paddingVertical: 12,
       paddingHorizontal: 14,
     },
-    divided: {
-      borderTopWidth: 1,
+
+    // Newsletters
+    list: {
+      gap: Spacing.listGap.newsletterCards,
+    },
+    newsRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: Palette.border.default,
+      borderRadius: Radius.card,
+      paddingVertical: 12,
+      paddingHorizontal: 14,
+    },
+    newsIcon: {
+      width: Size.iconCircle.md,
+      height: Size.iconCircle.md,
+      borderRadius: Size.iconCircle.md / 2,
+    },
+
+    // Today
+    todayCard: {
+      width: "100%",
+      backgroundColor: colors.surface,
+      borderRadius: Radius.card,
+      paddingTop: 14,
+      paddingHorizontal: 15,
+      paddingBottom: 6,
     },
     todayRow: {
       flexDirection: "row",
       alignItems: "center",
       gap: 10,
-      paddingVertical: 13,
+      paddingVertical: Spacing.rowPaddingY.today,
     },
-    todayLabel: {
-      flex: 1,
+    todayIcon: {
+      width: 18,
+      alignItems: "center",
+    },
+
+    // Upcoming
+    upcomingCard: {
+      backgroundColor: colors.surface,
+      borderRadius: Radius.card,
+      paddingVertical: 4,
+      paddingHorizontal: 15,
     },
     upcomingRow: {
       flexDirection: "row",
       alignItems: "center",
       gap: 12,
-      paddingVertical: 12,
+      paddingVertical: Spacing.rowPaddingY.upcoming,
     },
     dateColumn: {
-      width: 44,
+      width: 40,
       alignItems: "center",
     },
-    upcomingText: {
-      flex: 1,
-      gap: 2,
+    day: {
+      fontSize: 17,
+      fontWeight: "600",
+      lineHeight: 19,
     },
     emptyRow: {
       flexDirection: "row",
@@ -767,8 +783,17 @@ const createStyles = (colors: ColorPalette) =>
       flexDirection: "row",
       alignItems: "center",
       gap: 12,
-      padding: 12,
-      borderRadius: 12,
+      paddingVertical: 12,
+      paddingHorizontal: 14,
+      borderRadius: Radius.card,
       borderWidth: 1,
+      borderColor: Palette.border.default,
+    },
+    pickAvatar: {
+      width: Size.avatar.picker,
+      height: Size.avatar.picker,
+      borderRadius: Size.avatar.picker / 2,
+      alignItems: "center",
+      justifyContent: "center",
     },
   });

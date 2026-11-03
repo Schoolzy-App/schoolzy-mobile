@@ -150,14 +150,17 @@ export const tint = (hex: string, alpha: "0D" | "14" | "1A" | "26") =>
 // + colour. Single-line titles, values, pills and amounts never wrap — use
 // numberOfLines={1}.
 
+// Every entry sets a line height: the shared <Text> has a 24 base, which
+// would otherwise pad small text. "normal" in the design ≈ 1.2.
 const t = (
   fontSize: number,
   fontWeight: TextStyle["fontWeight"],
-  lineHeight?: number,
-): TextStyle =>
-  lineHeight
-    ? { fontSize, fontWeight, lineHeight: Math.round(fontSize * lineHeight) }
-    : { fontSize, fontWeight };
+  lineHeight = 1.2,
+): TextStyle => ({
+  fontSize,
+  fontWeight,
+  lineHeight: Math.round(fontSize * lineHeight),
+});
 
 export const Type = {
   display: t(40, "700", 1),

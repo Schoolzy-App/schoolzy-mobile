@@ -25,6 +25,13 @@ type ScreenTemplateProps = {
   style?: StyleProp<ViewStyle>;
   contentStyle?: StyleProp<ViewStyle>;
   headerContent?: React.ReactElement;
+  /** Overrides on the brand header, e.g. the 40 radius of dashboard screens. */
+  headerStyle?: StyleProp<ViewStyle>;
+  /**
+   * Scroll the header with the page instead of pinning it — the dashboard
+   * screens scroll as one piece; form screens keep a fixed header.
+   */
+  scrollHeader?: boolean;
   Top?: React.ReactElement;
   showHeader?: boolean;
   title?: string | React.ReactElement;
@@ -36,6 +43,8 @@ const ScreenTemplate: FC<ScreenTemplateProps> = ({
   children,
   style,
   headerContent,
+  headerStyle,
+  scrollHeader = false,
   Top,
   contentStyle,
   showHeader = true,
@@ -85,25 +94,28 @@ const ScreenTemplate: FC<ScreenTemplateProps> = ({
     </View>
   ) : null;
 
+  const header = showHeader ? (
+    <View
+      style={[
+        styles.header,
+        {
+          paddingTop: insets.top + 12,
+          paddingLeft: insets.left,
+          paddingRight: insets.right,
+        },
+        headerStyle,
+      ]}
+    >
+      {Top}
+      {titleContent}
+      {headerContent}
+    </View>
+  ) : null;
+
   return (
     <View style={[styles.screen, style]}>
       {/* ── Header ─────────────────────────────────────────────────────── */}
-      {showHeader && (
-        <View
-          style={[
-            styles.header,
-            {
-              paddingTop: insets.top + 12,
-              paddingLeft: insets.left,
-              paddingRight: insets.right,
-            },
-          ]}
-        >
-          {Top}
-          {titleContent}
-          {headerContent}
-        </View>
-      )}
+      {scrollHeader ? null : header}
 
       {/* ── Body ───────────────────────────────────────────────────────── */}
       <ScrollView
@@ -115,6 +127,7 @@ const ScreenTemplate: FC<ScreenTemplateProps> = ({
         bounces={false}
         showsVerticalScrollIndicator={false}
       >
+        {scrollHeader ? header : null}
         {children}
       </ScrollView>
 

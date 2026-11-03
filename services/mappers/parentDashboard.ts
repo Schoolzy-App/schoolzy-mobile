@@ -68,7 +68,9 @@ function toAttention(
   index: number,
 ): DashboardAttention {
   return {
-    id: `${dto.type ?? "attention"}-${dto.studentId ?? index}`,
+    // The index is always part of it: one child can have two items of the
+    // same type (two overdue installments), which would otherwise collide.
+    id: `${dto.type ?? "attention"}-${dto.studentId ?? "parent"}-${index}`,
     type: dto.type ?? "",
     title: dto.titleEn?.trim() || dto.titleAr?.trim() || "",
     subtitle: dto.subtitleEn?.trim() || dto.subtitleAr?.trim() || "",
