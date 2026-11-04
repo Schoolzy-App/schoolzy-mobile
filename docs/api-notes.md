@@ -102,7 +102,7 @@ don't exist. The screen is built from existing ones instead:
 ### 13. No notifications on/off setting
 - **Design:** a Notifications tile with a switch ("On · all children").
 - **Today:** there is no `PATCH parent/settings` or any stored preference,
-  so the tile is left out.
+  so the tile shows **on and read-only** until there is.
 
 ### 14. No password-changed date
 - **Design:** "Changed 3 months ago" under Change password.
@@ -110,8 +110,8 @@ don't exist. The screen is built from existing ones instead:
 
 ### 15. No delete-account endpoint
 - **Design:** a Delete account tile with a destructive confirm.
-- **Today:** there is no `DELETE parent/account`. The old app's button only
-  logged out, which isn't what it says — so the tile is left out. App Store
+- **Today:** there is no `DELETE parent/account`. The tile stays, behind a
+  destructive confirm, and for now it only signs out. App Store
   and Play require real in-app deletion for apps with sign-up.
 
 ### 16. Complaints "reply waiting"

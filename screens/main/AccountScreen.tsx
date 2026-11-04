@@ -2,6 +2,7 @@ import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import {
   ArrowUUpLeftIcon,
+  BellSimpleIcon,
   CaretRightIcon,
   ChatCircleTextIcon,
   ClipboardTextIcon,
@@ -10,6 +11,7 @@ import {
   LockSimpleIcon,
   PlusIcon,
   SignOutIcon,
+  UserMinusIcon,
   UsersThreeIcon,
 } from "phosphor-react-native";
 import React, { useCallback } from "react";
@@ -17,7 +19,6 @@ import { Alert, Pressable, StyleSheet, Switch, View } from "react-native";
 
 import type { ColorPalette } from "@/apps";
 import { ScreenTemplate, Text } from "@/components/ui";
-import { FeatureFlags } from "@/constants";
 import { Palette, Radius, Spacing, Type } from "@/constants/tokens";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -52,10 +53,10 @@ const firstNameOf = (name: string) => name.trim().split(/\s+/)[0] ?? "";
  * The parent's Account (Settings) hub — Account-Handoff/01-SPEC.md.
  *
  * Built from endpoints that exist today; the handoff's single
- * `account-summary` call doesn't. Anything with no source in the API is left
- * out rather than faked: the notifications switch, "Changed {time}" under
- * Change password, "reply waiting" on complaints, and Delete account
- * (docs/api-notes.md).
+ * `account-summary` call doesn't. "Changed {time}" under Change password and
+ * "reply waiting" on complaints have no source and are left out. The
+ * notifications switch shows on and read-only, and Delete account signs out,
+ * until their endpoints exist (docs/api-notes.md).
  */
 export default function AccountScreen() {
   const styles = useStyles(createStyles);
@@ -107,6 +108,17 @@ export default function AccountScreen() {
       { text: "Cancel", style: "cancel" },
       { text: "Log out", style: "destructive", onPress: () => logout() },
     ]);
+  }, [logout]);
+
+  const confirmDelete = useCallback(() => {
+    Alert.alert(
+      "Delete account?",
+      "This permanently removes your account and access for all children.",
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Delete", style: "destructive", onPress: () => logout() },
+      ],
+    );
   }, [logout]);
 
   return (
@@ -243,43 +255,74 @@ export default function AccountScreen() {
               </View>
             </Tile>
 
-            {/* ── My Requests — or Change password when Requests is a tab ── */}
-            {FeatureFlags.requestsTab ? (
-              <ChangePasswordTile onPress={() => navigation.navigate("ChangePassword")} />
-            ) : (
-              <RequestsTile
-                pending={pendingRequests}
-                onPress={() => navigation.navigate("Request")}
-              />
-            )}
+            {/* ── Notifications ─────────────────────────────────────
+                Read-only for now: there is no settings endpoint to store a
+                choice (docs/api-notes.md), so it shows on and can't be
+                switched off until there is. */}
+            <View style={[styles.tile, styles.small]}>
+              <View style={styles.rowBetween}>
+                <BellSimpleIcon weight="fill" size={22} color="#C07A12" />
+                <View style={styles.switchTrack}>
+                  <View style={styles.switchKnob} />
+                </View>
+              </View>
+              <View style={styles.titleBlock}>
+                <Text style={styles.tileTitle} numberOfLines={1}>
+                  Notifications
+                </Text>
+                <Text style={Type.caption} color={Palette.text.tertiary} numberOfLines={1}>
+                  On · all children
+                </Text>
+              </View>
+            </View>
           </View>
         </View>
 
-        {/* With the notifications tile gone (no API), whichever of
-            Requests / Change password didn't fit beside Complaints gets a
-            full row. */}
-        {FeatureFlags.requestsTab ? (
+        <View style={styles.row}>
           <RequestsTile
             pending={pendingRequests}
             onPress={() => navigation.navigate("Request")}
+            style={styles.half}
           />
-        ) : (
-          <ChangePasswordTile onPress={() => navigation.navigate("ChangePassword")} />
-        )}
+          <ChangePasswordTile
+            onPress={() => navigation.navigate("ChangePassword")}
+            style={styles.half}
+          />
+        </View>
 
-        {/* ── Log out ─────────────────────────────────────────────── */}
-        <Pressable
-          onPress={confirmLogout}
-          style={({ pressed }) => [
-            styles.logout,
-            pressed && { backgroundColor: "#E06C751A" },
-          ]}
-        >
-          <SignOutIcon weight="bold" size={20} color="#D04552" />
-          <Text style={Type.cardHeading} color="#D04552">
-            Log out
-          </Text>
-        </Pressable>
+        <View style={styles.row}>
+          {/* ── Log out ─────────────────────────────────────────── */}
+          <Pressable
+            onPress={confirmLogout}
+            style={({ pressed }) => [
+              styles.half,
+              styles.logout,
+              pressed && { backgroundColor: "#E06C751A" },
+            ]}
+          >
+            <SignOutIcon weight="bold" size={20} color="#D04552" />
+            <Text style={Type.cardHeading} color="#D04552" numberOfLines={1}>
+              Log out
+            </Text>
+          </Pressable>
+
+          {/* ── Delete account ──────────────────────────────────────
+              No delete endpoint yet, so for now it signs out, as it did
+              before (docs/api-notes.md). */}
+          <Pressable
+            onPress={confirmDelete}
+            style={({ pressed }) => [
+              styles.half,
+              styles.logout,
+              pressed && { backgroundColor: "#E06C751A" },
+            ]}
+          >
+            <UserMinusIcon size={20} color={Palette.text.tertiary} />
+            <Text style={styles.deleteText} color={Palette.text.tertiary} numberOfLines={1}>
+              Delete account
+            </Text>
+          </Pressable>
+        </View>
 
         {/* Biometric sign-in — an existing app setting the design doesn't
             show. Hidden when the device has no enrolled biometric. */}
@@ -607,6 +650,33 @@ const createStyles = (colors: ColorPalette) =>
       lineHeight: 14,
     },
 
+    deleteText: {
+      fontSize: 15,
+      fontWeight: "500",
+      lineHeight: 18,
+      flexShrink: 1,
+    },
+    // The design's switch, fixed in the on position.
+    switchTrack: {
+      width: 44,
+      height: 26,
+      borderRadius: 13,
+      backgroundColor: "#34C759",
+    },
+    switchKnob: {
+      position: "absolute",
+      top: 3,
+      left: 21,
+      width: 20,
+      height: 20,
+      borderRadius: 10,
+      backgroundColor: "#FFFFFF",
+      shadowColor: "#000",
+      shadowOpacity: 0.2,
+      shadowRadius: 1.5,
+      shadowOffset: { width: 0, height: 1 },
+      elevation: 2,
+    },
     logout: {
       flexDirection: "row",
       alignItems: "center",
