@@ -1,6 +1,7 @@
 import type {
   LocalizedLookupDto,
   ParentInfoDto,
+  ParentInfoSaveResultDto,
   RelativeDetailDto,
   RelativesResponseDto,
   SaveRelativeInput,
@@ -158,8 +159,8 @@ export const parentProfileApi = {
    * Some fields go to the school for review depending on settings, so a
    * success here does not mean the new value is live.
    */
-  updateProfile(input: UpdateParentInfoInput): Promise<unknown> {
-    return request<unknown>({
+  updateProfile(input: UpdateParentInfoInput): Promise<ParentInfoSaveResultDto> {
+    return request<ParentInfoSaveResultDto>({
       method: "PUT",
       url: ROUTES.parent.profile,
       data: input,

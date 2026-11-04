@@ -207,6 +207,47 @@ export interface ParentInfoDto {
   nationalityId?: number | null;
   nationalityName?: string | null;
   photoUrl?: string | null;
+  /** Read-only on the app: changed by the school office. */
+  nationalId?: string | null;
+  /** The account's sign-in email (not the contact email). */
+  loginEmail?: string | null;
+  canEdit?: boolean;
+  /** Field keys ("name", "mobile"…) that go to the school for review. */
+  reviewFields?: string[] | null;
+  hasPendingChanges?: boolean;
+  /** Changes waiting for the school, then the latest decisions. */
+  pendingChanges?: ParentInfoChangeDto[] | null;
+}
+
+/** 1 Pending · 2 Approved · 3 Rejected · 4 Superseded */
+export enum ParentInfoItemStatus {
+  Pending = 1,
+  Approved = 2,
+  Rejected = 3,
+  Superseded = 4,
+}
+
+export interface ParentInfoChangeDto {
+  id: number;
+  /** "name", "mobile", "phone", "email", "address", "job", "nationalityId" */
+  fieldKey: string;
+  fieldDisplay?: string | null;
+  currentValue?: string | null;
+  requestedValue?: string | null;
+  status: ParentInfoItemStatus;
+  statusDisplay?: string | null;
+  rejectReason?: string | null;
+  submittedAt?: string | null;
+  decidedAt?: string | null;
+}
+
+/** PUT /api/mobile/parent/profile → data */
+export interface ParentInfoSaveResultDto {
+  /** Field keys saved at once. */
+  applied: string[];
+  /** Field keys sent to the school for review. */
+  pendingReview: string[];
+  profile: ParentInfoDto;
 }
 
 /**

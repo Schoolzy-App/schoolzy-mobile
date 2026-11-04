@@ -23,6 +23,7 @@ import type {
   SaveRelativeInput,
   SaveRelativeResponseDto,
   StudentGuardiansDto,
+  ParentInfoSaveResultDto,
   UpdateParentInfoInput,
   UpdateRelativePermissionInput,
 } from "@/types/api";
@@ -200,7 +201,7 @@ export function useParentInfo(enabled = true) {
 export function useUpdateParentInfo() {
   const queryClient = useQueryClient();
 
-  return useMutation<unknown, Error, UpdateParentInfoInput>({
+  return useMutation<ParentInfoSaveResultDto, Error, UpdateParentInfoInput>({
     mutationFn: (input) => parentProfileApi.updateProfile(input),
     onSuccess: () => {
       queryClient.invalidateQueries({

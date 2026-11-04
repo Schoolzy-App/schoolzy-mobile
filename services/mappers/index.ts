@@ -97,6 +97,7 @@ export type {
   RelativeLink,
   GuardianStudent,
   ParentInfo,
+  ParentInfoChange,
   ParentInfoField,
 } from "./parentProfile";
 

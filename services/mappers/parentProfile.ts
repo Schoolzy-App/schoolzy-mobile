@@ -2,6 +2,7 @@ import type { DefaultInputOption } from "@/components/ui";
 import { resolvePhotoUrl } from "@/services/api/parentProfile";
 import type {
   LocalizedLookupDto,
+  ParentInfoChangeDto,
   ParentInfoDto,
   RelativeDetailDto,
   RelativeDto,
@@ -212,6 +213,41 @@ export interface ParentInfo {
   nationalityId: number | null;
   nationalityName: string;
   photoUrl: string | null;
+  /** Read-only, changed by the school office. */
+  nationalId: string;
+  loginEmail: string;
+  canEdit: boolean;
+  /** Field keys that go to the school for review when changed. */
+  reviewFields: string[];
+  /** The latest change per field ("name", "mobile"… → change). */
+  changes: Record<string, ParentInfoChange>;
+}
+
+export interface ParentInfoChange {
+  status: "pending" | "approved" | "rejected";
+  requestedValue: string;
+  rejectReason: string;
+}
+
+const CHANGE_STATUS: Record<number, ParentInfoChange["status"] | undefined> = {
+  1: "pending",
+  2: "approved",
+  3: "rejected",
+};
+
+/** Pending first, then the latest decision — one entry per field. */
+function toChanges(dtos: ParentInfoChangeDto[] | null | undefined) {
+  const changes: Record<string, ParentInfoChange> = {};
+  (dtos ?? []).forEach((dto) => {
+    const status = CHANGE_STATUS[dto.status];
+    if (!status || !dto.fieldKey || changes[dto.fieldKey]) return;
+    changes[dto.fieldKey] = {
+      status,
+      requestedValue: dto.requestedValue?.trim() ?? "",
+      rejectReason: dto.rejectReason?.trim() ?? "",
+    };
+  });
+  return changes;
 }
 
 export function selectParentInfo(dto: ParentInfoDto): ParentInfo {
@@ -226,6 +262,11 @@ export function selectParentInfo(dto: ParentInfoDto): ParentInfo {
     nationalityId: dto.nationalityId ?? null,
     nationalityName: dto.nationalityName?.trim() ?? "",
     photoUrl: resolvePhotoUrl(dto.photoUrl),
+    nationalId: dto.nationalId?.trim() ?? "",
+    loginEmail: dto.loginEmail?.trim() ?? "",
+    canEdit: dto.canEdit ?? true,
+    reviewFields: dto.reviewFields ?? [],
+    changes: toChanges(dto.pendingChanges),
   };
 }
 

@@ -300,13 +300,37 @@ export function InfoHint({ text }: { text: string }) {
   );
 }
 
-export function ErrorBanner({ title, message }: { title: string; message?: string }) {
+export function ErrorBanner({
+  title,
+  message,
+  items,
+  onRetry,
+}: {
+  title: string;
+  message?: string;
+  /** Bullet list — the field errors (Update Information §5). */
+  items?: string[];
+  /** "Retry" link, for server errors only. */
+  onRetry?: () => void;
+}) {
   return (
     <View style={styles.banner}>
       <WarningCircleIcon weight="fill" size={20} color={Palette.form.inputError} />
-      <View style={styles.flex}>
+      <View style={[styles.flex, styles.bannerBody]}>
         <Text style={Type.cardHeading}>{title}</Text>
         {message ? <Text style={styles.hintText}>{message}</Text> : null}
+        {items?.map((item) => (
+          <Text key={item} style={styles.hintText}>
+            •  {item}
+          </Text>
+        ))}
+        {onRetry ? (
+          <Pressable onPress={onRetry} hitSlop={8} style={styles.retry}>
+            <Text style={styles.retryText} color={Palette.action.primary}>
+              Retry
+            </Text>
+          </Pressable>
+        ) : null}
       </View>
     </View>
   );
@@ -463,5 +487,17 @@ const styles = StyleSheet.create({
     backgroundColor: Palette.form.errorBannerBg,
     paddingVertical: 12,
     paddingHorizontal: 14,
+  },
+  bannerBody: {
+    gap: 4,
+  },
+  retry: {
+    alignSelf: "flex-start",
+    marginTop: 2,
+  },
+  retryText: {
+    fontSize: 14,
+    fontWeight: "600",
+    lineHeight: 18,
   },
 });
