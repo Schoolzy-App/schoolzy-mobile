@@ -10,12 +10,19 @@ import React, {
 import { queryClient } from "@/providers/QueryProvider";
 import { authApi, setUnauthorizedHandler } from "@/services/api";
 import {
+  clearBiometricEnrollment,
+  getEnrollment,
+  readBiometricToken,
+  setLastLoginIdentifier,
+} from "@/services/biometric";
+import { getDeviceId } from "@/services/deviceId";
+import {
   onTokenRefresh,
   registerDeviceToken,
   registerForPushNotifications,
   unregisterForPushNotifications,
 } from "@/services/notifications";
-import type { AuthUser } from "@/types/api";
+import { ApiError, type AuthUser } from "@/types/api";
 import { createLogger } from "@/utils/logger";
 
 const log = createLogger("auth");
@@ -32,15 +39,20 @@ interface AuthContextValue {
   isLoggingIn: boolean;
   /** Sign in with email + password. Throws `ApiError` on failure. */
   login: (email: string, password: string) => Promise<void>;
+  /**
+   * Sign in with the device's biometric credential. One scan: reading the
+   * credential is the prompt.
+   * - `"cancelled"`: the scan was cancelled or failed; nothing changed.
+   * - `"invalidated"`: the device's biometrics changed; enrollment cleared.
+   * - `"rejected"`: the server refused the credential (401 — e.g. the password
+   *   changed); enrollment cleared.
+   * Throws `ApiError` for anything else (network, lockout, …); enrollment kept.
+   */
+  loginWithBiometric: (
+    label: string,
+  ) => Promise<"ok" | "cancelled" | "invalidated" | "rejected">;
   /** Sign out, clear tokens and drop all cached server state. */
   logout: () => Promise<void>;
-  /**
-   * True when a refresh token is on the device, so the session can be resumed
-   * without re-entering a password (used to gate the biometric button).
-   */
-  hasStoredSession: boolean;
-  /** Resume a stored session via the refresh token. Returns false if it failed. */
-  resumeSession: () => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -60,14 +72,12 @@ export function AuthProvider({
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isRestoring, setIsRestoring] = useState(true);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
-  const [hasStoredSession, setHasStoredSession] = useState(false);
 
   /** Local teardown — no server call. Used by both logout and 401 handling. */
   const clearSession = useCallback(() => {
     log.info("clearing local session + query cache");
     setAuthenticated(false);
     setUser(null);
-    setHasStoredSession(false);
     // Drop cached server state so the next account never sees stale data.
     queryClient.clear();
   }, []);
@@ -90,7 +100,6 @@ export function AuthProvider({
         if (session) {
           setUser(session.user);
           setAuthenticated(true);
-          setHasStoredSession(!!session.tokens.refreshToken);
           // Re-assert the device token — it may have rotated while signed out.
           void registerForPushNotifications();
         }
@@ -129,9 +138,29 @@ export function AuthProvider({
         hasRefreshToken: !!session.tokens.refreshToken,
         expiresAt: session.tokens.expiresAt,
       });
+
+      /**
+       * Biometric enrollment belongs to whoever turned it on. A different
+       * parent signing in on this phone must not keep a button that would
+       * sign them in as someone else, so it is dropped here. Best-effort: a
+       * keychain hiccup must not fail a login that already succeeded.
+       */
+      try {
+        const id = email.trim().toLowerCase();
+        const enrollment = await getEnrollment();
+        if (enrollment && enrollment.identifier !== id) {
+          log.info("different account signed in — clearing biometric enrollment");
+          await clearBiometricEnrollment();
+        }
+        await setLastLoginIdentifier(id);
+      } catch (e) {
+        log.warn("could not update biometric enrollment after login", {
+          message: (e as Error)?.message,
+        });
+      }
+
       setUser(session.user);
       setAuthenticated(true);
-      setHasStoredSession(!!session.tokens.refreshToken);
 
       // Fire-and-forget: a push-registration failure must not fail the login.
       void registerForPushNotifications();
@@ -144,24 +173,49 @@ export function AuthProvider({
   }, []);
 
   /**
-   * Exchanges the stored refresh token for a fresh session. Backs the biometric
-   * sign-in path, so the app never has to keep the user's password on device.
+   * Exchanges the device-bound biometric credential for a brand-new session.
+   * The password is never on the device, and logout does not affect this
+   * credential — only the server (password change, revoke, expiry) or the
+   * device (biometrics changed) can end it.
    */
-  const resumeSession = useCallback(async () => {
+  const loginWithBiometric = useCallback(async (label: string) => {
+    const read = await readBiometricToken(label);
+    if (read.status === "cancelled") {
+      log.info("biometric scan cancelled (error code/message in the biometric log)");
+      return "cancelled" as const;
+    }
+    if (read.status === "invalidated") {
+      log.warn("biometric credential unreadable — device biometrics changed");
+      await clearBiometricEnrollment();
+      return "invalidated" as const;
+    }
+
+    setIsLoggingIn(true);
     try {
-      const session = await authApi.refresh();
-      if (!session) {
-        log.warn("session resume failed — refresh token rejected or missing");
-        return false;
-      }
-      log.info("session resumed ✓");
+      const session = await authApi.biometricLogin(
+        await getDeviceId(),
+        read.token,
+      );
+      log.info("biometric login succeeded ✓", {
+        user: session.user,
+        hasRefreshToken: !!session.tokens.refreshToken,
+      });
       setUser(session.user);
       setAuthenticated(true);
+
+      // Fire-and-forget: a push-registration failure must not fail the login.
       void registerForPushNotifications();
-      return true;
+      return "ok" as const;
     } catch (e) {
-      log.error("session resume failed ✕", { message: (e as Error)?.message });
-      return false;
+      if (e instanceof ApiError && e.status === 401) {
+        log.warn("biometric credential rejected by server — clearing enrollment");
+        await clearBiometricEnrollment();
+        return "rejected" as const;
+      }
+      log.error("biometric login failed ✕", { message: (e as Error)?.message });
+      throw e;
+    } finally {
+      setIsLoggingIn(false);
     }
   }, []);
 
@@ -189,9 +243,8 @@ export function AuthProvider({
       isRestoring,
       isLoggingIn,
       login,
+      loginWithBiometric,
       logout,
-      hasStoredSession,
-      resumeSession,
     }),
     [
       authenticated,
@@ -199,9 +252,8 @@ export function AuthProvider({
       isRestoring,
       isLoggingIn,
       login,
+      loginWithBiometric,
       logout,
-      hasStoredSession,
-      resumeSession,
     ],
   );
 

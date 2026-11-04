@@ -1,4 +1,4 @@
-import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import {
   ArrowUUpLeftIcon,
@@ -65,6 +65,15 @@ export default function AccountScreen() {
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const biometric = useBiometricSetting();
+
+  // Enrollment can change while Account is in the stack behind another screen
+  // (a password change clears it), so re-read it whenever Account is shown.
+  const { refresh: refreshBiometric } = biometric;
+  useFocusEffect(
+    useCallback(() => {
+      void refreshBiometric();
+    }, [refreshBiometric]),
+  );
 
   const { data: currentUser } = useCurrentUser();
   const { data: info } = useParentInfo();
@@ -342,6 +351,9 @@ export default function AccountScreen() {
             <Switch
               value={biometric.enabled}
               onValueChange={biometric.toggle}
+              // Enrolling waits on the network and a scan; a second flip
+              // mid-way would race it.
+              disabled={biometric.busy}
               trackColor={{ true: "#34C759", false: "#E1E1E5" }}
               thumbColor="#FFFFFF"
             />
