@@ -114,7 +114,9 @@ export default function ConfirmDepositScreen({ navigation, route }: Props) {
   ]);
 
   const handleBackToFinances = useCallback(() => {
-    navigation.navigate("Finances", { studentName, studentSeasonId });
+    // Pop back to the Finances already in the stack (navigate would push a
+    // second copy, and Back would return to the payment form).
+    navigation.popTo("Finances", { studentName, studentSeasonId });
   }, [navigation, studentName, studentSeasonId]);
 
   return (

@@ -286,7 +286,9 @@ export default function PaymentDetailsScreen({ navigation, route }: Props) {
 
   const handleDone = useCallback(() => {
     setShowSuccess(false);
-    navigation.navigate("Finances", { studentName, studentSeasonId });
+    // Pop back to the Finances already in the stack (navigate would push a
+    // second copy, and Back would return to the payment form).
+    navigation.popTo("Finances", { studentName, studentSeasonId });
   }, [navigation, studentName, studentSeasonId]);
 
   // The wallet can't top itself up (the API rejects it), so Top up hides it.
