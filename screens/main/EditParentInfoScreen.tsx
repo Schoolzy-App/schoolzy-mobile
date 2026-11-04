@@ -1,4 +1,4 @@
-import { ClockIcon, LockSimpleIcon, XCircleIcon } from "phosphor-react-native";
+import { ClockIcon, InfoIcon, LockSimpleIcon, XCircleIcon } from "phosphor-react-native";
 import React, { useCallback, useState } from "react";
 import { StyleSheet, View } from "react-native";
 
@@ -184,6 +184,8 @@ export default function EditParentInfoScreen(_props: Props) {
             <Text style={styles.intro} color={Palette.text.secondary}>
               Update the details the school uses to reach you.
             </Text>
+
+            <ReviewSummary data={data} />
 
             {errorList.length ? (
               <ErrorBanner
@@ -373,6 +375,54 @@ function EditField({
   );
 }
 
+/** "name" → "Full name", for the review lines. */
+const labelOf = (key: string) => LABELS[key as EditableField] ?? key;
+
+function joinLabels(keys: string[]): string {
+  const labels = keys.map(labelOf);
+  if (labels.length <= 1) return labels.join("");
+  return `${labels.slice(0, -1).join(", ")} and ${labels[labels.length - 1]}`;
+}
+
+/**
+ * Tells the parent, before and after saving, that the school reviews some
+ * changes. Both parts come from the API, so they follow each school's
+ * settings: `reviewFields` is empty when every field saves at once, and
+ * then nothing shows.
+ */
+function ReviewSummary({ data }: { data: ParentInfo }) {
+  const pending = Object.entries(data.changes)
+    .filter(([, change]) => change.status === "pending")
+    .map(([key]) => key);
+
+  if (pending.length) {
+    return (
+      <View style={[styles.reviewBox, styles.reviewBoxPending]}>
+        <ClockIcon weight="fill" size={20} color={Palette.feedback.waiting} />
+        <View style={styles.flex}>
+          <Text style={Type.cardHeading}>Waiting for school review</Text>
+          <Text style={styles.reviewText}>
+            Your new {joinLabels(pending)} {pending.length > 1 ? "are" : "is"} with the
+            school. The school still uses your current details until it approves the
+            change.
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
+  if (!data.reviewFields.length) return null;
+  return (
+    <View style={styles.reviewBox}>
+      <InfoIcon weight="fill" size={20} color={Palette.action.primary} />
+      <Text style={[styles.reviewText, styles.flex]}>
+        Changes to your {joinLabels(data.reviewFields)} are reviewed by the school
+        before they take effect. Other changes save straight away.
+      </Text>
+    </View>
+  );
+}
+
 /**
  * The school-review state of a field, from the profile's `pendingChanges`:
  * a change still waiting, or the latest one turned down.
@@ -431,6 +481,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.form.bodyPadding,
     paddingBottom: 24,
     gap: 16,
+  },
+  reviewBox: {
+    flexDirection: "row",
+    gap: 10,
+    borderRadius: Radius.input,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    backgroundColor: Palette.action.infoNote,
+  },
+  reviewBoxPending: {
+    backgroundColor: Palette.feedback.waitingTint,
+  },
+  reviewText: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: Palette.text.body,
   },
   intro: {
     fontSize: 15,

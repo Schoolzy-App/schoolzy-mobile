@@ -140,24 +140,26 @@ The sub line is the subject plus due date / start time (design: "{subject} ·
 Weekends (Sun, Sat) are dimmed by rule. A `calendar?from=&to=` with
 `isSchoolDay` would also cover holidays.
 
-## Relatives
+## Relatives and My Information — decided with the product owner
 
-### 21. Existing child links can't be changed or removed
-- **Screen:** Relatives → Edit Relative.
-- **Design:** the relationship chips and the children checkboxes are
-  editable on Edit.
-- **Today:** `POST parent-profile/relatives` leaves an active link exactly
-  as it is (type, main parent), and nothing unlinks one child. The form
-  shows linked children checked and locked, and the relationship locked
-  with "Contact the school office to change it." Only the permission can
-  change, through `PUT relatives/links/{linkId}/permission`.
-- **To add:** a way to change a link's type and to remove a single link
-  (keeping the educational-mandate link protected).
+### 21. Per-field validation errors
+`AuthResult.ValidationFail` builds `FieldErrors`, but `ApiResponse` only
+serializes the flat `errors` list, so the app can't mark the field a
+server error belongs to. To add: `fieldErrors` in the envelope (My
+Information and Save Relative first). Sent to the API task.
 
-### 22. National ID is required by the API, optional in the design
-`SaveRelativeRequest.NationalId` is required (duplicate detection). The
-form marks it Required.
+### 22. A parent edits only their own record
+`PUT parent/profile` accepts `role` and can update the other parent. The
+app only edits the signed-in parent; the API should enforce it. Sent to
+the API task.
 
-### 23. No way to remove a relative's photo
-The design has "Remove" for a newly chosen photo only, which the app
-supports; a saved photo can be replaced but not deleted.
+### 23. Deleting a relative should go to school review
+`DELETE parent-profile/relatives/{id}` soft-deletes the links at once.
+Wanted: a removal request the school approves, soft delete on approval,
+and a decision for relatives who have an active user account. The app's
+delete sheet will change to "sent for review" once the API does.
+Sent to the API task.
+
+Decided, no change: National ID stays required; a link's relationship
+and single-child unlinking stay as they are (permission per child is
+enough); no photo removal.
