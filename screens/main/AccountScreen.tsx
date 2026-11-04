@@ -342,6 +342,9 @@ export default function AccountScreen() {
             <Switch
               value={biometric.enabled}
               onValueChange={biometric.toggle}
+              // Enrolling waits on the network and a scan; a second flip
+              // mid-way would race it.
+              disabled={biometric.busy}
               trackColor={{ true: "#34C759", false: "#E1E1E5" }}
               thumbColor="#FFFFFF"
             />

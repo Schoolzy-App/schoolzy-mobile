@@ -77,13 +77,13 @@ export default function LoginScreen({ navigation }: Props) {
           `${biometricLabel} changed`,
           `Sign in with your password, then turn ${biometricLabel} sign-in on again in Account.`,
         );
-        refreshBiometric();
+        void refreshBiometric();
       } else if (outcome === "rejected") {
         Alert.alert(
           `${biometricLabel} sign-in turned off`,
           "Your password may have changed. Sign in with your password, then turn it on again in Account.",
         );
-        refreshBiometric();
+        void refreshBiometric();
       }
       // "ok": the root navigator swaps to the main stack. "cancelled": nothing.
     } catch (e) {
