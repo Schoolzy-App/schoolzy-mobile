@@ -114,13 +114,17 @@ export function useUpdateLinkPermission(relativeId?: number) {
 
   return useMutation<unknown, Error, UpdateRelativePermissionInput>({
     mutationFn: (input) => parentProfileApi.updateLinkPermission(input),
-    onSuccess: () => {
-      if (typeof relativeId === "number") {
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.parentProfile.relative(relativeId),
-        });
-      }
-    },
+    // Returned so the caller's mutateAsync resolves once the list has the
+    // new value — the toggle stays pending until then.
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.parentProfile.relatives() }),
+        typeof relativeId === "number"
+          ? queryClient.invalidateQueries({
+              queryKey: queryKeys.parentProfile.relative(relativeId),
+            })
+          : undefined,
+      ]),
   });
 }
 

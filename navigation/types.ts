@@ -130,11 +130,8 @@ export type ConfirmDepositParams = {
   payingFor?: string;
 };
 
-export type RelativeDetailsParams = {
-  relativeId: number;
-  /** Shown in the header until the relative loads. */
-  name?: string;
-};
+/** `toast`: a message handed back by the form ("Relative saved."). */
+export type RelativesParams = { toast?: string } | undefined;
 
 /** Omit `relativeId` to create; pass one to edit that relative. */
 export type AddRelativeParams = {
@@ -168,7 +165,6 @@ export type PdfParams = {
 };
 
 export type NotificationParams = undefined;
-export type ParentProfileParams = undefined;
 export type EditParentInfoParams = undefined;
 export type ComplaintsParams = undefined;
 export type AddComplaintParams = undefined;
@@ -193,9 +189,8 @@ export type RootStackParamList = {
   Main: undefined;
   ChangePassword: undefined;
   ChatWithSchool: undefined;
-  ParentProfile: ParentProfileParams;
+  Relatives: RelativesParams;
   EditParentInfo: EditParentInfoParams;
-  RelativeDetails: RelativeDetailsParams;
   AddRelative: AddRelativeParams;
   Complaints: ComplaintsParams;
   ComplaintDetails: ComplaintDetailsParams;

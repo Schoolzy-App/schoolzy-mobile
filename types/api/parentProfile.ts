@@ -56,6 +56,8 @@ export interface RelativeDto {
   photoUrl: string | null;
   /** First letters of the first two words of the name, upper case. */
   initials?: string;
+  hasPhoto?: boolean;
+  nationalityName?: string | null;
   /**
    * The students this relative is linked to. The backend's list DTO
    * (FamilyRelativeDto) carries these too, with `hasPermission` = may collect
@@ -108,6 +110,8 @@ export interface RelativeLinkDto {
   mainParentId?: number | null;
   mainParentName?: string | null;
   hasPermission?: boolean | null;
+  /** The child's educational mandate — cannot be removed from the app. */
+  isEducationalMandate?: boolean | null;
 }
 
 export interface RelativeDetailDto extends RelativeDto {

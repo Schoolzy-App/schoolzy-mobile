@@ -139,3 +139,25 @@ The sub line is the subject plus due date / start time (design: "{subject} ·
 ### 20. No school calendar
 Weekends (Sun, Sat) are dimmed by rule. A `calendar?from=&to=` with
 `isSchoolDay` would also cover holidays.
+
+## Relatives
+
+### 21. Existing child links can't be changed or removed
+- **Screen:** Relatives → Edit Relative.
+- **Design:** the relationship chips and the children checkboxes are
+  editable on Edit.
+- **Today:** `POST parent-profile/relatives` leaves an active link exactly
+  as it is (type, main parent), and nothing unlinks one child. The form
+  shows linked children checked and locked, and the relationship locked
+  with "Contact the school office to change it." Only the permission can
+  change, through `PUT relatives/links/{linkId}/permission`.
+- **To add:** a way to change a link's type and to remove a single link
+  (keeping the educational-mandate link protected).
+
+### 22. National ID is required by the API, optional in the design
+`SaveRelativeRequest.NationalId` is required (duplicate detection). The
+form marks it Required.
+
+### 23. No way to remove a relative's photo
+The design has "Remove" for a newly chosen photo only, which the app
+supports; a saved photo can be replaced but not deleted.

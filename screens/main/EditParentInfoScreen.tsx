@@ -1,34 +1,26 @@
-import {
-  CaretDownIcon,
-  CheckCircleIcon,
-  CheckIcon,
-  ClockIcon,
-  LockSimpleIcon,
-  XCircleIcon,
-} from "phosphor-react-native";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { ClockIcon, LockSimpleIcon, XCircleIcon } from "phosphor-react-native";
+import React, { useCallback, useState } from "react";
+import { StyleSheet, View } from "react-native";
 
 import { ErrorBanner, Field, TextField } from "@/components/form/FormParts";
+import { SelectField } from "@/components/form/SelectField";
+import { Toast, type ToastMessage } from "@/components/form/Toast";
 import FormButton from "@/components/FormButton";
-import { Modal, ScreenTemplate, Text } from "@/components/ui";
+import { ScreenTemplate, Text } from "@/components/ui";
 import { Palette, Radius, Size, Spacing, Type } from "@/constants/tokens";
 import { useNationalities, useParentInfo, useUpdateParentInfo } from "@/hooks";
 import type { RootStackScreenProps } from "@/navigation/types";
 import type { ParentInfo, ParentInfoChange } from "@/services/mappers";
 import { ApiError } from "@/types/api";
-import type { ParentInfoSaveResultDto, UpdateParentInfoInput } from "@/types/api";
+import type {
+  ParentInfoSaveResultDto,
+  UpdateParentInfoInput,
+} from "@/types/api";
 
 type Props = RootStackScreenProps<"EditParentInfo">;
 
 type EditableField =
-  | "name"
-  | "mobile"
-  | "phone"
-  | "email"
-  | "address"
-  | "job"
-  | "nationalityId";
+  "name" | "mobile" | "phone" | "email" | "address" | "job" | "nationalityId";
 
 const NAME_MAX_LENGTH = 200;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -43,7 +35,10 @@ const LABELS: Record<EditableField, string> = {
 };
 
 /** The server's current value for a field, as a string the inputs can hold. */
-function initialValue(info: ParentInfo | undefined, field: EditableField): string {
+function initialValue(
+  info: ParentInfo | undefined,
+  field: EditableField,
+): string {
   if (!info) return "";
   if (field === "nationalityId") {
     return info.nationalityId ? String(info.nationalityId) : "";
@@ -66,7 +61,8 @@ function initialsOf(name: string): string {
 function savedMessage(result: ParentInfoSaveResultDto | undefined): string {
   const applied = result?.applied?.length ?? 0;
   const pending = result?.pendingReview?.length ?? 0;
-  if (pending && applied) return "Some changes were saved. The rest were sent to the school for review.";
+  if (pending && applied)
+    return "Some changes were saved. The rest were sent to the school for review.";
   if (pending) return "Your changes were sent to the school for review.";
   return "Your information was saved.";
 }
@@ -82,40 +78,36 @@ export default function EditParentInfoScreen(_props: Props) {
    * copy of the record means a refetch can't clobber half-typed input, and
    * the changed set the endpoint wants is just the draft's keys.
    */
-  const [draft, setDraft] = useState<Partial<Record<EditableField, string>>>({});
-  const [fieldErrors, setFieldErrors] = useState<Partial<Record<EditableField, string>>>({});
-  const [serverError, setServerError] = useState<{ invalid: boolean; items: string[] } | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
-  const [pickerOpen, setPickerOpen] = useState(false);
-
-  useEffect(() => {
-    if (!toast) return;
-    const timer = setTimeout(() => setToast(null), 3000);
-    return () => clearTimeout(timer);
-  }, [toast]);
+  const [draft, setDraft] = useState<Partial<Record<EditableField, string>>>(
+    {},
+  );
+  const [fieldErrors, setFieldErrors] = useState<
+    Partial<Record<EditableField, string>>
+  >({});
+  const [serverError, setServerError] = useState<{
+    invalid: boolean;
+    items: string[];
+  } | null>(null);
+  const [toast, setToast] = useState<ToastMessage | null>(null);
+  const hideToast = useCallback(() => setToast(null), []);
 
   const data = info.data;
   const locked = isPending || data?.canEdit === false;
-  const valueOf = (field: EditableField): string => draft[field] ?? initialValue(data, field);
+  const valueOf = (field: EditableField): string =>
+    draft[field] ?? initialValue(data, field);
 
   const setValue = (field: EditableField) => (next: string) => {
     setDraft((prev) => ({ ...prev, [field]: next }));
-    if (fieldErrors[field]) setFieldErrors((prev) => ({ ...prev, [field]: undefined }));
+    if (fieldErrors[field])
+      setFieldErrors((prev) => ({ ...prev, [field]: undefined }));
   };
-
-  const nationalityOptions = nationalities.data ?? [];
-  const nationalityLabel = useMemo(() => {
-    const id = valueOf("nationalityId");
-    if (!id) return "";
-    return nationalityOptions.find((o) => o.value === id)?.label || data?.nationalityName || "";
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [draft.nationalityId, nationalityOptions, data]);
 
   const handleSave = useCallback(async () => {
     if (isPending || !data) return;
     setServerError(null);
 
-    const value = (field: EditableField) => (draft[field] ?? initialValue(data, field)).trim();
+    const value = (field: EditableField) =>
+      (draft[field] ?? initialValue(data, field)).trim();
     const errors: Partial<Record<EditableField, string>> = {};
     if (!value("name")) errors.name = "Enter your full name.";
     else if (value("name").length > NAME_MAX_LENGTH)
@@ -131,25 +123,27 @@ export default function EditParentInfoScreen(_props: Props) {
     (Object.keys(draft) as EditableField[]).forEach((field) => {
       const next = value(field);
       if (next === initialValue(data, field)) return;
-      if (field === "nationalityId") changes.nationalityId = next ? Number(next) : null;
+      if (field === "nationalityId")
+        changes.nationalityId = next ? Number(next) : null;
       else changes[field] = next;
     });
 
     if (Object.keys(changes).length === 0) {
-      setToast("No changes to save.");
+      setToast({ text: "No changes to save.", kind: "info" });
       return;
     }
 
     try {
       const result = await save(changes);
       setDraft({});
-      setToast(savedMessage(result));
+      setToast({ text: savedMessage(result) });
     } catch (e) {
       // The server sends its field errors as a flat list (no keys), so they
       // go in the banner.
       // A 400 with errors is the server's validation; anything else is a
       // failure the parent can retry.
-      const invalid = e instanceof ApiError && e.status === 400 && e.errors.length > 0;
+      const invalid =
+        e instanceof ApiError && e.status === 400 && e.errors.length > 0;
       setServerError({ invalid, items: e instanceof ApiError ? e.errors : [] });
     }
   }, [isPending, data, draft, save]);
@@ -161,222 +155,186 @@ export default function EditParentInfoScreen(_props: Props) {
   const name = valueOf("name").trim() || data?.name || "";
 
   return (
-    <ScreenTemplate
-      variant="form"
-      title="My Information"
-      bottomContent={
-        data && data.canEdit !== false ? (
-          <View style={styles.footer}>
-            {toast ? (
-              <View style={styles.toast}>
-                <CheckCircleIcon weight="fill" size={18} color={Palette.feedback.success} />
-                <Text style={styles.toastText} color={Palette.text.onBrand}>
-                  {toast}
-                </Text>
-              </View>
-            ) : null}
+    <View style={styles.flex}>
+      <ScreenTemplate
+        variant="form"
+        title="My Information"
+        bottomContent={
+          data && data.canEdit !== false ? (
             <FormButton
               label={isPending ? "Saving…" : "Save"}
               loading={isPending}
               onPress={handleSave}
             />
-          </View>
-        ) : undefined
-      }
-    >
-      {info.isLoading ? (
-        <Skeleton />
-      ) : !data ? (
-        <View style={styles.body}>
-          <ErrorBanner
-            title="Couldn't load your information."
-            message={info.error?.message}
-            onRetry={() => info.refetch()}
-          />
-        </View>
-      ) : (
-        <View style={styles.body}>
-          <Text style={styles.intro} color={Palette.text.secondary}>
-            Update the details the school uses to reach you.
-          </Text>
-
-          {errorList.length ? (
-            <ErrorBanner title="Please correct the highlighted fields." items={errorList} />
-          ) : serverError?.invalid ? (
-            <ErrorBanner title="Please correct the highlighted fields." items={serverError.items} />
-          ) : serverError ? (
+          ) : undefined
+        }
+      >
+        {info.isLoading ? (
+          <Skeleton />
+        ) : !data ? (
+          <View style={styles.body}>
             <ErrorBanner
-              title="Something went wrong. Your changes were not saved."
-              items={serverError.items}
-              onRetry={handleSave}
+              title="Couldn't load your information."
+              message={info.error?.message}
+              onRetry={() => info.refetch()}
             />
-          ) : null}
+          </View>
+        ) : (
+          <View style={styles.body}>
+            <Text style={styles.intro} color={Palette.text.secondary}>
+              Update the details the school uses to reach you.
+            </Text>
 
-          {/* ── Read-only identity ─────────────────────────────── */}
-          <View>
-            <View style={styles.idCard}>
-              <View style={styles.idTop}>
-                <View style={styles.avatar}>
-                  <Text style={styles.initials} color={Palette.text.onBrand}>
-                    {initialsOf(name)}
-                  </Text>
-                </View>
-                <View style={styles.flex}>
-                  <Text style={styles.idName} numberOfLines={1}>
-                    {name}
-                  </Text>
-                  {data.role ? (
-                    <Text style={Type.meta} color={Palette.text.secondary}>
-                      {data.role}
-                    </Text>
-                  ) : null}
-                </View>
-                <LockSimpleIcon size={18} color={Palette.text.tertiary} />
-              </View>
-              {/* Rows the API has a value for; a blank one is left out. */}
-              {[
-                { key: "National ID", value: data.nationalId },
-                { key: "Sign-in email", value: data.loginEmail },
-              ]
-                .filter((row) => row.value)
-                .map((row, index, rows) => (
-                  <View
-                    key={row.key}
-                    style={[styles.idRow, index < rows.length - 1 && styles.idRowDivided]}
-                  >
-                    <Text style={styles.idKey} color={Palette.text.secondary}>
-                      {row.key}
-                    </Text>
-                    <Text style={styles.idValue} numberOfLines={1} ellipsizeMode="tail">
-                      {row.value}
+            {errorList.length ? (
+              <ErrorBanner
+                title="Please correct the highlighted fields."
+                items={errorList}
+              />
+            ) : serverError?.invalid ? (
+              <ErrorBanner
+                title="Please correct the highlighted fields."
+                items={serverError.items}
+              />
+            ) : serverError ? (
+              <ErrorBanner
+                title="Something went wrong. Your changes were not saved."
+                items={serverError.items}
+                onRetry={handleSave}
+              />
+            ) : null}
+
+            {/* ── Read-only identity ─────────────────────────────── */}
+            <View>
+              <View style={styles.idCard}>
+                <View style={styles.idTop}>
+                  <View style={styles.avatar}>
+                    <Text style={styles.initials} color={Palette.text.onBrand}>
+                      {initialsOf(name)}
                     </Text>
                   </View>
-                ))}
+                  <View style={styles.flex}>
+                    <Text style={styles.idName} numberOfLines={1}>
+                      {name}
+                    </Text>
+                    {data.role ? (
+                      <Text style={Type.meta} color={Palette.text.secondary}>
+                        {data.role}
+                      </Text>
+                    ) : null}
+                  </View>
+                  <LockSimpleIcon size={18} color={Palette.text.tertiary} />
+                </View>
+                {/* Rows the API has a value for; a blank one is left out. */}
+                {[
+                  { key: "National ID", value: data.nationalId },
+                  { key: "Sign-in email", value: data.loginEmail },
+                ]
+                  .filter((row) => row.value)
+                  .map((row, index, rows) => (
+                    <View
+                      key={row.key}
+                      style={[
+                        styles.idRow,
+                        index < rows.length - 1 && styles.idRowDivided,
+                      ]}
+                    >
+                      <Text style={styles.idKey} color={Palette.text.secondary}>
+                        {row.key}
+                      </Text>
+                      <Text
+                        style={styles.idValue}
+                        numberOfLines={1}
+                        ellipsizeMode="tail"
+                      >
+                        {row.value}
+                      </Text>
+                    </View>
+                  ))}
+              </View>
+              <Text style={styles.idNote} color={Palette.text.tertiary}>
+                {data.canEdit === false
+                  ? "Contact the school office to change your details."
+                  : "Contact the school office to change these."}
+              </Text>
             </View>
-            <Text style={styles.idNote} color={Palette.text.tertiary}>
-              {data.canEdit === false
-                ? "Contact the school office to change your details."
-                : "Contact the school office to change these."}
-            </Text>
+
+            {/* ── Editable ─────────────────────────────────────────── */}
+            <EditField
+              field="name"
+              hint="Required"
+              data={data}
+              value={valueOf("name")}
+              onText={setValue("name")}
+              error={fieldErrors.name}
+              editable={!locked}
+              maxLength={NAME_MAX_LENGTH}
+            />
+            <EditField
+              field="mobile"
+              hint="Optional"
+              data={data}
+              value={valueOf("mobile")}
+              onText={(text) => setValue("mobile")(digitsOnly(text))}
+              editable={!locked}
+              keyboardType="number-pad"
+            />
+            <EditField
+              field="phone"
+              hint="Optional"
+              data={data}
+              value={valueOf("phone")}
+              onText={(text) => setValue("phone")(digitsOnly(text))}
+              editable={!locked}
+              keyboardType="number-pad"
+            />
+            <EditField
+              field="email"
+              hint="For school contact"
+              data={data}
+              value={valueOf("email")}
+              onText={setValue("email")}
+              error={fieldErrors.email}
+              editable={!locked}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            <EditField
+              field="address"
+              hint="Optional"
+              data={data}
+              value={valueOf("address")}
+              onText={setValue("address")}
+              editable={!locked}
+            />
+            <EditField
+              field="job"
+              hint="Optional"
+              data={data}
+              value={valueOf("job")}
+              onText={setValue("job")}
+              editable={!locked}
+            />
+
+            <Field label="Nationality" hint="Optional">
+              <SelectField
+                title="Nationality"
+                placeholder="Select nationality"
+                value={valueOf("nationalityId")}
+                fallbackLabel={data.nationalityName}
+                options={nationalities.data ?? []}
+                onChange={setValue("nationalityId")}
+                disabled={locked}
+                loading={nationalities.isLoading}
+                emptyText="Nationality list is unavailable."
+              />
+              <ReviewNote change={data.changes.nationalityId} />
+            </Field>
           </View>
-
-          {/* ── Editable ─────────────────────────────────────────── */}
-          <EditField
-            field="name"
-            hint="Required"
-            data={data}
-            value={valueOf("name")}
-            onText={setValue("name")}
-            error={fieldErrors.name}
-            editable={!locked}
-            maxLength={NAME_MAX_LENGTH}
-          />
-          <EditField
-            field="mobile"
-            hint="Optional"
-            data={data}
-            value={valueOf("mobile")}
-            onText={(text) => setValue("mobile")(digitsOnly(text))}
-            editable={!locked}
-            keyboardType="number-pad"
-          />
-          <EditField
-            field="phone"
-            hint="Optional"
-            data={data}
-            value={valueOf("phone")}
-            onText={(text) => setValue("phone")(digitsOnly(text))}
-            editable={!locked}
-            keyboardType="number-pad"
-          />
-          <EditField
-            field="email"
-            hint="For school contact"
-            data={data}
-            value={valueOf("email")}
-            onText={setValue("email")}
-            error={fieldErrors.email}
-            editable={!locked}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-          <EditField
-            field="address"
-            hint="Optional"
-            data={data}
-            value={valueOf("address")}
-            onText={setValue("address")}
-            editable={!locked}
-          />
-          <EditField
-            field="job"
-            hint="Optional"
-            data={data}
-            value={valueOf("job")}
-            onText={setValue("job")}
-            editable={!locked}
-          />
-
-          <Field label="Nationality" hint="Optional">
-            <Pressable
-              disabled={locked || !nationalityOptions.length}
-              onPress={() => setPickerOpen(true)}
-              style={[
-                styles.select,
-                (!nationalityOptions.length || locked) && styles.selectDisabled,
-              ]}
-            >
-              <Text
-                style={styles.selectText}
-                color={nationalityLabel ? Palette.text.primary : Palette.text.tertiary}
-                numberOfLines={1}
-              >
-                {nationalityLabel || "Select nationality"}
-              </Text>
-              <CaretDownIcon weight="bold" size={16} color={Palette.text.tertiary} />
-            </Pressable>
-            {!nationalities.isLoading && !nationalityOptions.length ? (
-              <Text style={styles.helper} color={Palette.text.secondary}>
-                Nationality list is unavailable.
-              </Text>
-            ) : null}
-            <ReviewNote change={data.changes.nationalityId} />
-          </Field>
-        </View>
-      )}
-
-      <Modal bare isVisible={pickerOpen} closeModal={() => setPickerOpen(false)}>
-        <View style={styles.sheet}>
-          <Text style={styles.sheetTitle}>Nationality</Text>
-          <ScrollView style={styles.sheetList} contentContainerStyle={styles.sheetListContent}>
-            {nationalityOptions.map((option, index) => {
-              const selected = option.value === valueOf("nationalityId");
-              return (
-                <Pressable
-                  key={option.value}
-                  onPress={() => {
-                    setValue("nationalityId")(option.value);
-                    setPickerOpen(false);
-                  }}
-                  style={[styles.option, index > 0 && styles.optionDivided]}
-                >
-                  <Text
-                    style={[styles.optionText, selected && styles.optionSelected]}
-                    color={selected ? Palette.action.primary : Palette.text.primary}
-                  >
-                    {option.label}
-                  </Text>
-                  {selected ? (
-                    <CheckIcon weight="bold" size={18} color={Palette.action.primary} />
-                  ) : null}
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-        </View>
-      </Modal>
-    </ScreenTemplate>
+        )}
+      </ScreenTemplate>
+      <Toast message={toast} onHide={hideToast} />
+    </View>
   );
 }
 
@@ -397,7 +355,10 @@ function EditField({
   value: string;
   onText: (text: string) => void;
   error?: string;
-} & Omit<React.ComponentProps<typeof TextField>, "value" | "onChangeText" | "onChange">) {
+} & Omit<
+  React.ComponentProps<typeof TextField>,
+  "value" | "onChangeText" | "onChange"
+>) {
   return (
     <Field label={LABELS[field]} hint={hint} error={error}>
       <TextField
@@ -439,7 +400,9 @@ function Skeleton() {
     <View style={styles.body}>
       <View style={[styles.idCard, styles.skeletonCard]}>
         <View style={styles.skeletonRow}>
-          <View style={[styles.avatar, { backgroundColor: Palette.form.skeleton }]} />
+          <View
+            style={[styles.avatar, { backgroundColor: Palette.form.skeleton }]}
+          />
           <View style={[styles.flex, { gap: 8 }]}>
             <View style={[styles.bar, { width: "55%" }]} />
             <View style={[styles.bar, { width: "30%" }]} />
@@ -539,87 +502,10 @@ const styles = StyleSheet.create({
   inputLocked: {
     color: Palette.text.secondary,
   },
-  select: {
-    height: Size.input,
-    borderRadius: Radius.input,
-    borderWidth: Size.inputBorderWidth,
-    borderColor: Palette.form.inputBorder,
-    backgroundColor: Palette.surface.card,
-    paddingLeft: 14,
-    paddingRight: 14,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  selectDisabled: {
-    opacity: 0.5,
-  },
-  selectText: {
-    flex: 1,
-    fontSize: 16,
-  },
-  helper: {
-    fontSize: 13,
-    lineHeight: 17,
-  },
   review: {
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 5,
-  },
-  footer: {
-    gap: 10,
-  },
-  toast: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: Radius.input,
-    backgroundColor: "#1C1C1EE6",
-  },
-  toastText: {
-    flex: 1,
-    fontSize: 14,
-    fontWeight: "500",
-    lineHeight: 19,
-  },
-  sheet: {
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-    gap: 10,
-  },
-  sheetTitle: {
-    fontSize: 17,
-    fontWeight: "600",
-    lineHeight: 21,
-    paddingHorizontal: 4,
-  },
-  sheetList: {
-    maxHeight: 420,
-    borderRadius: Radius.card,
-    backgroundColor: Palette.surface.card,
-  },
-  sheetListContent: {
-    paddingHorizontal: 16,
-  },
-  option: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    paddingVertical: 14,
-  },
-  optionDivided: {
-    borderTopWidth: 1,
-    borderTopColor: Palette.border.divider,
-  },
-  optionText: {
-    flex: 1,
-    fontSize: 16,
-  },
-  optionSelected: {
-    fontWeight: "600",
   },
   skeletonCard: {
     gap: 12,

@@ -171,7 +171,7 @@ export default function AccountScreen() {
         {/* ── My Information ────────────────────────────────────────── */}
         <Tile
           style={styles.info}
-          onPress={() => navigation.navigate("ParentProfile")}
+          onPress={() => navigation.navigate("EditParentInfo")}
         >
           <View style={styles.rowBetween}>
             <View style={styles.kicker}>
@@ -192,7 +192,7 @@ export default function AccountScreen() {
           {/* ── Relatives (two rows tall) ───────────────────────────── */}
           <Tile
             style={[styles.half, styles.relatives]}
-            onPress={() => navigation.navigate("ParentProfile")}
+            onPress={() => navigation.navigate("Relatives")}
           >
             <View style={[styles.iconTile, { backgroundColor: "#5BA3A01F" }]}>
               <UsersThreeIcon weight="fill" size={22} color="#3F8784" />

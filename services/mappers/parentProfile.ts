@@ -74,6 +74,14 @@ export interface Relative {
   initials: string;
   /** May collect at least one child from school. */
   canPickUp: boolean;
+  /** Has a photo on file (the list colours the avatar by it). */
+  hasPhoto: boolean;
+  /** The children this relative is linked to. */
+  links: RelativeLink[];
+  /** The relationship, from the first link ("Uncle"). */
+  relationship: string;
+  /** The relationship type id from the first link, or null. */
+  relationshipType: number | null;
 }
 
 export function toRelative(dto: RelativeDto): Relative {
@@ -97,12 +105,17 @@ export function toRelative(dto: RelativeDto): Relative {
     initial: name.charAt(0).toUpperCase(),
     initials: dto.initials?.trim() || name.charAt(0).toUpperCase(),
     canPickUp: (dto.links ?? []).some((link) => !!link.hasPermission),
+    hasPhoto: dto.hasPhoto ?? !!dto.photoUrl,
+    links: (dto.links ?? []).map(toRelativeLink),
+    relationship: dto.links?.[0]?.typeName?.trim() ?? "",
+    relationshipType: dto.links?.[0]?.type ?? null,
   };
 }
 
 /** `select` for the relatives query. */
 export function selectRelatives(dto: RelativesResponseDto): Relative[] {
-  return (dto?.relatives ?? []).map(toRelative);
+  // Newest first (Relative Setting §2); ids grow with creation.
+  return (dto?.relatives ?? []).map(toRelative).sort((a, b) => b.relativeId - a.relativeId);
 }
 
 // ─── Relative detail ────────────────────────────────────────────────────────
@@ -114,9 +127,12 @@ export interface RelativeLink {
   linkId: number | null;
   studentSeasonId: number | null;
   studentName: string;
+  type: number | null;
   typeName: string;
   mainParentName: string;
   hasPermission: boolean;
+  /** The child's educational mandate — the school's, not removable here. */
+  isEducationalMandate: boolean;
 }
 
 export interface RelativeDetail extends Relative {
@@ -139,9 +155,11 @@ function toRelativeLink(dto: RelativeLinkDto, index: number): RelativeLink {
     linkId,
     studentSeasonId: dto.studentSeasonId ?? null,
     studentName: dto.studentName ?? "",
+    type: dto.type ?? null,
     typeName: dto.typeName ?? "",
     mainParentName: dto.mainParentName ?? "",
     hasPermission: !!dto.hasPermission,
+    isEducationalMandate: !!dto.isEducationalMandate,
   };
 }
 
