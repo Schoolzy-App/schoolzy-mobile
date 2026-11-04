@@ -57,6 +57,7 @@ export {
   useIgAccountOptions,
   useOnlinePayment,
   usePaymentCategories,
+  useWalletTopUpCategories,
   usePaymentHistory,
   useWalletPayment,
 } from "./usePayments";

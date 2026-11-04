@@ -105,6 +105,17 @@ export function usePaymentCategories(enabled = true) {
   });
 }
 
+/** GET /api/mobile/student-payments/categories/wallet — what Top up pays into. */
+export function useWalletTopUpCategories(enabled = true) {
+  return useQuery<PaymentCategoryDto[], Error, PaymentCategoryOption[]>({
+    queryKey: queryKeys.payments.walletCategories(),
+    queryFn: () => paymentsApi.walletCategories(),
+    select: selectPaymentCategories,
+    staleTime: 10 * 60_000,
+    enabled,
+  });
+}
+
 /**
  * GET /api/mobile/student-payments/{id}/ig-account-options
  *

@@ -157,8 +157,16 @@ export default function FinancesScreen({ navigation, route }: Props) {
   const historyChips = useMemo(
     () => [
       { value: "all" as const, label: "All", count: counts?.all },
-      { value: "schoolFees" as const, label: "School fees", count: counts?.schoolFees },
-      { value: "walletTopUp" as const, label: "Wallet", count: counts?.walletTopUp },
+      {
+        value: "schoolFees" as const,
+        label: "School fees",
+        count: counts?.schoolFees,
+      },
+      {
+        value: "walletTopUp" as const,
+        label: "Wallet",
+        count: counts?.walletTopUp,
+      },
       ...(counts?.other || historyFilter === "other"
         ? [{ value: "other" as const, label: "Other", count: counts?.other }]
         : []),
@@ -173,7 +181,10 @@ export default function FinancesScreen({ navigation, route }: Props) {
       title={
         <Text style={Type.headerTitleModule} color={Palette.text.onBrand}>
           Finances for{" "}
-          <Text style={[Type.headerTitleModule, Type.bold]} color={Palette.text.onBrand}>
+          <Text
+            style={[Type.headerTitleModule, Type.bold]}
+            color={Palette.text.onBrand}
+          >
             {firstName}
           </Text>
         </Text>
@@ -192,8 +203,18 @@ export default function FinancesScreen({ navigation, route }: Props) {
                 ? undefined
                 : "Balance unavailable right now"
           }
-          // No top-up endpoint yet (docs/api-notes.md §1), so Top up stays
-          // disabled.
+          // A top-up is an online payment into the wallet top-up category;
+          // it reaches the wallet once the school approves it.
+          onTopUp={
+            typeof studentSeasonId === "number"
+              ? () =>
+                  navigation.navigate("PaymentDetails", {
+                    studentName,
+                    studentSeasonId,
+                    topUp: true,
+                  })
+              : undefined
+          }
           onActivity={() => setHistoryFilter("walletTopUp")}
         />
 
@@ -208,7 +229,10 @@ export default function FinancesScreen({ navigation, route }: Props) {
             {/* ── School / IG ──────────────────────────────────────── */}
             {feeKinds.length > 1 && activeKind ? (
               <FilterChips
-                options={feeKinds.map((k) => ({ value: k, label: FEE_TAB_LABELS[k] }))}
+                options={feeKinds.map((k) => ({
+                  value: k,
+                  label: FEE_TAB_LABELS[k],
+                }))}
                 value={activeKind}
                 onChange={setFeeKind}
               />
@@ -219,13 +243,29 @@ export default function FinancesScreen({ navigation, route }: Props) {
                 <FeesSummaryCard
                   label="School fees outstanding"
                   outstanding={due?.schoolOutstanding ?? ""}
-                  overdue={overdueValue > 0 ? `${formatCurrency(overdueValue)} overdue` : undefined}
+                  overdue={
+                    overdueValue > 0
+                      ? `${formatCurrency(overdueValue)} overdue`
+                      : undefined
+                  }
                   progress={progress}
-                  paidLabel={summary ? `Paid ${formatCurrency(summary.paid)}` : undefined}
-                  totalLabel={summary ? `Total ${formatCurrency(summary.total)}` : undefined}
+                  paidLabel={
+                    summary ? `Paid ${formatCurrency(summary.paid)}` : undefined
+                  }
+                  totalLabel={
+                    summary
+                      ? `Total ${formatCurrency(summary.total)}`
+                      : undefined
+                  }
                 />
-                <FinanceSectionTitle title="Installments" hint="Tap Pay to pay one" />
-                <InstallmentList items={installments} onPay={handlePayInstallment} />
+                <FinanceSectionTitle
+                  title="Installments"
+                  hint="Tap Pay to pay one"
+                />
+                <InstallmentList
+                  items={installments}
+                  onPay={handlePayInstallment}
+                />
               </>
             ) : null}
 
@@ -236,7 +276,10 @@ export default function FinancesScreen({ navigation, route }: Props) {
                   label="IG fees outstanding"
                   outstanding={due?.igOutstanding ?? ""}
                 />
-                <FinanceSectionTitle title="IG accounts" hint="Tap Pay to pay one" />
+                <FinanceSectionTitle
+                  title="IG accounts"
+                  hint="Tap Pay to pay one"
+                />
                 <IgAccountList items={igAccounts} onPay={handlePayIg} />
               </>
             ) : null}

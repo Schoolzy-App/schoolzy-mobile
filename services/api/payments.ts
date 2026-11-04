@@ -95,11 +95,19 @@ export const paymentsApi = {
     return normalizeHistory(raw, paging.pageNumber, paging.pageSize);
   },
 
-  /** GET /api/mobile/student-payments/categories */
+  /** GET /api/mobile/student-payments/categories/without-wallet-and-cafeteria */
   categories(): Promise<PaymentCategoryDto[]> {
     return request<PaymentCategoryDto[]>({
       method: "GET",
       url: ROUTES.payments.categories(),
+    });
+  },
+
+  /** GET /api/mobile/student-payments/categories/wallet — the top-up category. */
+  walletCategories(): Promise<PaymentCategoryDto[]> {
+    return request<PaymentCategoryDto[]>({
+      method: "GET",
+      url: ROUTES.payments.walletCategories(),
     });
   },
 

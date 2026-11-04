@@ -84,7 +84,8 @@ export const ROUTES = {
      * They are now served from here and require the bearer token.
      */
     /** The same file by report id alone — what a notification carries. */
-    reportFileById: (reportId: number) => `/api/mobile/reports/${reportId}/file`,
+    reportFileById: (reportId: number) =>
+      `/api/mobile/reports/${reportId}/file`,
     reportFile: (studentSeasonId: number, reportId: number) =>
       `/api/mobile/students/${studentSeasonId}/reports/${reportId}/file`,
   },
@@ -166,8 +167,14 @@ export const ROUTES = {
       `/api/mobile/student-payments/${studentSeasonId}/history`,
     due: (studentSeasonId: number) =>
       `/api/mobile/student-payments/${studentSeasonId}/due`,
-    /** Not student-scoped — the category list is the same for every student. */
-    categories: () => `/api/mobile/student-payments/categories`,
+    /**
+     * Not student-scoped — the category list is the same for every student.
+     * Excludes the cafeteria and wallet top-up categories.
+     */
+    categories: () =>
+      `/api/mobile/student-payments/categories/without-wallet-and-cafeteria`,
+    /** Only the wallet top-up category, for the Top up flow. */
+    walletCategories: () => `/api/mobile/student-payments/categories/wallet`,
     igAccountOptions: (studentSeasonId: number) =>
       `/api/mobile/student-payments/${studentSeasonId}/ig-account-options`,
     /** Idempotency-protected. Completes immediately. */
