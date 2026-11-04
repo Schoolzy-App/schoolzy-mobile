@@ -21,13 +21,23 @@ import { tokenStorage } from "./tokenStorage";
 const log = createLogger("api");
 
 /**
+ * Per-request flags callers may set. `_skipBodyLog` keeps the request and
+ * response bodies out of the log entirely — for calls whose body is a secret
+ * the redaction list may not know about (the biometric credential).
+ */
+export type RequestFlags = {
+  _skipBodyLog?: boolean;
+};
+
+/**
  * Marks a request as already retried so a failed refresh can't loop, and
  * carries the start time so responses can report their duration.
  */
-type RetriableConfig = InternalAxiosRequestConfig & {
-  _retried?: boolean;
-  _startedAt?: number;
-};
+type RetriableConfig = InternalAxiosRequestConfig &
+  RequestFlags & {
+    _retried?: boolean;
+    _startedAt?: number;
+  };
 
 /**
  * Called when the session can no longer be recovered (refresh failed or no
@@ -78,13 +88,17 @@ api.interceptors.request.use((config) => {
     }
   }
 
-  (config as RetriableConfig)._startedAt = Date.now();
+  const retriable = config as RetriableConfig;
+  retriable._startedAt = Date.now();
 
   log.info(`→ ${config.method?.toUpperCase()} ${config.url}`, {
     params: config.params,
     // FormData has no useful JSON representation.
-    body:
-      config.data instanceof FormData ? "«multipart/form-data»" : config.data,
+    body: retriable._skipBodyLog
+      ? "«omitted»"
+      : config.data instanceof FormData
+        ? "«multipart/form-data»"
+        : config.data,
     authenticated: !!tokens?.accessToken,
   });
 
@@ -174,7 +188,7 @@ api.interceptors.response.use(
       `← ${response.status} ${config.method?.toUpperCase()} ${config.url}${
         ms != null ? ` (${ms}ms)` : ""
       }`,
-      response.data,
+      config._skipBodyLog ? "«omitted»" : response.data,
     );
 
     return response;
@@ -205,12 +219,23 @@ api.interceptors.response.use(
       `← ${status} ${config?.method?.toUpperCase()} ${config?.url}${
         ms != null ? ` (${ms}ms)` : ""
       }`,
-      data,
+      config?._skipBodyLog ? "«omitted»" : data,
     );
 
-    // Attempt a single refresh-and-retry for expired access tokens.
-    const isRefreshCall = config?.url?.includes(ROUTES.auth.refreshToken);
-    if (status === 401 && config && !config._retried && !isRefreshCall) {
+    /**
+     * A 401 from these means "these credentials are wrong", not "the access
+     * token expired" — refreshing would be meaningless, and a failed refresh
+     * would sign out (and clear) a session the caller never had. The caller
+     * handles the error itself; e.g. a rejected biometric login clears only
+     * the biometric enrollment.
+     */
+    const url = config?.url ?? "";
+    const isAuthCall = [
+      ROUTES.auth.refreshToken,
+      ROUTES.auth.login,
+      ROUTES.auth.biometricLogin,
+    ].some((route) => url.includes(route));
+    if (status === 401 && config && !config._retried && !isAuthCall) {
       config._retried = true;
 
       log.warn("401 — attempting token refresh");
@@ -278,7 +303,9 @@ export async function request<T>(config: AxiosRequestConfig): Promise<T> {
 }
 
 /** Issues a request without envelope unwrapping (binary downloads, auth). */
-export async function requestRaw<T>(config: AxiosRequestConfig): Promise<T> {
+export async function requestRaw<T>(
+  config: AxiosRequestConfig & RequestFlags,
+): Promise<T> {
   const response = await api.request<T>(config);
   return response.data;
 }

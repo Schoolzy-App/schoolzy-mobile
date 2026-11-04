@@ -48,6 +48,12 @@ export const ROUTES = {
     verifyOtp: "/api/v1/auth/otp/verify",
     resetPassword: "/api/v1/auth/reset-password",
     changePassword: "/api/v1/auth/change-password",
+    /** Issue a device-bound biometric credential — requires a session. */
+    biometricEnroll: "/api/v1/auth/biometric/enroll",
+    /** Exchange the biometric credential for a new session — anonymous. */
+    biometricLogin: "/api/v1/auth/biometric/login",
+    /** Revoke this device's biometric credential — requires a session. */
+    biometricRevoke: "/api/v1/auth/biometric/revoke",
   },
   home: "/api/v1/home",
   /** Name, user type and gender of the signed-in parent/relative. */
