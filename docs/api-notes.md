@@ -121,3 +121,21 @@ don't exist. The screen is built from existing ones instead:
 ### 17. One call for the whole screen
 The handoff's `GET parent/account-summary` would replace seven requests
 with one. Worth adding when the endpoints above are.
+
+## Agenda & Timesheet
+
+The handoff (`Agenda-Timesheet-Handoff/03-API.md`) assumes fields the
+existing endpoints don't have. The screens work without them:
+
+### 18. Timetable periods have no room or colour
+The sub line is the teacher alone (design: "{teacher} · {room}"), and the
+colour bar comes from the subject name (Maths blue, English burgundy…),
+grey otherwise. A `room` and `colorKey` per period would match the design.
+
+### 19. Agenda items have no teacher or period
+The sub line is the subject plus due date / start time (design: "{subject} ·
+{teacher}" or "{subject} · Period n").
+
+### 20. No school calendar
+Weekends (Sun, Sat) are dimmed by rule. A `calendar?from=&to=` with
+`isSchoolDay` would also cover holidays.

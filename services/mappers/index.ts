@@ -101,7 +101,7 @@ export type {
 } from "./parentProfile";
 
 export { selectAgenda } from "./agenda";
-export type { AgendaSummary, AttendanceState } from "./agenda";
+export type { AgendaEntry, AgendaSummary, AttendanceState } from "./agenda";
 
 export {
   selectHealthProfileEdit,
