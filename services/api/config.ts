@@ -77,6 +77,8 @@ export const ROUTES = {
      * Report files used to arrive as an absolute `fileUrl` on another host.
      * They are now served from here and require the bearer token.
      */
+    /** The same file by report id alone — what a notification carries. */
+    reportFileById: (reportId: number) => `/api/mobile/reports/${reportId}/file`,
     reportFile: (studentSeasonId: number, reportId: number) =>
       `/api/mobile/students/${studentSeasonId}/reports/${reportId}/file`,
   },

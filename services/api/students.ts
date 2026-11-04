@@ -94,6 +94,11 @@ export const studentsApi = {
     return `${API_BASE_URL}${ROUTES.students.reportFile(studentSeasonId, reportId)}?api-version=${API_VERSION}`;
   },
 
+  /** GET /api/mobile/reports/{reportId}/file — no student needed. */
+  getReportFileUrlById(reportId: number): string {
+    return `${API_BASE_URL}${ROUTES.students.reportFileById(reportId)}?api-version=${API_VERSION}`;
+  },
+
   /** Auth headers for the binary endpoint above. */
   getReportFileHeaders: fileAuthHeaders,
 };
