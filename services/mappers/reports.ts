@@ -8,6 +8,9 @@ import { dayOfMonth, formatDate, shortWeekday } from "@/utils/format";
 /** Exam reports, the only category with a term sub-filter. */
 export const EXAM_CATEGORY = 1;
 
+/** Clinic (Medical) reports — shown under Health, not in Reports. */
+export const CLINIC_CATEGORY = 3;
+
 export interface StudentReport {
   id: string;
   /** Numeric API id — builds the file URL with the student's id. */

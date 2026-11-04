@@ -8,7 +8,7 @@ import { QueryState, ScreenTemplate, Text } from "@/components/ui";
 import { Palette, Radius, Spacing, Type } from "@/constants/tokens";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useStudentReports } from "@/hooks";
-import { EXAM_CATEGORY } from "@/services/mappers";
+import { CLINIC_CATEGORY, EXAM_CATEGORY } from "@/services/mappers";
 import type { StudentReport } from "@/services/mappers";
 import type { RootStackScreenProps } from "@/navigation/types";
 
@@ -48,10 +48,23 @@ export default function ReportsScreen({ navigation, route }: Props) {
 
   const showTerms = category === EXAM_CATEGORY;
 
+  // Clinic reports live under Health, so Reports leaves them out — their
+  // chip goes, and "All" counts without them.
+  const chips = useMemo(() => {
+    const all = data?.chips ?? [];
+    const clinic = all.find((c) => c.key === String(CLINIC_CATEGORY));
+    return all
+      .filter((c) => c.key !== String(CLINIC_CATEGORY))
+      .map((c) =>
+        c.key === "all" && clinic ? { ...c, count: c.count - clinic.count } : c,
+      );
+  }, [data?.chips]);
+
   // Newest first from the server; grouping keeps that order.
   const groups = useMemo(() => {
     const result: { label: string; reports: StudentReport[] }[] = [];
     for (const report of data?.reports ?? []) {
+      if (report.category === CLINIC_CATEGORY) continue;
       if (showTerms && term !== "all" && String(report.examTerm) !== term) continue;
       const last = result[result.length - 1];
       if (last && last.label === report.monthLabel) last.reports.push(report);
@@ -87,8 +100,8 @@ export default function ReportsScreen({ navigation, route }: Props) {
       }
     >
       <View style={styles.body}>
-        {data?.chips.length ? (
-          <FilterChips options={data.chips.map((c) => ({ value: c.key, label: c.label, count: c.count }))} value={chip} onChange={handleChip} />
+        {chips.length > 1 ? (
+          <FilterChips options={chips.map((c) => ({ value: c.key, label: c.label, count: c.count }))} value={chip} onChange={handleChip} />
         ) : null}
 
         {showTerms ? (
@@ -99,7 +112,7 @@ export default function ReportsScreen({ navigation, route }: Props) {
           isLoading={isLoading}
           error={error}
           // Categories with no reports is a valid state, not a failure.
-          isEmpty={!data?.chips.length && !data?.reports.length}
+          isEmpty={!chips.length && !data?.reports.length}
           emptyMessage="No reports published yet"
           onRetry={refetch}
         >

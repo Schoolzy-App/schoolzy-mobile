@@ -168,5 +168,9 @@ export type { WalletBalance } from "./wallet";
 export { selectCurrentUser } from "./currentUser";
 export type { CurrentUser } from "./currentUser";
 
-export { EXAM_CATEGORY, selectStudentReports } from "./reports";
+export {
+  CLINIC_CATEGORY,
+  EXAM_CATEGORY,
+  selectStudentReports,
+} from "./reports";
 export type { ReportChip, StudentReport, StudentReports } from "./reports";

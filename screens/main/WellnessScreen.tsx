@@ -3,13 +3,17 @@ import React, { useCallback, useMemo } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 
 import { StudentCard } from "@/components";
+import ReportCard from "@/components/report/ReportCard";
 import type { StudentStat } from "@/components/StudentCard";
 import { QueryState, ScreenTemplate, Text } from "@/components/ui";
 import WellnessReport from "@/components/wellness/WellnessReport";
 import { Icons } from "@/constants";
+import { Type } from "@/constants/tokens";
 import { useTheme } from "@/contexts/ThemeContext";
-import { useHealthProfile, useStyles } from "@/hooks";
+import { useHealthProfile, useStudentReports, useStyles } from "@/hooks";
 import type { RootStackScreenProps } from "@/navigation/types";
+import { CLINIC_CATEGORY } from "@/services/mappers";
+import type { StudentReport } from "@/services/mappers";
 
 type Props = RootStackScreenProps<"Wellness">;
 
@@ -54,6 +58,16 @@ export default function WellnessScreen({ navigation, route }: Props) {
       color: colors.success,
     };
   }, [summary, colors]);
+
+  const clinic = useStudentReports(studentSeasonId, CLINIC_CATEGORY);
+
+  const openReport = useCallback(
+    (report: StudentReport) => {
+      if (typeof studentSeasonId !== "number") return;
+      navigation.navigate("ReportDetail", { studentSeasonId, report });
+    },
+    [navigation, studentSeasonId],
+  );
 
   const handleEdit = useCallback(() => {
     navigation.navigate("WellnessEdit", route.params);
@@ -102,6 +116,29 @@ export default function WellnessScreen({ navigation, route }: Props) {
         >
           {summary ? <WellnessReport defaultOpen summary={summary} /> : null}
         </QueryState>
+
+        {/* ── Clinic visits — moved here from Reports ────────────────
+            The student's Medical reports (category 3), newest first, as a
+            plain list. Hidden when there are none. */}
+        {clinic.data?.reports.length ? (
+          <View style={styles.clinic}>
+            <Text style={[Type.sectionTitle, styles.clinicTitle]}>Clinic visits</Text>
+            {clinic.data.reports.map((report) => (
+              <ReportCard key={report.id} report={report} onSelect={openReport} />
+            ))}
+            {clinic.hasNextPage ? (
+              <Pressable
+                onPress={() => clinic.fetchNextPage()}
+                disabled={clinic.isFetchingNextPage}
+                style={styles.more}
+              >
+                <Text style={Type.link} color={colors.primary}>
+                  {clinic.isFetchingNextPage ? "Loading…" : "Show more"}
+                </Text>
+              </Pressable>
+            ) : null}
+          </View>
+        ) : null}
       </View>
     </ScreenTemplate>
   );
@@ -119,5 +156,17 @@ const createStyles = () =>
     reportsList: {
       width: "100%",
       gap: 12,
+    },
+    clinic: {
+      gap: 10,
+      paddingTop: 8,
+    },
+    clinicTitle: {
+      paddingHorizontal: 2,
+    },
+    more: {
+      alignSelf: "center",
+      paddingVertical: 10,
+      paddingHorizontal: 16,
     },
   });
