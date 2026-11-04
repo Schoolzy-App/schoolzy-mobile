@@ -123,7 +123,10 @@ export default function AddRelativeScreen({ navigation, route }: Props) {
   const typeValue =
     draft.type ?? (relative?.relationshipType ? String(relative.relationshipType) : "");
 
-  const genderValue = draft.genderId ?? (relative?.genderId ? String(relative.genderId) : "");
+  /** Starts on Male (the parent switches it when needed); a saved value wins. */
+  const maleOption = genders.data?.find((g) => g.label.trim().toLowerCase() === "male")?.value ?? "";
+  const genderValue =
+    draft.genderId ?? (relative?.genderId ? String(relative.genderId) : maleOption);
 
   /**
    * Whose side of the family the relative is on — a link's `mainParentId`,
@@ -424,7 +427,7 @@ export default function AddRelativeScreen({ navigation, route }: Props) {
             />
           </Field>
 
-          <Field label="Gender" hint="Optional">
+          <Field label="Gender">
             <View style={styles.chips}>
               {(genders.data ?? []).map((option) => {
                 const selected = option.value === genderValue;
@@ -432,7 +435,7 @@ export default function AddRelativeScreen({ navigation, route }: Props) {
                   <Pressable
                     key={option.value}
                     disabled={saving}
-                    onPress={() => setValue("genderId")(selected ? "" : option.value)}
+                    onPress={() => setValue("genderId")(option.value)}
                     style={[styles.chip, selected && styles.chipSelected]}
                   >
                     <Text
@@ -448,31 +451,18 @@ export default function AddRelativeScreen({ navigation, route }: Props) {
           </Field>
 
           <Field label="Relationship" hint={relationshipLocked ? undefined : "Required"} error={errors.type}>
-            <View style={styles.chips}>
-              {(relativeTypes.data ?? []).map((option) => {
-                const selected = option.value === typeValue;
-                return (
-                  <Pressable
-                    key={option.value}
-                    disabled={relationshipLocked || saving}
-                    onPress={() => setValue("type")(option.value)}
-                    style={[
-                      styles.chip,
-                      selected && styles.chipSelected,
-                      !selected && !!errors.type && { borderColor: Palette.form.optionErrorBorder },
-                      relationshipLocked && !selected && styles.chipLocked,
-                    ]}
-                  >
-                    <Text
-                      style={styles.chipText}
-                      color={selected ? Palette.text.onBrand : Palette.text.primary}
-                    >
-                      {option.label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
+            <SelectField
+              title="Relationship"
+              placeholder="Select relationship"
+              value={typeValue}
+              fallbackLabel={relative?.relationship}
+              options={relativeTypes.data ?? []}
+              onChange={setValue("type")}
+              disabled={relationshipLocked || saving}
+              loading={relativeTypes.isLoading}
+              invalid={!!errors.type}
+              emptyText="Relationship list is unavailable."
+            />
             {relationshipLocked ? (
               <View style={styles.lockedNote}>
                 <LockSimpleIcon size={14} color={Palette.text.tertiary} />
