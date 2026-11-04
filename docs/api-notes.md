@@ -6,14 +6,15 @@ to ship the screens. Checked against `Schoolzy-LMS/MobileApp/Schoolzy.Mobile.Api
 
 ## Wallet — to settle together with the business rules
 
-### 1. No wallet top-up endpoint
+### 1. Wallet top-up — settled
 - **Screen:** Finances → wallet card → **Top up**.
-- **Today:** the button is shown but disabled. `WalletController` only has
-  balance and history reads; `StudentPaymentsController` has `POST wallet`
-  (pay *with* the wallet) and `POST online`, but nothing that adds money to it.
-- **To decide:** a top-up endpoint, or a top-up as an online payment
-  (`POST student-payments/online`) with the "Wallet TopUp" category — in
-  which case the app routes Top up to the payment screen.
+- **Now:** a top-up is an online payment (`POST student-payments/online`)
+  into the category from `GET student-payments/categories/wallet`. Top up
+  opens Payment Details in top-up mode, with no School / IG tabs and without
+  the wallet as a method. The general list
+  (`categories/without-wallet-and-cafeteria`) no longer includes it.
+- The wallet balance goes up when the school approves the payment on the web
+  (Payment Online → Approve).
 
 ### 2. Wallet spending isn't in payment history
 - **Screen:** Finances → Payment History → **Wallet** chip.

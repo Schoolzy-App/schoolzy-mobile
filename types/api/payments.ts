@@ -118,10 +118,11 @@ export interface DuePaymentsDto {
 // ─── §5 Payment categories ───────────────────────────────────────────────────
 
 /**
- * GET /api/mobile/student-payments/categories
+ * GET /api/mobile/student-payments/categories/without-wallet-and-cafeteria
+ * and GET /api/mobile/student-payments/categories/wallet.
  *
- * Cafeteria categories are excluded server-side — those use the separate
- * cafeteria checkout flow.
+ * Cafeteria categories are excluded server-side (they use the cafeteria
+ * checkout flow), and the wallet top-up category comes only from /wallet.
  */
 export interface PaymentCategoryDto {
   id: number;

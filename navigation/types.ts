@@ -115,6 +115,11 @@ export type PaymentDetailsParams = {
   studentSeasonId?: number;
   /** Absent when the parent started a free-form payment. */
   prefill?: PaymentPrefill;
+  /**
+   * Wallet Top up: the category comes from `categories/wallet`, there are no
+   * School / IG tabs, and the wallet itself isn't offered as a method.
+   */
+  topUp?: boolean;
 };
 
 export type ConfirmDepositParams = {

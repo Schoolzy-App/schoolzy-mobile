@@ -98,6 +98,7 @@ export const queryKeys = {
     history: (studentSeasonId: number, type?: number) =>
       [...queryKeys.payments.all, "history", studentSeasonId, type ?? "all"] as const,
     categories: () => [...queryKeys.payments.all, "categories"] as const,
+    walletCategories: () => [...queryKeys.payments.all, "walletCategories"] as const,
     igAccountOptions: (studentSeasonId: number) =>
       [...queryKeys.payments.all, "igAccountOptions", studentSeasonId] as const,
   },
