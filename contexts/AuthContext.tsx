@@ -181,7 +181,7 @@ export function AuthProvider({
   const loginWithBiometric = useCallback(async (label: string) => {
     const read = await readBiometricToken(label);
     if (read.status === "cancelled") {
-      log.info("biometric scan cancelled");
+      log.info("biometric scan cancelled (error code/message in the biometric log)");
       return "cancelled" as const;
     }
     if (read.status === "invalidated") {

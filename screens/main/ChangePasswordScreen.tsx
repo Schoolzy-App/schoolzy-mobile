@@ -11,6 +11,7 @@ import { Button, PasswordInput, ScreenTemplate, Text } from "@/components/ui";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useStyles } from "@/hooks";
 import { authApi } from "@/services/api";
+import { clearBiometricEnrollmentAfterPasswordChange } from "@/services/biometric";
 import { ApiError } from "@/types/api";
 import type { RootStackScreenProps } from "@/navigation/types";
 
@@ -42,7 +43,16 @@ export default function ChangePasswordScreen({ navigation }: Props) {
     setIsSubmitting(true);
     try {
       await authApi.changePassword({ currentPassword, newPassword: password });
-      Alert.alert("Password changed", "Your password has been updated.");
+      // The server ended biometric sign-in with the old password; drop the
+      // local credential too so Account and the login screen stop offering it.
+      const biometricLabel = await clearBiometricEnrollmentAfterPasswordChange();
+      Alert.alert(
+        "Password changed",
+        "Your password has been updated." +
+          (biometricLabel
+            ? ` Turn ${biometricLabel} sign-in on again in Account.`
+            : ""),
+      );
       navigation.goBack();
     } catch (e) {
       setError(

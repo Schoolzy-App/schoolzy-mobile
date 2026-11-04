@@ -6,7 +6,11 @@ import * as SecureStore from "expo-secure-store";
  *
  * It is an identifier, not a secret — the biometric token is the secret — so
  * `Math.random` is enough and it is stored without `requireAuthentication`.
- * It survives logout; a reinstall wipes it along with the enrollment.
+ * It survives logout. On Android a reinstall wipes it along with the
+ * enrollment. On iOS keychain items survive an uninstall, so `device_id` and
+ * the `biometric_*` items come back together after a reinstall — the
+ * credential still matches the id it was bound to, so behaviour is consistent
+ * on both platforms.
  */
 
 const KEY_DEVICE_ID = "device_id";

@@ -2,6 +2,10 @@ import * as LocalAuthentication from "expo-local-authentication";
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 
+import { createLogger } from "@/utils/logger";
+
+const log = createLogger("biometric");
+
 /**
  * Biometric sign-in: what the device can do, and the device-bound credential
  * that backs it.
@@ -34,12 +38,19 @@ export interface BiometricCapability {
   /** The device has biometric hardware AND the user has enrolled on it. */
   available: boolean;
   type: BiometricType;
-  /** "Face ID" / "Fingerprint" — safe to show even when unavailable. */
+  /** "Face ID" / "Face unlock" / "Fingerprint" — safe to show even when unavailable. */
   label: string;
 }
 
+/**
+ * "Face ID" is Apple's name, so an Android phone whose only strong biometric
+ * is a face sensor says "Face unlock". The type stays `"faceid"` on both.
+ */
 export function biometricLabel(type: BiometricType): string {
-  return type === "faceid" ? "Face ID" : "Fingerprint";
+  if (type === "faceid") {
+    return Platform.OS === "android" ? "Face unlock" : "Face ID";
+  }
+  return "Fingerprint";
 }
 
 /** Login identifiers are compared case- and whitespace-insensitively. */
@@ -150,7 +161,9 @@ export type BiometricTokenRead =
  * - A resolved `null` means the OS dropped the item because the device's
  *   biometrics changed (a new face or fingerprint): `"invalidated"`.
  * - A throw is a cancelled or failed scan: `"cancelled"`. Nothing is cleared
- *   here, so the parent can simply try again.
+ *   here, so the parent can simply try again. The error's code and message
+ *   are logged (never a value) so an unexpected keystore failure that lands
+ *   here can still be told apart from a real cancel.
  */
 export async function readBiometricToken(
   label: string,
@@ -161,7 +174,12 @@ export async function readBiometricToken(
       authenticationPrompt: `Sign in with ${label}`,
     });
     return token ? { status: "ok", token } : { status: "invalidated" };
-  } catch {
+  } catch (e) {
+    const err = e as { code?: unknown; message?: unknown } | null;
+    log.warn("biometric read threw — treated as cancelled", {
+      code: err?.code,
+      message: err?.message,
+    });
     return { status: "cancelled" };
   }
 }
@@ -194,4 +212,46 @@ export async function clearBiometricEnrollment(): Promise<void> {
     SecureStore.deleteItemAsync(KEY_ENROLLMENT),
     SecureStore.deleteItemAsync(KEY_LEGACY_ENABLED),
   ]);
+}
+
+/**
+ * After a successful password change or reset. The server has already ended
+ * the credential (it is bound to the password via the security stamp), so the
+ * local copy is dead weight: clear it so the Account toggle and the login
+ * button stop offering it. Best-effort — a failure is logged and never
+ * blocks the success flow.
+ *
+ * Returns the capability label ("Face ID" / "Fingerprint" / …) when an
+ * enrollment existed, so the caller can tell the parent to turn it on again,
+ * or null when there was nothing to clear.
+ */
+export async function clearBiometricEnrollmentAfterPasswordChange(): Promise<
+  string | null
+> {
+  let wasEnrolled = false;
+  try {
+    wasEnrolled = (await getEnrollment()) !== null;
+  } catch {
+    wasEnrolled = false;
+  }
+
+  try {
+    await clearBiometricEnrollment();
+  } catch (e) {
+    log.warn("could not clear biometric enrollment after password change", {
+      message: (e as Error)?.message,
+    });
+    return null;
+  }
+  if (!wasEnrolled) return null;
+
+  log.info("password changed — local biometric enrollment cleared");
+  try {
+    return (await getBiometricCapability()).label;
+  } catch (e) {
+    log.warn("could not read biometric capability", {
+      message: (e as Error)?.message,
+    });
+    return null;
+  }
 }
