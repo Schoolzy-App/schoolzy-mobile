@@ -129,6 +129,7 @@ export interface RelativeLink {
   studentName: string;
   type: number | null;
   typeName: string;
+  mainParentId: number | null;
   mainParentName: string;
   hasPermission: boolean;
   /** The child's educational mandate — the school's, not removable here. */
@@ -157,6 +158,7 @@ function toRelativeLink(dto: RelativeLinkDto, index: number): RelativeLink {
     studentName: dto.studentName ?? "",
     type: dto.type ?? null,
     typeName: dto.typeName ?? "",
+    mainParentId: dto.mainParentId ?? null,
     mainParentName: dto.mainParentName ?? "",
     hasPermission: !!dto.hasPermission,
     isEducationalMandate: !!dto.isEducationalMandate,
@@ -183,6 +185,11 @@ export interface GuardianStudent {
    * rebuilt for each selected student rather than shared.
    */
   parentOptions: DefaultInputOption[];
+  /** This student's father / mother Parents.Id — a link's `mainParentId`. */
+  fatherId: number | null;
+  motherId: number | null;
+  fatherName: string;
+  motherName: string;
 }
 
 export function selectGuardianStudents(
@@ -208,6 +215,10 @@ export function selectGuardianStudents(
       studentSeasonId: dto.studentSeasonId,
       studentName: dto.studentName ?? "",
       parentOptions,
+      fatherId: dto.father?.id ?? null,
+      motherId: dto.mother?.id ?? null,
+      fatherName: dto.father?.name?.trim() ?? "",
+      motherName: dto.mother?.name?.trim() ?? "",
     };
   });
 }

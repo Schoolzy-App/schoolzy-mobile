@@ -290,6 +290,19 @@ export function LockNote({ text }: { text: string }) {
   );
 }
 
+/** The same grey-blue note with an info icon and an optional bold title. */
+export function InfoNote({ title, text }: { title?: string; text: string }) {
+  return (
+    <View style={styles.lockNote}>
+      <InfoIcon weight="fill" size={18} color={Palette.action.primary} />
+      <View style={styles.flex}>
+        {title ? <Text style={[styles.noteText, styles.semibold]}>{title}</Text> : null}
+        <Text style={styles.noteText}>{text}</Text>
+      </View>
+    </View>
+  );
+}
+
 /** Plain hint line with an info icon, under a field. */
 export function InfoHint({ text }: { text: string }) {
   return (

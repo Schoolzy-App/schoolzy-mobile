@@ -11,15 +11,17 @@ import {
 import React, { useCallback, useMemo, useRef, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 
-import { ErrorBanner, Field, FieldError, TextField } from "@/components/form/FormParts";
+import { ErrorBanner, Field, FieldError, RadioCard, TextField } from "@/components/form/FormParts";
 import { SelectField } from "@/components/form/SelectField";
 import FormButton from "@/components/FormButton";
 import { Modal, QueryState, ScreenTemplate, Text } from "@/components/ui";
 import { Palette, Radius, Size, Spacing, Type } from "@/constants/tokens";
 import {
   useDeleteRelative,
+  useGenders,
   useGuardianStudents,
   useNationalities,
+  useParentInfo,
   useRelative,
   useRelativeTypes,
   useSaveRelative,
@@ -34,7 +36,7 @@ import type { AssignRelativeStudentInput } from "@/types/api";
 type Props = RootStackScreenProps<"AddRelative">;
 
 type TextFieldKey = "nameEn" | "phone" | "email" | "nationalId";
-type FieldKey = TextFieldKey | "nationalityId" | "type" | "children" | "photo";
+type FieldKey = TextFieldKey | "nationalityId" | "type" | "genderId" | "side" | "children" | "photo";
 
 /** Server rules (ParentProfileAppService): ≤200 name, JPG/PNG ≤ 5 MB. */
 const NAME_MAX_LENGTH = 200;
@@ -49,6 +51,8 @@ const LABELS: Record<FieldKey, string> = {
   nationalId: "National ID",
   nationalityId: "Nationality",
   type: "Relationship",
+  genderId: "Gender",
+  side: "Relative of",
   children: "Children",
   photo: "Photo",
 };
@@ -60,6 +64,8 @@ function savedValue(relative: RelativeDetail | undefined, field: TextFieldKey | 
   if (field === "nationalityId") return relative.nationalityId ? String(relative.nationalityId) : "";
   return relative[field];
 }
+
+type Side = "father" | "mother";
 
 /** Per child: chosen, and whether the relative may act for them. */
 interface ChildChoice {
@@ -75,13 +81,17 @@ export default function AddRelativeScreen({ navigation, route }: Props) {
   const guardians = useGuardianStudents();
   const relativeTypes = useRelativeTypes();
   const nationalities = useNationalities();
+  const genders = useGenders();
+  const parentInfo = useParentInfo();
   const existing = useRelative(editingId);
   const relative = existing.data;
   const { mutateAsync: setPermission } = useUpdateLinkPermission(editingId);
   const { mutateAsync: deleteRelative, isPending: deleting } = useDeleteRelative();
 
   /** Edits only, falling back to the saved relative — no seeding effect. */
-  const [draft, setDraft] = useState<Partial<Record<TextFieldKey | "nationalityId" | "type", string>>>({});
+  const [draft, setDraft] = useState<
+    Partial<Record<TextFieldKey | "nationalityId" | "type" | "genderId" | "side", string>>
+  >({});
   const [photo, setPhoto] = useState<UploadFile | null>(null);
   const [children, setChildren] = useState<Record<number, ChildChoice>>({});
   const [errors, setErrors] = useState<Partial<Record<FieldKey, string>>>({});
@@ -113,9 +123,36 @@ export default function AddRelativeScreen({ navigation, route }: Props) {
   const typeValue =
     draft.type ?? (relative?.relationshipType ? String(relative.relationshipType) : "");
 
+  const genderValue = draft.genderId ?? (relative?.genderId ? String(relative.genderId) : "");
+
+  /**
+   * Whose side of the family the relative is on — a link's `mainParentId`,
+   * which is that child's father or mother. An existing link's value wins
+   * (and is locked, like the relationship); otherwise it defaults to the
+   * signed-in parent, and the parent can switch it.
+   */
+  const existingSide = useMemo((): Side | "" => {
+    for (const student of guardians.data ?? []) {
+      const link = existingLinks.get(student.studentSeasonId);
+      if (!link?.mainParentId) continue;
+      if (link.mainParentId === student.fatherId) return "father";
+      if (link.mainParentId === student.motherId) return "mother";
+    }
+    return "";
+  }, [guardians.data, existingLinks]);
+  const ownSide: Side | "" =
+    parentInfo.data?.role?.toLowerCase() === "father"
+      ? "father"
+      : parentInfo.data?.role?.toLowerCase() === "mother"
+        ? "mother"
+        : "";
+  const sideLocked = existingSide !== "";
+  const sideValue = (sideLocked ? existingSide : (draft.side as Side | undefined) ?? ownSide) || "";
+  const firstStudent = guardians.data?.[0];
+
   const clearError = (field: FieldKey) =>
     errors[field] && setErrors((prev) => ({ ...prev, [field]: undefined }));
-  const setValue = (field: TextFieldKey | "nationalityId" | "type") => (next: string) => {
+  const setValue = (field: TextFieldKey | "nationalityId" | "type" | "genderId" | "side") => (next: string) => {
     setDraft((prev) => ({ ...prev, [field]: next }));
     clearError(field);
   };
@@ -215,7 +252,7 @@ export default function AddRelativeScreen({ navigation, route }: Props) {
     const students: AssignRelativeStudentInput[] = selected.map((s) => ({
       studentSeasonId: s.studentSeasonId,
       type: Number(typeValue),
-      mainParentId: null,
+      mainParentId: sideValue === "father" ? s.fatherId : sideValue === "mother" ? s.motherId : null,
       hasPermission: choiceOf(s.studentSeasonId).permission,
     }));
 
@@ -231,9 +268,9 @@ export default function AddRelativeScreen({ navigation, route }: Props) {
       request: {
           relativeId: editingId ?? null,
           nameEn: value("nameEn"),
-          // Not on this form; kept as saved so an edit doesn't clear them.
+          // Not on this form; kept as saved so an edit doesn't clear it.
           nameAr: relative?.nameAr || null,
-          genderId: relative?.genderId ?? null,
+          genderId: genderValue ? Number(genderValue) : null,
           nationalId: value("nationalId"),
           phone: value("phone") || null,
           email: value("email") || null,
@@ -243,7 +280,7 @@ export default function AddRelativeScreen({ navigation, route }: Props) {
       photo: photo ?? undefined,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isPending, draft, children, photo, errors.photo, guardians.data, relative, existingLinks, typeValue]);
+  }, [isPending, draft, children, photo, errors.photo, guardians.data, relative, existingLinks, typeValue, genderValue, sideValue]);
 
   const handleDelete = useCallback(async () => {
     if (!editing) return;
@@ -387,6 +424,29 @@ export default function AddRelativeScreen({ navigation, route }: Props) {
             />
           </Field>
 
+          <Field label="Gender" hint="Optional">
+            <View style={styles.chips}>
+              {(genders.data ?? []).map((option) => {
+                const selected = option.value === genderValue;
+                return (
+                  <Pressable
+                    key={option.value}
+                    disabled={saving}
+                    onPress={() => setValue("genderId")(selected ? "" : option.value)}
+                    style={[styles.chip, selected && styles.chipSelected]}
+                  >
+                    <Text
+                      style={styles.chipText}
+                      color={selected ? Palette.text.onBrand : Palette.text.primary}
+                    >
+                      {option.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </Field>
+
           <Field label="Relationship" hint={relationshipLocked ? undefined : "Required"} error={errors.type}>
             <View style={styles.chips}>
               {(relativeTypes.data ?? []).map((option) => {
@@ -422,6 +482,36 @@ export default function AddRelativeScreen({ navigation, route }: Props) {
               </View>
             ) : null}
           </Field>
+
+          {firstStudent && (firstStudent.fatherId || firstStudent.motherId) ? (
+            <Field label="Relative of">
+              <View style={styles.sides}>
+                {(["father", "mother"] as const)
+                  .filter((side) => (side === "father" ? firstStudent.fatherId : firstStudent.motherId))
+                  .map((side) => {
+                    const name = side === "father" ? firstStudent.fatherName : firstStudent.motherName;
+                    return (
+                      <View key={side} style={sideLocked && sideValue !== side ? styles.chipLocked : undefined}>
+                        <RadioCard
+                          title={side === "father" ? "Father's side" : "Mother's side"}
+                          description={[name, side === ownSide ? "You" : ""].filter(Boolean).join(" · ")}
+                          selected={sideValue === side}
+                          onPress={() => !sideLocked && !saving && setValue("side")(side)}
+                        />
+                      </View>
+                    );
+                  })}
+              </View>
+              {sideLocked ? (
+                <View style={styles.lockedNote}>
+                  <LockSimpleIcon size={14} color={Palette.text.tertiary} />
+                  <Text style={[styles.photoHint, styles.flex]} color={Palette.text.secondary}>
+                    Set when the relative was added. Contact the school office to change it.
+                  </Text>
+                </View>
+              ) : null}
+            </Field>
+          ) : null}
 
           <Field label="Phone" hint="Optional">
             <TextField
@@ -526,8 +616,9 @@ export default function AddRelativeScreen({ navigation, route }: Props) {
           </View>
 
           <Text style={styles.help} color={Palette.text.secondary}>
-            You stay the main guardian. Permission on lets the school select this
-            person to collect that child.
+            You stay the main guardian. Permission on means the school may hand that
+            child over to this person — on the day, you still send the school a pickup
+            request naming them.
           </Text>
 
           {editing ? (
@@ -669,6 +760,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     lineHeight: 17,
+  },
+  sides: {
+    gap: 8,
   },
   lockedNote: {
     flexDirection: "row",

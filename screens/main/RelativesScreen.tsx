@@ -10,7 +10,7 @@ import {
 import React, { useCallback, useEffect, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 
-import { ErrorBanner } from "@/components/form/FormParts";
+import { ErrorBanner, InfoNote } from "@/components/form/FormParts";
 import { Toast, type ToastMessage } from "@/components/form/Toast";
 import FormButton from "@/components/FormButton";
 import { QueryState, ScreenTemplate, Text } from "@/components/ui";
@@ -79,6 +79,11 @@ export default function RelativesScreen({ navigation, route }: Props) {
           <Text style={styles.intro} color={Palette.text.secondary}>
             Add a relative and choose who may act for your child at school.
           </Text>
+
+          <InfoNote
+            title="What “Permission on” means"
+            text="The school may hand that child over to this person. On the day they collect, you still send the school a pickup request naming them."
+          />
 
           {error ? <ErrorBanner title={error} /> : null}
 
