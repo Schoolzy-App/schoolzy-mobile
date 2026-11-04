@@ -16,7 +16,6 @@ import { Icons, Images } from "@/constants";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useBiometricSetting, useStyles } from "@/hooks";
-import { authenticateBiometric } from "@/services/biometric";
 import { ApiError } from "@/types/api";
 import type { AuthStackScreenProps } from "@/navigation/types";
 
@@ -26,21 +25,22 @@ type Props = AuthStackScreenProps<"Login">;
 
 export default function LoginScreen({ navigation }: Props) {
   const { colors } = useTheme();
-  const { login, isLoggingIn, hasStoredSession, resumeSession } = useAuth();
+  const { login, loginWithBiometric, isLoggingIn } = useAuth();
   const styles = useStyles(createStyles);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   /**
-   * Capability and preference together: the button appears only when the
-   * device can do it AND the parent has left it switched on in Account.
+   * Capability and enrollment together: the button appears only when the
+   * device can do it AND a parent turned it on in Account on this phone.
    */
   const {
     available: biometricAvailable,
     label: biometricLabel,
     enabled: biometricEnabled,
     ready: biometricReady,
+    refresh: refreshBiometric,
   } = useBiometricSetting();
 
   const handleForgotPassword = useCallback(
@@ -65,20 +65,40 @@ export default function LoginScreen({ navigation }: Props) {
   }, [email, password, isLoggingIn, login]);
 
   /**
-   * Biometric sign-in resumes the stored session via the refresh token — the
-   * password is never written to the device.
+   * Biometric sign-in exchanges the device-bound credential for a new session —
+   * the password is never written to the device. One scan; a cancelled scan
+   * does nothing, so the parent can just tap again.
    */
   const handleBiometricLogin = useCallback(async () => {
-    if (!(await authenticateBiometric())) return;
-
-    const resumed = await resumeSession();
-    if (!resumed) {
+    try {
+      const outcome = await loginWithBiometric(biometricLabel);
+      if (outcome === "invalidated") {
+        Alert.alert(
+          `${biometricLabel} changed`,
+          `Sign in with your password, then turn ${biometricLabel} sign-in on again in Account.`,
+        );
+        refreshBiometric();
+      } else if (outcome === "rejected") {
+        Alert.alert(
+          `${biometricLabel} sign-in turned off`,
+          "Your password may have changed. Sign in with your password, then turn it on again in Account.",
+        );
+        refreshBiometric();
+      }
+      // "ok": the root navigator swaps to the main stack. "cancelled": nothing.
+    } catch (e) {
+      // Enrollment is kept — a dropped connection or a lockout is not a reason
+      // to make the parent turn biometrics on again.
       Alert.alert(
-        "Session expired",
-        "Please sign in with your email and password.",
+        "Unable to sign in",
+        e instanceof ApiError && e.isNetworkError
+          ? "No connection. Check your network and try again."
+          : e instanceof ApiError
+            ? e.message
+            : "Unable to sign in. Please try again.",
       );
     }
-  }, [resumeSession]);
+  }, [loginWithBiometric, biometricLabel, refreshBiometric]);
 
   const canSubmit = !!email && !!password && !isLoggingIn;
 
@@ -159,14 +179,11 @@ export default function LoginScreen({ navigation }: Props) {
             style={styles.loginButton}
           />
 
-          {/* Biometric login. Four conditions, all required: the probe has
-              finished (so the button doesn't flash in and out), the device is
-              enrolled, the parent hasn't switched it off in Account, and there
-              is a stored session to resume. */}
-          {biometricReady &&
-          biometricAvailable &&
-          biometricEnabled &&
-          hasStoredSession ? (
+          {/* Biometric login. Three conditions, all required: the probe has
+              finished (so the button doesn't flash in and out), the device has
+              a usable biometric, and a credential is enrolled on this phone.
+              It survives logout on purpose. */}
+          {biometricReady && biometricAvailable && biometricEnabled ? (
             <Pressable
               style={styles.biometricButton}
               onPress={handleBiometricLogin}
