@@ -152,7 +152,7 @@ Add a feature flag `gateRequestsTab` (default off, per app variant, env-overrida
 
 - Keep the `ApiResponse` envelope and the idempotency pattern. Don't change behaviour for school-created requests.
 - The mobile app has no unit-test runner. Verify with `tsc` and eslint plus a device checklist. The backend follows its existing test conventions.
-- Work on feature branches in both repos. Mobile: `feature/parent-gate-requests`, branched from `design-polish` (the remote `main` only holds the initial commit; feature PRs merge into `design-polish`). Backend: branch from its `main`.
+- Work on feature branches in both repos. Mobile: `feature/parent-gate-requests`, branched from `design-polish` (the remote `main` only holds the initial commit; feature PRs merge into `design-polish`). Backend: branch from `origin/Dev` (backend PRs target `Dev`).
 
 ## 8. Left to the builder
 
