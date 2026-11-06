@@ -30,6 +30,8 @@ export type MainTabParamList = {
    * `Request` screen rather than rendering here — same pattern as `Chatting`.
    */
   Requests: undefined;
+  /** Placeholder for the optional Gate tab; pressing it pushes `GateRequests`. */
+  GateRequests: undefined;
   Account: undefined;
   Add: undefined;
 };

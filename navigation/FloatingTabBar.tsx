@@ -4,6 +4,7 @@ import {
   ChatCircleTextIcon,
   ClipboardTextIcon,
   GearSixIcon,
+  DoorIcon,
   HouseIcon,
   type Icon,
   type IconWeight,
@@ -50,7 +51,7 @@ type TabEntry = {
 
 /**
  * Bottom-bar entries, filtered by feature flag. `Home` and `Account` are always
- * present; Chat and Requests are opt-in — see `constants/featureFlags.ts`.
+ * present; Chat, Requests and Gate are opt-in — see `constants/featureFlags.ts`.
  */
 export const TABS: TabEntry[] = [
   { name: "Home", label: "Home", Icon: HouseIcon, weight: "fill" },
@@ -73,6 +74,17 @@ export const TABS: TabEntry[] = [
           Icon: ClipboardTextIcon,
           weight: "fill" as const,
           pushesRoute: "Request" as const,
+        },
+      ]
+    : []),
+  ...(FeatureFlags.gateRequestsTab
+    ? [
+        {
+          name: "GateRequests" as const,
+          label: "Gate",
+          Icon: DoorIcon,
+          weight: "fill" as const,
+          pushesRoute: "GateRequests" as const,
         },
       ]
     : []),

@@ -9,10 +9,13 @@ import {
   onForegroundMessage,
   onNotificationOpened,
 } from "@/services/notifications";
-import type { PushMessage } from "@/types/api";
+import { NotificationType, type PushMessage } from "@/types/api";
 import { queryClient } from "@/providers/QueryProvider";
 import { queryKeys } from "@/hooks/queries/queryKeys";
-import { resolveNotification } from "@/services/notificationRouting";
+import {
+  resolveNotification,
+  toNotificationType,
+} from "@/services/notificationRouting";
 import { createLogger } from "@/utils/logger";
 
 const log = createLogger("push:route");
@@ -22,7 +25,17 @@ function invalidateFor(message: PushMessage) {
   const type = message.data.type?.toLowerCase() ?? "";
   log.debug(`invalidating caches for type="${type || "(none)"}"`);
 
-  if (type.includes("newsletter") || type.includes("report")) {
+  const kind = toNotificationType(message.data.type);
+  const isGateRequest =
+    kind === NotificationType.GateRequestSubmitted ||
+    kind === NotificationType.GateRequestConfirmed ||
+    kind === NotificationType.GateRequestCancelled;
+
+  if (isGateRequest) {
+    // Checked first: the type name contains "request", which would otherwise
+    // refresh document requests instead.
+    queryClient.invalidateQueries({ queryKey: queryKeys.gateRequests.all });
+  } else if (type.includes("newsletter") || type.includes("report")) {
     // A published report shows up in both places.
     queryClient.invalidateQueries({ queryKey: queryKeys.newsletters.all });
     queryClient.invalidateQueries({ queryKey: queryKeys.students.all });
