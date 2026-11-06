@@ -25,7 +25,7 @@ export interface GateRequest {
   time: string | null;
   status: GateRequestStatus;
   createdAt: Date;
-  /** Login username or email as received, not a display name. */
+  /** Parent or relative display name; null when the creator has none (row hidden). */
   requestedByName: string | null;
 }
 

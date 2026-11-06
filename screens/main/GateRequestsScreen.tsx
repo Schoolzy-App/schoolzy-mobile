@@ -8,6 +8,7 @@ import {
 import React, { memo, useCallback } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 
+import { InfoHint } from "@/components/form/FormParts";
 import FormButton from "@/components/FormButton";
 import GateStatusChip from "@/components/gateRequests/GateStatusChip";
 import { QueryState, ScreenTemplate, Text } from "@/components/ui";
@@ -41,7 +42,10 @@ export default function GateRequestsScreen({ navigation }: Props) {
 
   const today = data?.today ?? [];
   const earlier = data?.earlier ?? [];
-  const isEmpty = !isLoading && !error && today.length + earlier.length === 0;
+  // A failed background refetch keeps the cached list (React Query keeps
+  // `data`); only a failure with nothing loaded yet is a blocking error.
+  const blockingError = data ? null : error;
+  const isEmpty = !isLoading && !!data && today.length + earlier.length === 0;
 
   return (
     <ScreenTemplate
@@ -55,7 +59,10 @@ export default function GateRequestsScreen({ navigation }: Props) {
       }
     >
       <View style={styles.body}>
-        <QueryState isLoading={isLoading} error={error} onRetry={refetch}>
+        <QueryState isLoading={isLoading} error={blockingError} onRetry={refetch}>
+          {error && data ? (
+            <InfoHint text="Couldn't refresh. Showing the last loaded requests." />
+          ) : null}
           {isEmpty ? (
             <View style={styles.emptyCard}>
               <View style={styles.emptyIcon}>

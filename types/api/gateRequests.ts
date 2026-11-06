@@ -76,7 +76,7 @@ export interface GateRequestListItemDto {
   status: number;
   statusName: string;
   createdAtUtc: string;
-  /** Login username or email of the creator, not a display name. */
+  /** Parent or relative display name of the creator; null when unmatched. */
   requestedByName: string | null;
 }
 

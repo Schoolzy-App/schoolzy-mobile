@@ -43,7 +43,8 @@ const normaliseTime = (value: string) =>
 /** Fixed copy (spec §6.5.2). */
 const SUCCESS_COPY =
   "Request sent. Waiting for the school to confirm. It isn't valid at the gate until confirmed.";
-const HAS_REQUEST_TODAY_HINT = "Already has a request today";
+// The existing request may be a school-made one the parent's list doesn't show.
+const HAS_REQUEST_TODAY_HINT = "A request already exists today. Contact the school to change it.";
 const NO_RELATIVES_HINT = "No relatives have pickup permission yet.";
 
 /**
@@ -304,14 +305,21 @@ export default function AddGateRequestScreen({ navigation }: Props) {
         ) : undefined
       }
     >
+      {/* A failed background refetch (409 resync, refocus) keeps the cached
+          students/options and the form; only a failure with nothing loaded blocks. */}
       <QueryState
         isLoading={students.isLoading}
-        error={students.error}
+        error={students.data ? null : students.error}
         onRetry={students.refetch}
         isEmpty={!studentList.length}
         emptyMessage="There are no children you can send a gate request for."
       >
         <View style={styles.body}>
+          {(students.error && students.data) ||
+          (studentId !== null && options.error && options.data) ? (
+            <InfoHint text="Couldn't refresh. Showing the last loaded details." />
+          ) : null}
+
           {/* ── Student ─────────────────────────────────────────────── */}
           <Field label="Student" error={show("student")}>
             <View style={styles.stack}>
@@ -333,7 +341,7 @@ export default function AddGateRequestScreen({ navigation }: Props) {
           {studentId !== null ? (
             <QueryState
               isLoading={options.isLoading}
-              error={options.error}
+              error={options.data ? null : options.error}
               onRetry={options.refetch}
             >
               {options.data ? (

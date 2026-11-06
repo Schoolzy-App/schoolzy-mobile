@@ -111,9 +111,15 @@ export default function GateRequestDetailsScreen({ route }: Props) {
         }
       >
         <View style={styles.body}>
-          <QueryState isLoading={isLoading} error={error} onRetry={refetch}>
+          {/* A failed background refetch (refocus, push invalidation) keeps
+              the cached request; only a failure with nothing loaded blocks. */}
+          <QueryState isLoading={isLoading} error={data ? null : error} onRetry={refetch}>
             {data ? (
               <>
+                {error ? (
+                  <InfoHint text="Couldn't refresh. Showing the last loaded details." />
+                ) : null}
+
                 <StatusBanner item={data} />
 
                 {isProcessing ? (
