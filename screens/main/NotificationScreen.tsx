@@ -11,7 +11,7 @@ import {
   useNotifications,
   useStyles,
 } from "@/hooks";
-import { resolveTargetDestination } from "@/hooks/usePushNotifications";
+import { resolveNotification } from "@/services/notificationRouting";
 import type { RootStackScreenProps } from "@/navigation/types";
 import type { NotificationListItem } from "@/services/mappers";
 
@@ -48,16 +48,16 @@ export default function NotificationScreen({ navigation }: Props) {
   );
 
   /**
-   * Tapping marks the row read and routes from the notification's type label —
-   * the payload no longer carries a URL, so this opens the relevant list
-   * rather than the specific record. Rows with no mobile destination
-   * (complaints) still get marked read.
+   * Tapping marks the row read and opens the record it's about — a clinic
+   * report opens that report, a complaint that complaint — from the
+   * notification's type and referenceId. Rows with nowhere to go still get
+   * marked read.
    */
   const handlePress = useCallback(
-    (item: NotificationListItem) => {
+    async (item: NotificationListItem) => {
       if (item.unread) markRead(item.notificationId);
 
-      const destination = resolveTargetDestination(item.target);
+      const destination = await resolveNotification(item.type, item.referenceId);
       if (!destination) return;
 
       const navigate = navigation.navigate as (

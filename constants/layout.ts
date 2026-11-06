@@ -8,8 +8,10 @@
  */
 
 /**
- * The floating tab bar's height above the safe area: 8 top padding + 60 bar
- * + 12 bottom padding. The bar is absolutely positioned, so scrollable
- * content has to end above it or its last row can't be reached.
+ * Room to leave above the safe area for the floating tab bar: 28 from the
+ * bottom + a 55 bar (41 item + 7 padding each side) + breathing room, so the
+ * last row clears it (the design's 130 bottom inset, less screens' own
+ * padding). The bar is absolutely positioned, so scrollable content has to
+ * end above it or its last row can't be reached.
  */
-export const TAB_BAR_HEIGHT = 80;
+export const TAB_BAR_HEIGHT = 100;

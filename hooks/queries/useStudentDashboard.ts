@@ -14,6 +14,7 @@ import type {
 import type {
   LatestActivitiesDto,
   NeedsAttentionDto,
+  StudentFinancialSummaryDto,
   StudentTodayDto,
 } from "@/types/api";
 
@@ -59,6 +60,25 @@ export function useNeedsAttention(studentSeasonId?: number) {
     select: selectNeedsAttention,
     staleTime: 0,
     enabled: typeof studentSeasonId === "number",
+  });
+}
+
+/**
+ * GET /api/mobile/students/{id}/dashboard/financial-summary
+ *
+ * Not cached across visits, for the same reason as needs-attention: it
+ * should reflect a payment the parent just made.
+ */
+export function useStudentFinancialSummary(
+  studentSeasonId?: number,
+  enabled = true,
+) {
+  return useQuery<StudentFinancialSummaryDto>({
+    queryKey: queryKeys.dashboard.financialSummary(studentSeasonId ?? 0),
+    queryFn: () =>
+      studentsApi.dashboardFinancialSummary(studentSeasonId as number),
+    staleTime: 0,
+    enabled: enabled && typeof studentSeasonId === "number",
   });
 }
 

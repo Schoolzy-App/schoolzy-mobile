@@ -1,3 +1,4 @@
+import { CalendarDotsIcon } from "phosphor-react-native";
 import React, { memo, useCallback, useMemo, useState } from "react";
 import { Modal, Pressable, StyleSheet, View } from "react-native";
 
@@ -7,7 +8,7 @@ import { Icons } from "@/constants";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useStyles } from "@/hooks";
 
-const { CalendarIcon, ChevronIcon } = Icons;
+const { ChevronIcon } = Icons;
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -192,7 +193,7 @@ const WeekCalendar = memo<WeekCalendarProps>(
               }}
               hitSlop={8}
             >
-              <CalendarIcon width={24} height={24} />
+              <CalendarDotsIcon weight="fill" size={26} color={colors.primary} />
             </Pressable>
           ) : null}
         </View>

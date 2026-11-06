@@ -5,7 +5,6 @@ import {
   type QueryClient,
 } from "@tanstack/react-query";
 
-import type { TimelineStep } from "@/components/TimelineStepper";
 import { paymentsApi } from "@/services/api";
 import type { PaymentProofFile } from "@/services/api/payments";
 import { useIdempotentMutation } from "@/hooks/useIdempotentMutation";
@@ -13,12 +12,13 @@ import {
   selectDuePayments,
   selectIgAccountOptions,
   selectPaymentCategories,
-  selectPaymentHistoryPages,
+  selectPaymentHistoryList,
 } from "@/services/mappers";
 import type {
   DuePaymentsSummary,
   IgAccountOption,
   PaymentCategoryOption,
+  PaymentHistoryList,
 } from "@/services/mappers";
 import {
   PAYMENT_HISTORY_DEFAULT_PAGE_SIZE,
@@ -28,17 +28,23 @@ import {
   type OnlinePaymentResultDto,
   type PaymentCategoryDto,
   type PaymentHistoryDto,
+  type PaymentHistoryKind,
   type WalletPaymentRequestDto,
   type WalletPaymentResultDto,
 } from "@/types/api";
 
 import { queryKeys } from "./queryKeys";
 
-/** GET /api/mobile/student-payments/{id}/due */
-export function useDuePayments(studentSeasonId?: number) {
+/**
+ * GET /api/mobile/student-payments/{id}/due
+ *
+ * `all` adds the fully paid installments — Finances lists every installment
+ * with its status; the payment flow only needs what is still owed.
+ */
+export function useDuePayments(studentSeasonId?: number, all = false) {
   return useQuery<DuePaymentsDto, Error, DuePaymentsSummary>({
-    queryKey: queryKeys.payments.due(studentSeasonId ?? 0),
-    queryFn: () => paymentsApi.due(studentSeasonId as number),
+    queryKey: queryKeys.payments.due(studentSeasonId ?? 0, all),
+    queryFn: () => paymentsApi.due(studentSeasonId as number, all),
     select: selectDuePayments,
     enabled: typeof studentSeasonId === "number",
   });
@@ -50,28 +56,35 @@ export function useDuePayments(studentSeasonId?: number) {
  * Paginated: the screen renders `data` and calls `fetchNextPage` for more.
  * `select` runs on the accumulated pages, so adding a page maps only that page
  * into new objects — the ones already rendered keep their identity.
+ *
+ * `type` is the filter chip; each one is its own cached list.
  */
 export function usePaymentHistory(
   studentSeasonId?: number,
+  type?: PaymentHistoryKind,
   pageSize = PAYMENT_HISTORY_DEFAULT_PAGE_SIZE,
 ) {
   return useInfiniteQuery<
     PaymentHistoryDto,
     Error,
-    TimelineStep[],
+    PaymentHistoryList,
     ReturnType<typeof queryKeys.payments.history>,
     number
   >({
-    queryKey: queryKeys.payments.history(studentSeasonId ?? 0),
+    queryKey: queryKeys.payments.history(studentSeasonId ?? 0, type),
     queryFn: ({ pageParam }) =>
       paymentsApi.history(studentSeasonId as number, {
         pageNumber: pageParam,
         pageSize,
+        type,
       }),
     initialPageParam: 1,
     getNextPageParam: (last) =>
       last.pageNumber < last.totalPages ? last.pageNumber + 1 : undefined,
-    select: selectPaymentHistoryPages,
+    select: selectPaymentHistoryList,
+    // Switching chips keeps the previous list on screen until the new one
+    // arrives, instead of flashing a loader.
+    placeholderData: (previous) => previous,
     enabled: typeof studentSeasonId === "number",
   });
 }
@@ -86,6 +99,17 @@ export function usePaymentCategories(enabled = true) {
   return useQuery<PaymentCategoryDto[], Error, PaymentCategoryOption[]>({
     queryKey: queryKeys.payments.categories(),
     queryFn: () => paymentsApi.categories(),
+    select: selectPaymentCategories,
+    staleTime: 10 * 60_000,
+    enabled,
+  });
+}
+
+/** GET /api/mobile/student-payments/categories/wallet — what Top up pays into. */
+export function useWalletTopUpCategories(enabled = true) {
+  return useQuery<PaymentCategoryDto[], Error, PaymentCategoryOption[]>({
+    queryKey: queryKeys.payments.walletCategories(),
+    queryFn: () => paymentsApi.walletCategories(),
     select: selectPaymentCategories,
     staleTime: 10 * 60_000,
     enabled,

@@ -48,6 +48,12 @@ export const ROUTES = {
     verifyOtp: "/api/v1/auth/otp/verify",
     resetPassword: "/api/v1/auth/reset-password",
     changePassword: "/api/v1/auth/change-password",
+    /** Issue a device-bound biometric credential — requires a session. */
+    biometricEnroll: "/api/v1/auth/biometric/enroll",
+    /** Exchange the biometric credential for a new session — anonymous. */
+    biometricLogin: "/api/v1/auth/biometric/login",
+    /** Revoke this device's biometric credential — requires a session. */
+    biometricRevoke: "/api/v1/auth/biometric/revoke",
   },
   home: "/api/v1/home",
   /** Name, user type and gender of the signed-in parent/relative. */
@@ -70,10 +76,16 @@ export const ROUTES = {
     /** Newest activity per source — reports, exams, homework, health. */
     dashboardLatest: (studentSeasonId: number) =>
       `/api/mobile/students/${studentSeasonId}/dashboard/latest`,
+    /** School-fee totals: outstanding, overdue, next installment. */
+    dashboardFinancialSummary: (studentSeasonId: number) =>
+      `/api/mobile/students/${studentSeasonId}/dashboard/financial-summary`,
     /**
      * Report files used to arrive as an absolute `fileUrl` on another host.
      * They are now served from here and require the bearer token.
      */
+    /** The same file by report id alone — what a notification carries. */
+    reportFileById: (reportId: number) =>
+      `/api/mobile/reports/${reportId}/file`,
     reportFile: (studentSeasonId: number, reportId: number) =>
       `/api/mobile/students/${studentSeasonId}/reports/${reportId}/file`,
   },
@@ -114,6 +126,15 @@ export const ROUTES = {
     priorities: "/api/mobile/complaints/priorities",
     contactMethods: "/api/mobile/complaints/contact-methods",
   },
+  gateRequests: {
+    eligibility: "/api/mobile/gate-requests/eligibility",
+    students: "/api/mobile/gate-requests/students",
+    createOptions: "/api/mobile/gate-requests/create-options",
+    list: "/api/mobile/gate-requests",
+    create: "/api/mobile/gate-requests",
+    detail: (id: number) => `/api/mobile/gate-requests/${id}`,
+    cancel: (id: number) => `/api/mobile/gate-requests/${id}/cancel`,
+  },
   documentRequests: {
     createOptions: "/api/mobile/document-requests/create-options",
     list: "/api/mobile/document-requests",
@@ -132,6 +153,9 @@ export const ROUTES = {
      */
     file: (source: NewsletterItemSource, id: number) =>
       `/api/mobile/newsletters/${source}/${id}/file`,
+    /** Body and attachment; opening it marks the newsletter read. */
+    detail: (source: NewsletterItemSource, id: number) =>
+      `/api/mobile/newsletters/${source}/${id}`,
   },
   healthProfile: {
     overview: (studentSeasonId: number) =>
@@ -152,8 +176,14 @@ export const ROUTES = {
       `/api/mobile/student-payments/${studentSeasonId}/history`,
     due: (studentSeasonId: number) =>
       `/api/mobile/student-payments/${studentSeasonId}/due`,
-    /** Not student-scoped — the category list is the same for every student. */
-    categories: () => `/api/mobile/student-payments/categories`,
+    /**
+     * Not student-scoped — the category list is the same for every student.
+     * Excludes the cafeteria and wallet top-up categories.
+     */
+    categories: () =>
+      `/api/mobile/student-payments/categories/without-wallet-and-cafeteria`,
+    /** Only the wallet top-up category, for the Top up flow. */
+    walletCategories: () => `/api/mobile/student-payments/categories/wallet`,
     igAccountOptions: (studentSeasonId: number) =>
       `/api/mobile/student-payments/${studentSeasonId}/ig-account-options`,
     /** Idempotency-protected. Completes immediately. */

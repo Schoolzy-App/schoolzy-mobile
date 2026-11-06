@@ -10,8 +10,16 @@ export type { StudentProfileSummary } from "./students";
 
 export { selectLatestStates } from "./latest";
 
-export { toNewsletterItem, selectNewsletters } from "./newsletters";
-export type { NewsletterListItem } from "./newsletters";
+export {
+  selectNewsletterDetail,
+  selectNewsletters,
+  toNewsletterItem,
+} from "./newsletters";
+export type {
+  NewsletterDetail,
+  NewsletterKind,
+  NewsletterListItem,
+} from "./newsletters";
 
 export {
   toRequest,
@@ -40,6 +48,22 @@ export type {
   ComplaintTone,
   GroupedComplaints,
 } from "./complaints";
+
+export {
+  toGateRequest,
+  selectGateRequestDetail,
+  selectGroupedGateRequests,
+  gateStatusTone,
+  gateStatusLabel,
+  humanizeLabel,
+} from "./gateRequests";
+export type {
+  GateRequest,
+  GateRequestDetail,
+  GateRequestStatus,
+  GateStatusTone,
+  GroupedGateRequests,
+} from "./gateRequests";
 
 export {
   selectTodayTiles,
@@ -89,11 +113,12 @@ export type {
   RelativeLink,
   GuardianStudent,
   ParentInfo,
+  ParentInfoChange,
   ParentInfoField,
 } from "./parentProfile";
 
 export { selectAgenda } from "./agenda";
-export type { AgendaSummary, AttendanceState } from "./agenda";
+export type { AgendaEntry, AgendaSummary, AttendanceState } from "./agenda";
 
 export {
   selectHealthProfileEdit,
@@ -107,6 +132,7 @@ export {
   selectIgAccountOptions,
   selectPaymentCategories,
   selectPaymentHistory,
+  selectPaymentHistoryList,
   selectPaymentHistoryPages,
 } from "./payments";
 export type {
@@ -114,7 +140,12 @@ export type {
   DuePaymentsSummary,
   IgAccountOption,
   IgOutstandingRow,
+  InstallmentStatus,
   PaymentCategoryOption,
+  PaymentHistoryList,
+  PaymentHistoryMonth,
+  PaymentHistoryRow,
+  PaymentHistoryRowKind,
 } from "./payments";
 
 export {
@@ -154,5 +185,9 @@ export type { WalletBalance } from "./wallet";
 export { selectCurrentUser } from "./currentUser";
 export type { CurrentUser } from "./currentUser";
 
-export { selectStudentReports } from "./reports";
-export type { StudentReport, StudentReports } from "./reports";
+export {
+  CLINIC_CATEGORY,
+  EXAM_CATEGORY,
+  selectStudentReports,
+} from "./reports";
+export type { ReportChip, StudentReport, StudentReports } from "./reports";

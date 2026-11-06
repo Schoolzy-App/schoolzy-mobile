@@ -35,6 +35,9 @@ export function toComplaintPage(
       pageNumber,
       // No metadata to go on: a full page means there may be another.
       hasMore: raw.length >= pageSize,
+      totalCount: null,
+      summary: null,
+      statusCounts: null,
     };
   }
 
@@ -45,19 +48,28 @@ export function toComplaintPage(
       ? current < raw.totalPages
       : items.length >= pageSize;
 
-  return { items, pageNumber: current, hasMore };
+  return {
+    items,
+    pageNumber: current,
+    hasMore,
+    totalCount: raw?.totalCount ?? null,
+    summary: raw?.summary ?? null,
+    statusCounts: raw?.statusCounts ?? null,
+  };
 }
 
 export const complaintsApi = {
   /** GET /api/mobile/complaints?pageNumber=&pageSize= */
+  /** `status` is the chip filter (1–6); omit for all. */
   async list(
     pageNumber = 1,
     pageSize = COMPLAINTS_PAGE_SIZE,
+    status?: number,
   ): Promise<ComplaintPage> {
     const raw = await request<ComplaintListResponseDto>({
       method: "GET",
       url: ROUTES.complaints.list,
-      params: { pageNumber, pageSize },
+      params: status ? { pageNumber, pageSize, status } : { pageNumber, pageSize },
     });
     return toComplaintPage(raw, pageNumber, pageSize);
   },

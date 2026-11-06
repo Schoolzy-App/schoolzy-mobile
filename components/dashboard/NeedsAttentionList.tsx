@@ -1,9 +1,19 @@
-import { MaterialIcons } from "@expo/vector-icons";
+import { CloudSlashIcon } from "phosphor-react-native";
 import React, { memo, useCallback } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 
 import type { ColorPalette } from "@/apps";
+import { moduleStyle } from "@/components/home/moduleStyle";
 import { Text } from "@/components/ui";
+import {
+  IconSize,
+  Opacity,
+  Palette,
+  Radius,
+  Shadow,
+  Size,
+  Type,
+} from "@/constants/tokens";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useStyles } from "@/hooks";
 import type { AttentionItem, NeedsAttention } from "@/services/mappers";
@@ -13,21 +23,16 @@ export interface NeedsAttentionListProps {
   onSelect?: (item: AttentionItem) => void;
 }
 
-const ICON: Record<string, keyof typeof MaterialIcons.glyphMap> = {
-  InstallmentOverdue: "error-outline",
-  InstallmentDueToday: "event",
-  WalletEmpty: "account-balance-wallet",
-  MealNotOrdered: "restaurant",
-};
-
 /**
- * Actionable items for one student: overdue or due-today installments, an
- * empty wallet, an unordered meal.
+ * The Student Dashboard's "Needs attention" card (spec §5): overdue or
+ * due-today installments, an empty wallet, an unordered meal — a vertical
+ * list, unlike the carousel on Home.
  *
- * The empty state is deliberately two different messages. "All caught up" is
- * only true when every section actually loaded; when one failed and there is
+ * The design hides the card when there is nothing to do, but only "nothing to
+ * do" when every section actually loaded. When one failed and there is
  * nothing to show, saying all is well would be a claim the data doesn't
- * support — so it says the information is unavailable instead.
+ * support — so that case still renders, saying the information is
+ * unavailable.
  */
 const NeedsAttentionList = memo<NeedsAttentionListProps>(
   ({ data, onSelect }) => {
@@ -38,35 +43,50 @@ const NeedsAttentionList = memo<NeedsAttentionListProps>(
 
     const { items, isPartial } = data;
 
-    if (items.length === 0) {
-      return (
-        <View style={styles.emptyCard}>
-          <MaterialIcons
-            name={isPartial ? "cloud-off" : "check-circle"}
-            size={20}
-            color={isPartial ? colors.textSecondary : colors.success}
-          />
-          <Text variant="label3" weight="regular" color={colors.textSecondary}>
-            {isPartial
-              ? "Some information is unavailable right now."
-              : "No attention needed."}
-          </Text>
-        </View>
-      );
-    }
+    if (items.length === 0 && !isPartial) return null;
 
     return (
-      <View style={styles.list}>
-        {items.map((item) => (
-          <AttentionRow key={item.id} item={item} onSelect={onSelect} />
-        ))}
+      <View style={[styles.card, Shadow.card]}>
+        <View style={styles.header}>
+          <Text style={Type.cardHeading} numberOfLines={1}>
+            Needs attention
+          </Text>
+          {items.length ? (
+            <View style={[styles.count, { backgroundColor: colors.primary }]}>
+              <Text style={styles.countText} color={Palette.text.onBrand}>
+                {items.length}
+              </Text>
+            </View>
+          ) : null}
+        </View>
+
+        {items.length === 0 ? (
+          <View style={styles.note}>
+            <CloudSlashIcon size={IconSize.row} color={Palette.text.tertiary} />
+            <Text style={Type.meta} color={Palette.text.tertiary}>
+              Some information is unavailable right now.
+            </Text>
+          </View>
+        ) : (
+          items.map((item, index) => (
+            <AttentionRow
+              key={item.id}
+              item={item}
+              divided={index > 0}
+              onSelect={onSelect}
+            />
+          ))
+        )}
 
         {/* Items present AND a failed section: what's shown is real but
-            incomplete, so neither hide the cards nor imply completeness. */}
-        {isPartial ? (
-          <Text variant="caption1" weight="regular" color={colors.textSecondary}>
-            Some information couldn&apos;t be loaded.
-          </Text>
+            incomplete, so neither hide the rows nor imply completeness. */}
+        {items.length > 0 && isPartial ? (
+          <View style={styles.note}>
+            <CloudSlashIcon size={IconSize.inline} color={Palette.text.tertiary} />
+            <Text style={Type.caption} color={Palette.text.tertiary}>
+              Some information couldn&apos;t be loaded.
+            </Text>
+          </View>
         ) : null}
       </View>
     );
@@ -77,99 +97,112 @@ export default NeedsAttentionList;
 
 const AttentionRow = memo<{
   item: AttentionItem;
+  divided: boolean;
   onSelect?: (item: AttentionItem) => void;
-}>(({ item, onSelect }) => {
+}>(({ item, divided, onSelect }) => {
   const { colors } = useTheme();
   const styles = useStyles(createStyles);
+  const { Icon, color } = moduleStyle(item.type, item.title);
 
-  const accent = item.severity === "danger" ? colors.danger : colors.warning;
   const handlePress = useCallback(() => onSelect?.(item), [onSelect, item]);
 
   return (
-    <Pressable
-      style={[styles.row, { borderLeftColor: accent }]}
-      onPress={handlePress}
-      disabled={!onSelect}
-    >
-      <View style={[styles.iconBg, { backgroundColor: accent + "18" }]}>
-        <MaterialIcons
-          name={ICON[item.type] ?? "info-outline"}
-          size={20}
-          color={accent}
-        />
+    <View style={[styles.row, divided && styles.divided]}>
+      <View style={[styles.icon, { backgroundColor: color ?? colors.primary }]}>
+        <Icon weight="fill" size={IconSize.inCircle34} color={Palette.text.onBrand} />
       </View>
 
       <View style={styles.texts}>
-        <Text variant="label3" weight="semiBold" numberOfLines={1}>
+        <Text style={Type.itemTitle} numberOfLines={1}>
           {item.title}
         </Text>
         {item.subtitle ? (
-          <Text
-            variant="caption1"
-            weight="regular"
-            color={colors.textSecondary}
-            numberOfLines={2}
-          >
+          <Text style={Type.caption} color={Palette.text.tertiary} numberOfLines={1}>
             {item.subtitle}
           </Text>
         ) : null}
       </View>
 
       {onSelect ? (
-        <View style={[styles.cta, { backgroundColor: accent }]}>
-          <Text variant="caption1" weight="semiBold" color={colors.buttonText}>
+        <Pressable
+          onPress={handlePress}
+          hitSlop={6}
+          style={({ pressed }) => [
+            styles.cta,
+            { backgroundColor: colors.primary },
+            pressed && styles.pressed,
+          ]}
+        >
+          <Text style={Type.buttonSmall} color={Palette.text.onBrand} numberOfLines={1}>
             {item.cta}
           </Text>
-        </View>
+        </Pressable>
       ) : null}
-    </Pressable>
+    </View>
   );
 });
 AttentionRow.displayName = "AttentionRow";
 
 const createStyles = (colors: ColorPalette) =>
   StyleSheet.create({
-    list: {
+    card: {
       width: "100%",
-      gap: 10,
+      backgroundColor: colors.surface,
+      borderRadius: Radius.card,
+      paddingTop: 14,
+      paddingHorizontal: 15,
+      paddingBottom: 6,
+    },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      marginBottom: 2,
+    },
+    count: {
+      borderRadius: 10,
+      paddingHorizontal: 7,
+      paddingVertical: 1,
+    },
+    countText: {
+      fontSize: 11,
+      fontWeight: "700",
+      lineHeight: 14,
     },
     row: {
       flexDirection: "row",
       alignItems: "center",
-      gap: 12,
-      padding: 12,
-      borderRadius: 12,
-      borderWidth: 1,
-      borderColor: colors.border,
-      // A colour-coded spine so overdue reads as more urgent at a glance.
-      borderLeftWidth: 4,
-      backgroundColor: colors.surface,
+      gap: 11,
+      paddingVertical: 9,
     },
-    iconBg: {
-      width: 38,
-      height: 38,
-      borderRadius: 19,
+    divided: {
+      borderTopWidth: 1,
+      borderTopColor: Palette.border.divider,
+    },
+    icon: {
+      width: Size.iconCircle.sm,
+      height: Size.iconCircle.sm,
+      borderRadius: Size.iconCircle.sm / 2,
       alignItems: "center",
       justifyContent: "center",
     },
     texts: {
       flex: 1,
-      gap: 2,
     },
     cta: {
-      paddingHorizontal: 12,
-      paddingVertical: 7,
-      borderRadius: 16,
+      height: Size.actionButton.height,
+      paddingHorizontal: Size.actionButton.paddingX,
+      borderRadius: Radius.actionButton,
+      alignItems: "center",
+      justifyContent: "center",
     },
-    emptyCard: {
-      width: "100%",
+    pressed: {
+      opacity: Opacity.pressed,
+    },
+    note: {
       flexDirection: "row",
       alignItems: "center",
-      gap: 10,
-      padding: 14,
-      borderRadius: 12,
-      backgroundColor: colors.surface,
-      borderWidth: 1,
-      borderColor: colors.border,
+      gap: 8,
+      paddingVertical: 9,
     },
   });

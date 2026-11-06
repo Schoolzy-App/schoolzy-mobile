@@ -4,31 +4,27 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { StyleSheet, View } from "react-native";
 
 import type { ColorPalette } from "@/apps";
-import {
-  CustomizeQuickActions,
-  DynamicStateList,
-  ParentHeader,
-} from "@/components";
+import { CustomizeQuickActions, ParentHeader } from "@/components";
+import AttentionCard from "@/components/home/AttentionCard";
 import type { QuickActionDraft } from "@/components/home/CustomizeQuickActions";
 import {
   ChildPicker,
   ChildSummaryList,
   GlanceGrid,
+  NewsletterList,
   QuickActionsRow,
   TodayList,
   UpcomingList,
 } from "@/components/home/HomeSections";
-import type { DynamicStateData } from "@/components/DynamicStateItem";
-import { QueryState, ScreenTemplate, Text } from "@/components/ui";
+import { QueryState, ScreenTemplate } from "@/components/ui";
+import { Radius, Spacing } from "@/constants/tokens";
 import { useAuth } from "@/contexts/AuthContext";
-import { useTheme } from "@/contexts/ThemeContext";
 import {
   useCurrentUser,
   useParentDashboard,
   useQuickActionsCatalog,
   useResetQuickActions,
   useSaveQuickActions,
-  useStudents,
   useStyles,
 } from "@/hooks";
 import type { RootStackParamList } from "@/navigation/types";
@@ -36,24 +32,14 @@ import {
   isQuickActionsCleared,
   setQuickActionsCleared,
 } from "@/services/quickActionsPreference";
-import { toAttentionStates } from "@/services/mappers";
 import type {
   DashboardAttention,
   DashboardChild,
+  DashboardNewsletter,
   DashboardUpcoming,
   GlanceTile,
   QuickAction,
 } from "@/services/mappers";
-
-/** Shown when the server reports nothing needing attention. */
-const QUIET_STATE: DynamicStateData[] = [
-  {
-    id: "quiet",
-    type: "success",
-    title: "Everything looks good!",
-    subtitle: "No action needed right now",
-  },
-];
 
 /**
  * Catalogue codes that don't need a child.
@@ -73,7 +59,6 @@ const PARENT_ONLY = new Set([
 // ─── Screen ──────────────────────────────────────────────────────────────────
 export default function HomeScreen() {
   const styles = useStyles(createStyles);
-  const { colors } = useTheme();
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
@@ -115,21 +100,6 @@ export default function HomeScreen() {
   } | null>(null);
 
   const children = useMemo(() => data?.children ?? [], [data?.children]);
-
-  /**
-   * The dashboard payload has no gender, so it comes from the students list —
-   * a cached request the rest of the app already makes. It picks both the
-   * avatar and its circle colour; children it doesn't cover fall back to the
-   * mapper's own default.
-   */
-  const { data: students } = useStudents();
-  const genders = useMemo(() => {
-    const map: Record<number, "male" | "female"> = {};
-    students?.forEach((student) => {
-      map[Number(student.id)] = student.gender;
-    });
-    return map;
-  }, [students]);
 
   const pinnedNames = useMemo(() => {
     const map: Record<number, string> = {};
@@ -343,31 +313,43 @@ export default function HomeScreen() {
     [pending],
   );
 
-  /**
-   * Attention items reuse the header's existing state card — the quiet state
-   * already uses it, so a second treatment would just be a second style for
-   * the same job. `onPress` carries the action; there is no separate button.
-   */
-  const headerStates = useMemo(() => {
-    const items = data?.attention ?? [];
-    if (!items.length) return QUIET_STATE;
-    return toAttentionStates(items).map((state, index) => ({
-      ...state,
-      onPress: () => handleAttention(items[index]),
-    }));
-  }, [data?.attention, handleAttention]);
+  const handleNewsletters = useCallback(
+    () => navigation.navigate("Newsletter"),
+    [navigation],
+  );
+
+  // Dashboard newsletters are always source 1 (announcements) — the same
+  // assumption the API's own `newsletters/{id}` shortcut makes.
+  const handleNewsletter = useCallback(
+    (item: DashboardNewsletter) =>
+      navigation.navigate("NewsletterDetail", {
+        source: 1,
+        id: item.newsletterId,
+        title: item.title,
+      }),
+    [navigation],
+  );
+
+  const parentName =
+    data?.parent.name || currentUser?.name || user?.name || "";
 
   return (
     <ScreenTemplate
+      scrollHeader
+      headerStyle={styles.header}
       headerContent={
         <View style={styles.headerInner}>
           <ParentHeader
-            parentName={data?.parent.name || currentUser?.name || user?.name || ""}
-            gender={currentUser?.gender}
+            parentName={parentName}
+            initials={data?.parent.initials || initialsOf(parentName)}
             onNotificationPress={handleNotifications}
             unreadCount={data?.parent.unreadNotifications}
           />
-          <DynamicStateList data={headerStates} />
+          {/* Held back until the dashboard loads, so the quiet state doesn't
+              flash before real attention items arrive. */}
+          {data ? (
+            <AttentionCard items={data.attention} onAction={handleAttention} />
+          ) : null}
         </View>
       }
       style={styles.screen}
@@ -388,9 +370,7 @@ export default function HomeScreen() {
               />
 
               <ChildSummaryList
-                title={data.childrenTitle}
                 students={data.children}
-                genders={genders}
                 showFinance={data.features.finance}
                 onSelect={handleChild}
               />
@@ -398,6 +378,12 @@ export default function HomeScreen() {
               {data.glance.length ? (
                 <GlanceGrid tiles={data.glance} onSelect={handleTile} />
               ) : null}
+
+              <NewsletterList
+                items={data.newsletters}
+                onSelect={handleNewsletter}
+                onSeeAll={handleNewsletters}
+              />
 
               <TodayList
                 tiles={data.today}
@@ -409,56 +395,6 @@ export default function HomeScreen() {
                 items={data.upcoming}
                 onSelect={handleUpcoming}
               />
-
-              {/* Newsletters keep their own section at the bottom, matching
-                  the rest of the app's "See all" pattern. */}
-              {data.newsletters.length ? (
-                <View style={styles.section}>
-                  <View style={styles.sectionHeader}>
-                    <Text variant="label2" weight="semiBold">
-                      Latest Newsletters
-                    </Text>
-                    <Text
-                      variant="label3"
-                      weight="semiBold"
-                      color={colors.primary}
-                      onPress={() => navigation.navigate("Newsletter")}
-                    >
-                      See all
-                    </Text>
-                  </View>
-
-                  <View style={styles.newsCard}>
-                    {data.newsletters.map((item, index) => (
-                      <View
-                        key={item.id}
-                        style={[
-                          styles.newsRow,
-                          index > 0 && styles.divided,
-                          index > 0 && { borderTopColor: colors.border },
-                        ]}
-                      >
-                        <View style={styles.newsText}>
-                          <Text
-                            variant="label3"
-                            weight={item.isRead ? "regular" : "semiBold"}
-                            numberOfLines={1}
-                          >
-                            {item.title}
-                          </Text>
-                          <Text
-                            variant="caption1"
-                            weight="regular"
-                            color={colors.textSecondary}
-                          >
-                            {item.date}
-                          </Text>
-                        </View>
-                      </View>
-                    ))}
-                  </View>
-                </View>
-              ) : null}
             </>
           ) : null}
         </QueryState>
@@ -486,47 +422,36 @@ export default function HomeScreen() {
   );
 }
 
+/** Fallback for the avatar while the dashboard (which sends them) loads. */
+function initialsOf(name: string): string {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join("");
+}
+
 const createStyles = (colors: ColorPalette) =>
   StyleSheet.create({
     screen: {
       backgroundColor: colors.background,
     },
+    header: {
+      borderBottomLeftRadius: Radius.header,
+      borderBottomRightRadius: Radius.header,
+      paddingBottom: 15,
+    },
     headerInner: {
       width: "100%",
-      gap: 14,
+      paddingHorizontal: Spacing.screenX,
+      gap: 12,
     },
     body: {
       width: "100%",
-      paddingHorizontal: 16,
-      paddingTop: 16,
+      paddingHorizontal: Spacing.screenX,
+      paddingTop: Spacing.contentTop.home,
       paddingBottom: 24,
-      gap: 20,
-    },
-    section: {
-      width: "100%",
-      gap: 10,
-    },
-    sectionHeader: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-    },
-    newsCard: {
-      backgroundColor: colors.surface,
-      borderRadius: 16,
-      paddingHorizontal: 14,
-    },
-    newsRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 10,
-      paddingVertical: 12,
-    },
-    divided: {
-      borderTopWidth: 1,
-    },
-    newsText: {
-      flex: 1,
-      gap: 2,
+      gap: Spacing.sectionGap.home,
     },
   });

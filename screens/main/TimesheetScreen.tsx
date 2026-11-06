@@ -1,17 +1,19 @@
+import { CalendarXIcon } from "phosphor-react-native";
 import React, { useCallback, useState } from "react";
 import { StyleSheet, View } from "react-native";
 
 import type { ColorPalette } from "@/apps";
 import { WeekCalendar } from "@/components";
+import { ScheduleEmpty, subjectColor } from "@/components/schedule/ScheduleParts";
 import { QueryState, ScreenTemplate, Text } from "@/components/ui";
-import { useTheme } from "@/contexts/ThemeContext";
+import { Palette, Radius, Spacing, Type } from "@/constants/tokens";
 import { useStyles, useTimetable } from "@/hooks";
 import type { RootStackScreenProps } from "@/navigation/types";
 
 type Props = RootStackScreenProps<"Timesheet">;
 
+/** The class timetable for a day (Agenda-Timesheet-Handoff/02-TIMESHEET.md). */
 export default function TimesheetScreen({ route }: Props) {
-  const { colors } = useTheme();
   const styles = useStyles(createStyles);
   const { studentName, studentSeasonId } = route.params;
   const firstName = studentName.split(" ")[0];
@@ -24,6 +26,9 @@ export default function TimesheetScreen({ route }: Props) {
   );
 
   const slots = data?.slots ?? [];
+  // The backend resolves the weekday; before it answers, the date gives it.
+  const weekday =
+    data?.day || selectedDate.toLocaleDateString("en-GB", { weekday: "long" });
 
   const handleSelectDate = useCallback((date: Date) => {
     setSelectedDate(date);
@@ -31,89 +36,65 @@ export default function TimesheetScreen({ route }: Props) {
 
   return (
     <ScreenTemplate
+      scrollHeader
+      headerStyle={styles.header}
       title={
-        <Text variant="label1" weight="medium" color={colors.buttonText}>
+        <Text style={Type.headerTitleModule} color={Palette.text.onBrand} numberOfLines={1}>
           Timesheet for{" "}
-          <Text variant="label1" weight="bold" color={colors.buttonText}>
+          <Text style={[Type.headerTitleModule, Type.bold]} color={Palette.text.onBrand}>
             {firstName}
           </Text>
         </Text>
       }
     >
-      {/* ── Calendar ─────────────────────────────────────────────── */}
-      <View style={styles.calendarCard}>
+      <View style={styles.body}>
         {/* No day is blocked: the backend decides which days have a published
             timetable, and a day without one renders the empty state below. */}
-        <WeekCalendar
-          selectedDate={selectedDate}
-          onSelectDate={handleSelectDate}
-        />
-      </View>
-
-      {/* ── Day, as resolved by the backend ──────────────────────── */}
-      {data?.day ? (
-        <View style={styles.dayHeader}>
-          <Text variant="label1" weight="semiBold">
-            {data.day}
-          </Text>
+        <View style={styles.calendarCard}>
+          <WeekCalendar selectedDate={selectedDate} onSelectDate={handleSelectDate} />
         </View>
-      ) : null}
 
-      {/* ── Periods ──────────────────────────────────────────────── */}
-      <View style={styles.slotsList}>
+        <Text style={styles.weekday}>{weekday}</Text>
+
         <QueryState
           // placeholderData keeps the previous day on screen while loading.
           isLoading={isLoading && isFetching}
           error={error}
-          // An empty `periods` array is a valid success, not a failure: the day
-          // simply has no published timetable.
-          isEmpty={!slots.length}
-          emptyMessage="No timetable available for this day."
           onRetry={refetch}
         >
-          {slots.map((slot) => (
-            <View key={slot.id} style={styles.slotCard}>
-              <View style={styles.timeColumn}>
-                <Text variant="label2" weight="bold" color={colors.primary}>
-                  {slot.from}
-                </Text>
-                <Text
-                  variant="caption1"
-                  weight="medium"
-                  color={colors.textSecondary}
-                >
-                  {slot.to}
-                </Text>
-              </View>
-              <View
-                style={[styles.divider, { backgroundColor: colors.border }]}
-              />
-              <View style={styles.subjectColumn}>
-                <Text variant="label2" weight="semiBold">
-                  {slot.subject}
-                </Text>
-                {/* Both lines are nullable by contract, so each is optional. */}
-                {slot.teacher ? (
-                  <Text
-                    variant="label3"
-                    weight="regular"
-                    color={colors.textSecondary}
-                  >
-                    {slot.teacher}
+          {slots.length ? (
+            slots.map((slot) => (
+              <View key={slot.id} style={styles.row}>
+                <View style={styles.time}>
+                  <Text style={styles.start}>{slot.from}</Text>
+                  <Text style={Type.caption} color={Palette.text.tertiary}>
+                    {slot.to}
                   </Text>
-                ) : null}
-                {slot.duration ? (
-                  <Text
-                    variant="caption1"
-                    weight="regular"
-                    color={colors.textSecondary}
-                  >
-                    {slot.duration}
+                </View>
+                <View style={[styles.bar, { backgroundColor: subjectColor(slot.subject) }]} />
+                <View style={styles.text}>
+                  <Text style={Type.cardHeading} numberOfLines={1}>
+                    {slot.subject}
                   </Text>
-                ) : null}
+                  {/* The API has no room, so the line is the teacher alone. */}
+                  {slot.teacher ? (
+                    <Text style={Type.meta} color={Palette.text.tertiary} numberOfLines={1}>
+                      {slot.teacher}
+                    </Text>
+                  ) : null}
+                </View>
               </View>
-            </View>
-          ))}
+            ))
+          ) : (
+            // An empty `periods` array is a valid success: the day has no
+            // published timetable — a weekend, a holiday, or a school that
+            // doesn't use timetables in the system.
+            <ScheduleEmpty
+              Icon={CalendarXIcon}
+              title="No classes for this day"
+              hint="When the school publishes a timetable for this day, the classes will show here."
+            />
+          )}
         </QueryState>
       </View>
     </ScreenTemplate>
@@ -122,45 +103,53 @@ export default function TimesheetScreen({ route }: Props) {
 
 const createStyles = (colors: ColorPalette) =>
   StyleSheet.create({
+    header: {
+      borderBottomLeftRadius: Radius.header,
+      borderBottomRightRadius: Radius.header,
+    },
+    body: {
+      width: "100%",
+      paddingHorizontal: Spacing.screenX,
+      paddingTop: Spacing.contentTop.modules,
+      paddingBottom: Spacing.bottomInset.modulesScroll,
+      gap: 15,
+    },
     calendarCard: {
-      width: "100%",
       backgroundColor: colors.surface,
-      borderRadius: 16,
-      padding: 16,
-      marginTop: 16,
-      marginHorizontal: 16,
-      alignSelf: "center",
-    },
-    dayHeader: {
-      paddingHorizontal: 16,
-      paddingTop: 16,
-    },
-    slotsList: {
-      width: "100%",
-      paddingHorizontal: 16,
+      borderRadius: Radius.detailCard,
       paddingVertical: 16,
-      gap: 10,
+      paddingHorizontal: 15,
     },
-    slotCard: {
+    weekday: {
+      fontSize: 19,
+      fontWeight: "600",
+      lineHeight: 23,
+      textAlign: "center",
+    },
+    row: {
       flexDirection: "row",
       alignItems: "center",
+      gap: 14,
+      paddingVertical: 13,
+      paddingHorizontal: 15,
+      borderRadius: Radius.card,
       backgroundColor: colors.surface,
-      borderRadius: 12,
-      padding: 12,
-      gap: 12,
-      borderWidth: 1,
-      borderColor: colors.border,
     },
-    timeColumn: {
-      width: 64,
-      alignItems: "center",
-      gap: 2,
+    time: {
+      width: 54,
+      gap: 1,
     },
-    divider: {
-      width: 1,
+    start: {
+      fontSize: 15,
+      fontWeight: "700",
+      lineHeight: 18,
+    },
+    bar: {
+      width: 3,
       alignSelf: "stretch",
+      borderRadius: 2,
     },
-    subjectColumn: {
+    text: {
       flex: 1,
       gap: 2,
     },

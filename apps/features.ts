@@ -18,6 +18,11 @@ export interface AppFeatures {
    * Requests row, so the two placements stay mutually exclusive.
    */
   requestsTab: boolean;
+  /**
+   * Gate Requests as a bottom-bar tab. Independent of the Account row, which
+   * stays either way.
+   */
+  gateRequestsTab: boolean;
   /** Payment methods offered on the Payment Details screen. */
   paymentMethods: {
     applePay: boolean;
@@ -34,6 +39,7 @@ export interface AppFeatures {
 export const DEFAULT_FEATURES: AppFeatures = {
   chatTab: false,
   requestsTab: true,
+  gateRequestsTab: true,
   paymentMethods: {
     // InstaPay -> POST /student-payments/online (proof upload, starts Pending).
     // Wallet   -> POST /student-payments/wallet (completes immediately).

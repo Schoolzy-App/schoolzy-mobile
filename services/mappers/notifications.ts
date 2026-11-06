@@ -37,6 +37,10 @@ export interface NotificationListItem extends NotificationData {
   /** Display label from the server, e.g. "DocumentRequest". */
   typeLabel: string;
   target: NotificationTarget | null;
+  /** NotificationType number — what tap routing keys on. */
+  type: number;
+  /** The record it's about; null when the server sent none. */
+  referenceId: number | null;
 }
 
 export function toNotificationItem(dto: NotificationDto): NotificationListItem {
@@ -51,6 +55,8 @@ export function toNotificationItem(dto: NotificationDto): NotificationListItem {
     unread: !dto.isRead,
     typeLabel: dto.typeLabel ?? "",
     target: toNotificationTarget(dto.typeLabel),
+    type: dto.type,
+    referenceId: dto.referenceId ?? null,
   };
 }
 

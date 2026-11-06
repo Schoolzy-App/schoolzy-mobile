@@ -19,6 +19,7 @@ const SENSITIVE_KEYS = [
   "token",
   "authorization",
   "resettoken",
+  "biometrictoken",
 ];
 
 /** FCM tokens are ~160 chars; log enough to correlate, not the whole value. */

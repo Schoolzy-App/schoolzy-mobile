@@ -68,11 +68,16 @@ function normalizeHistory(
 }
 
 export const paymentsApi = {
-  /** GET /api/mobile/student-payments/{studentSeasonId}/due */
-  due(studentSeasonId: number): Promise<DuePaymentsDto> {
+  /**
+   * GET /api/mobile/student-payments/{studentSeasonId}/due
+   *
+   * `all` adds the fully paid installments, each with its `status`.
+   */
+  due(studentSeasonId: number, all = false): Promise<DuePaymentsDto> {
     return request<DuePaymentsDto>({
       method: "GET",
       url: ROUTES.payments.due(studentSeasonId),
+      params: all ? { all: true } : undefined,
     });
   },
 
@@ -85,16 +90,24 @@ export const paymentsApi = {
     const raw = await request<PaymentHistoryDto | PaymentHistoryItemDto[]>({
       method: "GET",
       url: ROUTES.payments.history(studentSeasonId),
-      params: paging,
+      params: params.type ? { ...paging, type: params.type } : paging,
     });
     return normalizeHistory(raw, paging.pageNumber, paging.pageSize);
   },
 
-  /** GET /api/mobile/student-payments/categories */
+  /** GET /api/mobile/student-payments/categories/without-wallet-and-cafeteria */
   categories(): Promise<PaymentCategoryDto[]> {
     return request<PaymentCategoryDto[]>({
       method: "GET",
       url: ROUTES.payments.categories(),
+    });
+  },
+
+  /** GET /api/mobile/student-payments/categories/wallet — the top-up category. */
+  walletCategories(): Promise<PaymentCategoryDto[]> {
+    return request<PaymentCategoryDto[]>({
+      method: "GET",
+      url: ROUTES.payments.walletCategories(),
     });
   },
 

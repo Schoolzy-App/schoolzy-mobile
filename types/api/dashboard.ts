@@ -176,3 +176,20 @@ export interface LatestActivityDto {
 export interface LatestActivitiesDto {
   activities: LatestActivityDto[] | null;
 }
+
+/**
+ * GET /api/mobile/students/{studentSeasonId}/dashboard/financial-summary
+ *
+ * School-fee totals for one student. `nextDueDate` and `nextDueAmount` are
+ * null together when nothing is left to pay; `currency` is null when the
+ * school's country has none on record.
+ */
+export interface StudentFinancialSummaryDto {
+  totalOutstanding: number;
+  overdueAmount: number;
+  nextDueDate: string | null;
+  nextDueAmount: number | null;
+  total: number;
+  paid: number;
+  currency: string | null;
+}

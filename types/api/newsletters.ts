@@ -32,4 +32,32 @@ export interface NewsletterDto {
   /** Which table `id` refers to — required to build the file URL. */
   source: NewsletterItemSource;
   students: NewsletterStudentDto[] | null;
+  /** 1 Announcement, 2 Letter — derived from `source` server-side. */
+  kind?: 1 | 2;
+  kindDisplay?: string;
+  /** Who it went to: "All school", "Year 4", or a child's name. */
+  audience?: string | null;
+  /** Null where no read state is kept (letters, Relative accounts). */
+  isRead?: boolean | null;
+  hasAttachment?: boolean;
+}
+
+/** One file attached to a newsletter. */
+export interface NewsletterAttachmentDto {
+  name: string;
+  /** Bytes; null when unknown. */
+  size: number | null;
+  contentType: string;
+  url: string;
+}
+
+/**
+ * GET /api/mobile/newsletters/{source}/{id}
+ *
+ * Every list field plus the body. Opening it marks the newsletter read.
+ */
+export interface NewsletterDetailDto extends NewsletterDto {
+  /** Plain text. */
+  body: string;
+  attachment: NewsletterAttachmentDto | null;
 }
