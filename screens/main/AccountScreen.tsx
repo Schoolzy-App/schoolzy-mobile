@@ -6,6 +6,7 @@ import {
   CaretRightIcon,
   ChatCircleTextIcon,
   ClipboardTextIcon,
+  DoorOpenIcon,
   FingerprintIcon,
   IdentificationCardIcon,
   LockSimpleIcon,
@@ -27,6 +28,7 @@ import {
   useComplaints,
   useCurrentUser,
   useDocumentRequests,
+  useGateEligibility,
   useGuardianStudentsRaw,
   useParentInfo,
   useRelatives,
@@ -82,6 +84,7 @@ export default function AccountScreen() {
   const { data: relatives } = useRelatives();
   const { data: complaints } = useComplaints();
   const { data: requests } = useDocumentRequests();
+  const { data: gateEligibility } = useGateEligibility();
 
   // ── Header ────────────────────────────────────────────────────────────
   const name = info?.name || currentUser?.name || "";
@@ -286,6 +289,29 @@ export default function AccountScreen() {
             </View>
           </View>
         </View>
+
+        {/* ── Gate Requests ─────────────────────────────────────────
+            Only for parents the server says may use it (mandate for at
+            least one active student); hidden while loading or on error. */}
+        {gateEligibility?.canUse ? (
+          <Tile
+            style={styles.gate}
+            onPress={() => navigation.navigate("GateRequests")}
+          >
+            <View style={[styles.iconTile, { backgroundColor: Palette.status.warning.tint }]}>
+              <DoorOpenIcon weight="fill" size={22} color={Palette.status.warning.fg} />
+            </View>
+            <View style={[styles.flex, styles.titleBlock]}>
+              <Text style={styles.tileTitle} numberOfLines={1}>
+                Gate Requests
+              </Text>
+              <Text style={Type.caption} color={Palette.text.tertiary} numberOfLines={1}>
+                Early pickup & who collects
+              </Text>
+            </View>
+            <CaretRightIcon weight="bold" size={14} color={Palette.text.chevron} />
+          </Tile>
+        ) : null}
 
         <View style={styles.row}>
           <RequestsTile
@@ -698,6 +724,12 @@ const createStyles = (colors: ColorPalette) =>
       borderRadius: Radius.financeCard,
       borderWidth: 1.5,
       borderColor: Palette.border.default,
+    },
+    gate: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+      padding: 14,
     },
     biometric: {
       flexDirection: "row",

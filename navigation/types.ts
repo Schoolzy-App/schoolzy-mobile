@@ -203,6 +203,9 @@ export type RootStackParamList = {
   Request: RequestParams;
   RequestDetails: RequestDetailsParams;
   AddRequest: AddRequestParams;
+  GateRequests: undefined;
+  AddGateRequest: undefined;
+  GateRequestDetails: { requestId: number };
   StudentProfile: StudentProfileParams;
   Reports: ReportsParams;
   Wellness: WellnessParams;
