@@ -35,10 +35,11 @@ export function isGateInFlightConflict(error: ApiError): boolean {
 }
 
 /** GET /api/mobile/gate-requests/eligibility */
-export function useGateEligibility() {
+export function useGateEligibility({ enabled = true }: { enabled?: boolean } = {}) {
   return useQuery<GateEligibilityDto, Error>({
     queryKey: queryKeys.gateRequests.eligibility(),
     queryFn: () => gateRequestsApi.eligibility(),
+    enabled,
   });
 }
 

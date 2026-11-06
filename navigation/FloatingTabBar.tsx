@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Text } from "@/components/ui";
 import { FeatureFlags } from "@/constants";
 import { IconSize, Palette, Radius, Shadow, Size, Spacing } from "@/constants/tokens";
+import { useGateEligibility } from "@/hooks/queries/useGateRequests";
 
 import type { MainTabParamList, RootStackParamList } from "./types";
 
@@ -103,6 +104,15 @@ export function FloatingTabBar({ active, onSelect }: FloatingTabBarProps) {
   const rootNavigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
+  // The flag only offers the Gate tab: parents /eligibility rejects never see
+  // it. No request at all while the flag is off.
+  const { data: gateEligibility } = useGateEligibility({
+    enabled: FeatureFlags.gateRequestsTab,
+  });
+  const tabs = gateEligibility?.canUse
+    ? TABS
+    : TABS.filter((tab) => tab.name !== "GateRequests");
+
   return (
     <View
       pointerEvents="box-none"
@@ -112,7 +122,7 @@ export function FloatingTabBar({ active, onSelect }: FloatingTabBarProps) {
       ]}
     >
       <View style={[styles.bar, Shadow.bottomNav]}>
-        {TABS.map((tab) => {
+        {tabs.map((tab) => {
           const isActive = !tab.pushesRoute && tab.name === active;
           const onPress = () => {
             if (tab.pushesRoute) {
