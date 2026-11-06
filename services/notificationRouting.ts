@@ -112,6 +112,17 @@ export async function resolveNotification(
         return { screen: "Newsletter" };
       }
 
+      // Confirmed/Cancelled carry the gate request's BusHolding id. Submitted
+      // is for school staff, so a parent has nowhere to go.
+      case NotificationType.GateRequestConfirmed:
+      case NotificationType.GateRequestCancelled:
+        return hasId
+          ? { screen: "GateRequestDetails", params: { requestId: id } }
+          : { screen: "GateRequests" };
+
+      case NotificationType.GateRequestSubmitted:
+        return null;
+
       // Exams, homework, timetable, meetings and general notices name no
       // student, so there's no screen they can open on their own.
       default:

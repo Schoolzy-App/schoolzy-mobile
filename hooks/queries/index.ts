@@ -38,6 +38,15 @@ export {
   useCreateComplaint,
 } from "./useComplaints";
 export {
+  useGateEligibility,
+  useGateStudents,
+  useGateCreateOptions,
+  useGateRequests,
+  useGateRequest,
+  useCreateGateRequest,
+  useCancelGateRequest,
+} from "./useGateRequests";
+export {
   useDocumentRequests,
   useDocumentRequest,
   useDocumentRequestOptions,

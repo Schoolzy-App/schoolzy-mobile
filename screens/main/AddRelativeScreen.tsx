@@ -172,7 +172,7 @@ export default function AddRelativeScreen({ navigation, route }: Props) {
   };
 
   const goBackWith = useCallback(
-    (toast: string) => navigation.navigate("Relatives", { toast }),
+    (toast: string) => navigation.popTo("Relatives", { toast }),
     [navigation],
   );
 
@@ -310,7 +310,7 @@ export default function AddRelativeScreen({ navigation, route }: Props) {
           <FormButton
             label="Back to Relatives"
             height={48}
-            onPress={() => navigation.navigate("Relatives", {})}
+            onPress={() => navigation.popTo("Relatives", {})}
           />
         </View>
       </ScreenTemplate>

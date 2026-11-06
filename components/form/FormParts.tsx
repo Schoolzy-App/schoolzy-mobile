@@ -16,7 +16,7 @@ import {
 } from "react-native";
 
 import { Text } from "@/components/ui";
-import { Palette, Radius, Size, Spacing, Type } from "@/constants/tokens";
+import { Opacity, Palette, Radius, Size, Spacing, Type } from "@/constants/tokens";
 
 /**
  * The form screens' building blocks (Complaints spec §3, shared with Update
@@ -199,6 +199,8 @@ export function ChildOption({
   selected,
   onPress,
   invalid,
+  disabled,
+  hint,
 }: {
   name: string;
   /** Position in the list — picks the avatar colour. */
@@ -206,14 +208,23 @@ export function ChildOption({
   selected: boolean;
   onPress: () => void;
   invalid?: boolean;
+  /** Greyed out and not selectable (e.g. already has a gate request today). */
+  disabled?: boolean;
+  /** A line under the name, e.g. why the row is disabled. */
+  hint?: string;
 }) {
   return (
     <Pressable
       onPress={onPress}
+      disabled={disabled}
+      accessibilityRole="radio"
+      accessibilityLabel={hint ? `${name}, ${hint}` : name}
+      accessibilityState={{ checked: selected, selected, disabled: !!disabled }}
       style={[
         styles.child,
         selected && { borderColor: Palette.action.primary },
         !selected && invalid && { borderColor: Palette.form.optionErrorBorder },
+        disabled && styles.childDisabled,
       ]}
     >
       <View
@@ -226,9 +237,16 @@ export function ChildOption({
           {name.trim().charAt(0).toUpperCase()}
         </Text>
       </View>
-      <Text style={[Type.cardTitle, styles.flex]} numberOfLines={1}>
-        {name}
-      </Text>
+      <View style={styles.flex}>
+        <Text style={Type.cardTitle} numberOfLines={1}>
+          {name}
+        </Text>
+        {hint ? (
+          <Text style={Type.meta} color={Palette.text.secondary}>
+            {hint}
+          </Text>
+        ) : null}
+      </View>
       {selected ? (
         <CheckCircleIcon weight="fill" size={22} color={Palette.action.primary} />
       ) : (
@@ -435,6 +453,9 @@ const styles = StyleSheet.create({
     borderWidth: Size.inputBorderWidth,
     borderColor: Palette.form.inputBorder,
     backgroundColor: Palette.surface.card,
+  },
+  childDisabled: {
+    opacity: Opacity.disabled,
   },
   childAvatar: {
     width: 40,

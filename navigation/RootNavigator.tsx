@@ -11,6 +11,9 @@ import AddRelativeScreen from "@/screens/main/AddRelativeScreen";
 import EditParentInfoScreen from "@/screens/main/EditParentInfoScreen";
 import RelativesScreen from "@/screens/main/RelativesScreen";
 import AddRequestScreen from "@/screens/main/AddRequestScreen";
+import AddGateRequestScreen from "@/screens/main/AddGateRequestScreen";
+import GateRequestDetailsScreen from "@/screens/main/GateRequestDetailsScreen";
+import GateRequestsScreen from "@/screens/main/GateRequestsScreen";
 import ComplaintDetailsScreen from "@/screens/main/ComplaintDetailsScreen";
 import ComplaintsScreen from "@/screens/main/ComplaintsScreen";
 import AgendaScreen from "@/screens/main/AgendaScreen";
@@ -64,6 +67,12 @@ export default function RootNavigator() {
             component={RequestDetailsScreen}
           />
           <Stack.Screen name="AddRequest" component={AddRequestScreen} />
+          <Stack.Screen name="GateRequests" component={GateRequestsScreen} />
+          <Stack.Screen name="AddGateRequest" component={AddGateRequestScreen} />
+          <Stack.Screen
+            name="GateRequestDetails"
+            component={GateRequestDetailsScreen}
+          />
           <Stack.Screen name="StudentProfile" component={StudentProfileScreen} />
           <Stack.Screen name="Reports" component={ReportsScreen} />
           <Stack.Screen name="Wellness" component={WellnessScreen} />

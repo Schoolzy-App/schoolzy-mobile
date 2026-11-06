@@ -4,17 +4,22 @@ import {
   ChatCircleTextIcon,
   ClipboardTextIcon,
   GearSixIcon,
+  DoorIcon,
+  DotsThreeOutlineIcon,
   HouseIcon,
+  NewspaperIcon,
+  UsersThreeIcon,
   type Icon,
   type IconWeight,
 } from "phosphor-react-native";
-import React from "react";
-import { Animated, Pressable, StyleSheet, View } from "react-native";
+import React, { useState } from "react";
+import { Animated, Modal, Pressable, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Text } from "@/components/ui";
 import { FeatureFlags } from "@/constants";
 import { IconSize, Palette, Radius, Shadow, Size, Spacing } from "@/constants/tokens";
+import { useGateEligibility } from "@/hooks/queries/useGateRequests";
 
 import type { MainTabParamList, RootStackParamList } from "./types";
 
@@ -26,9 +31,9 @@ import type { MainTabParamList, RootStackParamList } from "./types";
  * navigator would pull every tab screen in and make an import cycle.
  */
 
-/** Root routes that take no params — the only ones a tab may push. */
+/** Root routes whose params are optional — the only ones a tab may push. */
 type ParamlessRootRoute = {
-  [K in keyof RootStackParamList]: RootStackParamList[K] extends undefined
+  [K in keyof RootStackParamList]: undefined extends RootStackParamList[K]
     ? K
     : never;
 }[keyof RootStackParamList];
@@ -36,7 +41,8 @@ type ParamlessRootRoute = {
 export type TabName = Exclude<keyof MainTabParamList, "Add">;
 
 type TabEntry = {
-  name: TabName;
+  /** A tab route, or a key for entries that only push a root screen. */
+  name: TabName | "Newsletters" | "Relatives" | "Complaints";
   label: string;
   Icon: Icon;
   /** Inactive weight; the active pill always uses fill. */
@@ -46,14 +52,23 @@ type TabEntry = {
    * highlighted, since the app navigates away from the tab stack.
    */
   pushesRoute?: ParamlessRootRoute;
+  /** Listed under the bar's "More" button instead of on the bar itself. */
+  more?: boolean;
 };
 
 /**
  * Bottom-bar entries, filtered by feature flag. `Home` and `Account` are always
- * present; Chat and Requests are opt-in — see `constants/featureFlags.ts`.
+ * present; Chat, Requests and Gate are opt-in — see `constants/featureFlags.ts`.
  */
 export const TABS: TabEntry[] = [
   { name: "Home", label: "Home", Icon: HouseIcon, weight: "fill" },
+  {
+    name: "Newsletters",
+    label: "Newsletters",
+    Icon: NewspaperIcon,
+    weight: "fill",
+    pushesRoute: "Newsletter",
+  },
   ...(FeatureFlags.chatTab
     ? [
         {
@@ -62,6 +77,7 @@ export const TABS: TabEntry[] = [
           Icon: ChatCircleTextIcon,
           weight: "fill" as const,
           pushesRoute: "ChatWithSchool" as const,
+          more: true,
         },
       ]
     : []),
@@ -73,9 +89,38 @@ export const TABS: TabEntry[] = [
           Icon: ClipboardTextIcon,
           weight: "fill" as const,
           pushesRoute: "Request" as const,
+          more: true,
         },
       ]
     : []),
+  ...(FeatureFlags.gateRequestsTab
+    ? [
+        {
+          name: "GateRequests" as const,
+          label: "Gate",
+          Icon: DoorIcon,
+          weight: "fill" as const,
+          pushesRoute: "GateRequests" as const,
+          more: true,
+        },
+      ]
+    : []),
+  {
+    name: "Relatives",
+    label: "Relatives",
+    Icon: UsersThreeIcon,
+    weight: "fill",
+    pushesRoute: "Relatives",
+    more: true,
+  },
+  {
+    name: "Complaints",
+    label: "Complaints",
+    Icon: ChatCircleTextIcon,
+    weight: "fill",
+    pushesRoute: "Complaints",
+    more: true,
+  },
   { name: "Account", label: "Account", Icon: GearSixIcon, weight: "regular" },
 ];
 
@@ -91,24 +136,41 @@ export function FloatingTabBar({ active, onSelect }: FloatingTabBarProps) {
   const rootNavigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
+  // The flag only offers the Gate tab: parents /eligibility rejects never see
+  // it. No request at all while the flag is off.
+  const { data: gateEligibility } = useGateEligibility({
+    enabled: FeatureFlags.gateRequestsTab,
+  });
+  const tabs = gateEligibility?.canUse
+    ? TABS
+    : TABS.filter((tab) => tab.name !== "GateRequests");
+  // Home, Newsletters and Account stay on the bar; the rest sit under "More".
+  const barTabs = tabs.filter((tab) => !tab.more);
+  const moreTabs = tabs.filter((tab) => tab.more);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const bottom = Spacing.bottomInset.navFromBottom + (insets.bottom || 0);
+
+  const openTab = (tab: TabEntry) => {
+    setMoreOpen(false);
+    if (tab.pushesRoute) {
+      rootNavigation.navigate(tab.pushesRoute);
+      return;
+    }
+    onSelect(tab.name as TabName);
+  };
+
   return (
     <View
       pointerEvents="box-none"
       style={[
         styles.outer,
-        { bottom: Spacing.bottomInset.navFromBottom + (insets.bottom || 0) },
+        { bottom },
       ]}
     >
       <View style={[styles.bar, Shadow.bottomNav]}>
-        {TABS.map((tab) => {
+        {barTabs.map((tab) => {
           const isActive = !tab.pushesRoute && tab.name === active;
-          const onPress = () => {
-            if (tab.pushesRoute) {
-              rootNavigation.navigate(tab.pushesRoute);
-              return;
-            }
-            onSelect(tab.name);
-          };
+          const onPress = () => openTab(tab);
 
           return (
             <TabButton key={tab.name} isActive={isActive} onPress={onPress}>
@@ -135,7 +197,58 @@ export function FloatingTabBar({ active, onSelect }: FloatingTabBarProps) {
             </TabButton>
           );
         })}
+        {moreTabs.length ? (
+          <TabButton isActive={false} onPress={() => setMoreOpen(true)}>
+            <View
+              style={styles.inactive}
+              accessible
+              accessibilityRole="button"
+              accessibilityLabel="More"
+            >
+              <DotsThreeOutlineIcon
+                weight="fill"
+                size={IconSize.nav}
+                color={Palette.text.onBrand}
+              />
+            </View>
+          </TabButton>
+        ) : null}
       </View>
+
+      <Modal
+        visible={moreOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setMoreOpen(false)}
+      >
+        <Pressable style={styles.backdrop} onPress={() => setMoreOpen(false)}>
+          <View
+            style={[
+              styles.moreMenu,
+              Shadow.bottomNav,
+              { bottom: bottom + Size.navItem.height + 26 },
+            ]}
+          >
+            {moreTabs.map((tab, index) => (
+              <Pressable
+                key={tab.name}
+                onPress={() => openTab(tab)}
+                accessibilityRole="button"
+                style={({ pressed }) => [
+                  styles.moreItem,
+                  index > 0 && styles.moreDivider,
+                  pressed && styles.morePressed,
+                ]}
+              >
+                <tab.Icon weight="fill" size={IconSize.nav} color={Palette.text.onBrand} />
+                <Text style={styles.moreLabel} color={Palette.text.onBrand}>
+                  {tab.label === "Gate" ? "Gate Requests" : tab.label}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -222,5 +335,34 @@ const styles = StyleSheet.create({
     height: Size.navItem.height,
     justifyContent: "center",
     paddingRight: 16,
+  },
+  backdrop: {
+    flex: 1,
+  },
+  moreMenu: {
+    position: "absolute",
+    right: Spacing.screenX,
+    minWidth: 200,
+    paddingVertical: 6,
+    borderRadius: 20,
+    backgroundColor: Palette.surface.bottomNav,
+  },
+  moreItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+  },
+  moreDivider: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "rgba(255,255,255,0.15)",
+  },
+  morePressed: {
+    opacity: 0.6,
+  },
+  moreLabel: {
+    fontSize: 15,
+    fontWeight: "500",
   },
 });

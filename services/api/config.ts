@@ -126,6 +126,15 @@ export const ROUTES = {
     priorities: "/api/mobile/complaints/priorities",
     contactMethods: "/api/mobile/complaints/contact-methods",
   },
+  gateRequests: {
+    eligibility: "/api/mobile/gate-requests/eligibility",
+    students: "/api/mobile/gate-requests/students",
+    createOptions: "/api/mobile/gate-requests/create-options",
+    list: "/api/mobile/gate-requests",
+    create: "/api/mobile/gate-requests",
+    detail: (id: number) => `/api/mobile/gate-requests/${id}`,
+    cancel: (id: number) => `/api/mobile/gate-requests/${id}/cancel`,
+  },
   documentRequests: {
     createOptions: "/api/mobile/document-requests/create-options",
     list: "/api/mobile/document-requests",

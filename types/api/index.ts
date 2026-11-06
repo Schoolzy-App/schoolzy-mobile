@@ -4,6 +4,7 @@ export * from "./students";
 export * from "./agenda";
 export * from "./complaints";
 export * from "./dashboard";
+export * from "./gateRequests";
 export * from "./parentDashboard";
 export * from "./parentProfile";
 export * from "./documentRequests";

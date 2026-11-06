@@ -30,6 +30,8 @@ export type MainTabParamList = {
    * `Request` screen rather than rendering here — same pattern as `Chatting`.
    */
   Requests: undefined;
+  /** Placeholder for the optional Gate tab; pressing it pushes `GateRequests`. */
+  GateRequests: undefined;
   Account: undefined;
   Add: undefined;
 };
@@ -203,6 +205,9 @@ export type RootStackParamList = {
   Request: RequestParams;
   RequestDetails: RequestDetailsParams;
   AddRequest: AddRequestParams;
+  GateRequests: undefined;
+  AddGateRequest: undefined;
+  GateRequestDetails: { requestId: number };
   StudentProfile: StudentProfileParams;
   Reports: ReportsParams;
   Wellness: WellnessParams;

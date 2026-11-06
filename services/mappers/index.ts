@@ -50,6 +50,22 @@ export type {
 } from "./complaints";
 
 export {
+  toGateRequest,
+  selectGateRequestDetail,
+  selectGroupedGateRequests,
+  gateStatusTone,
+  gateStatusLabel,
+  humanizeLabel,
+} from "./gateRequests";
+export type {
+  GateRequest,
+  GateRequestDetail,
+  GateRequestStatus,
+  GateStatusTone,
+  GroupedGateRequests,
+} from "./gateRequests";
+
+export {
   selectTodayTiles,
   selectNeedsAttention,
   selectLatestActivities,

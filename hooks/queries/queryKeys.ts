@@ -63,6 +63,16 @@ export const queryKeys = {
     lookups: (name: string) =>
       [...queryKeys.complaints.all, "lookup", name] as const,
   },
+  gateRequests: {
+    all: ["gateRequests"] as const,
+    list: () => [...queryKeys.gateRequests.all, "list"] as const,
+    detail: (id: number) =>
+      [...queryKeys.gateRequests.all, "detail", id] as const,
+    eligibility: () => [...queryKeys.gateRequests.all, "eligibility"] as const,
+    students: () => [...queryKeys.gateRequests.all, "students"] as const,
+    createOptions: (studentSeasonId: number) =>
+      [...queryKeys.gateRequests.all, "createOptions", studentSeasonId] as const,
+  },
   documentRequests: {
     all: ["documentRequests"] as const,
     list: () => [...queryKeys.documentRequests.all, "list"] as const,

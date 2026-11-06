@@ -77,6 +77,9 @@ export const NotificationType = {
   ClinicReport: 11,
   AdminForm: 12,
   StudentDynamicReport: 13,
+  GateRequestSubmitted: 14,
+  GateRequestConfirmed: 15,
+  GateRequestCancelled: 16,
 } as const;
 
 export type NotificationType =
