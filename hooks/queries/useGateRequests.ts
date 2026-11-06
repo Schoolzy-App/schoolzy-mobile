@@ -9,6 +9,7 @@ import type {
   GateRequestDetail,
   GroupedGateRequests,
 } from "@/services/mappers";
+import type { ApiError } from "@/types/api";
 import type {
   CreateGateRequestInput,
   CreateGateRequestResponseDto,
@@ -21,6 +22,17 @@ import type {
 
 import { useIdempotentMutation } from "../useIdempotentMutation";
 import { queryKeys } from "./queryKeys";
+
+/**
+ * The only 409 that means "same key still in flight" is the idempotency
+ * coordinator's `Request Already Processing` (no error code). Every other gate
+ * 409 (AlreadyConfirmed, RequestExpired, AlreadyCancelled, ConcurrentUpdate,
+ * HoldingRecordExistsToday) is final and carries a code in `errors`, so it
+ * releases the key and clears `isProcessing`.
+ */
+export function isGateInFlightConflict(error: ApiError): boolean {
+  return /already processing/i.test(error.message ?? "");
+}
 
 /** GET /api/mobile/gate-requests/eligibility */
 export function useGateEligibility() {
@@ -82,6 +94,7 @@ export function useCreateGateRequest(
     CreateGateRequestResponseDto
   >({
     operation: "GateRequests.Create",
+    isInFlightConflict: isGateInFlightConflict,
     mutationFn: (input, idempotencyKey) =>
       gateRequestsApi.create(input, idempotencyKey),
     onSuccess: (ids) => {
@@ -107,13 +120,13 @@ export function useCancelGateRequest(
 
   return useIdempotentMutation<void, GateRequestDetailDto>({
     operation: "GateRequests.Cancel",
+    isInFlightConflict: isGateInFlightConflict,
     mutationFn: (_input, idempotencyKey) =>
       gateRequestsApi.cancel(id, idempotencyKey),
     onSuccess: (detail) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.gateRequests.list() });
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.gateRequests.detail(id),
-      });
+      // The response is the fresh detail; seed it to avoid a refetch flash.
+      queryClient.setQueryData(queryKeys.gateRequests.detail(id), detail);
       // Cancelling frees the student for another request today.
       queryClient.invalidateQueries({
         queryKey: queryKeys.gateRequests.students(),

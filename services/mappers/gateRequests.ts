@@ -51,8 +51,11 @@ function toStatus(code: number): GateRequestStatus {
       return "cancelledBySchool";
     case GateRequestStatusCode.Expired:
       return "expired";
-    default:
+    case GateRequestStatusCode.Pending:
       return "pending";
+    default:
+      // Unknown future status: neutral, never an actionable "pending".
+      return "expired";
   }
 }
 
