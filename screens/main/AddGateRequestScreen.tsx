@@ -7,7 +7,7 @@ import {
   PlusIcon,
   SquareIcon,
 } from "phosphor-react-native";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 
 import {
@@ -35,7 +35,10 @@ type Props = RootStackScreenProps<"AddGateRequest">;
 const NOTES_MAX_LENGTH = 500;
 const QUARTER_HOUR = 15;
 const LAST_MINUTE_OF_DAY = 23 * 60 + 59;
-const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
+/** "9:30" or "09:30"; sent normalised to HH:mm. */
+const TIME_PATTERN = /^([01]?\d|2[0-3]):[0-5]\d$/;
+const normaliseTime = (value: string) =>
+  TIME_PATTERN.test(value.trim()) ? value.trim().padStart(5, "0") : value.trim();
 
 /** Fixed copy (spec §6.5.2). */
 const SUCCESS_COPY =
@@ -89,16 +92,58 @@ export default function AddGateRequestScreen({ navigation }: Props) {
   const [tried, setTried] = useState(false);
   const [createdIds, setCreatedIds] = useState<number[] | null>(null);
 
+  // A picked student counts only while it can still be used: once the latest
+  // data says it already has a request today, it is no longer selected.
+  const pickedStudent = students.data?.find((s) => s.studentSeasonId === pickedStudentId);
+  const pickedUsable = !!pickedStudent && !pickedStudent.hasRequestToday;
   // Auto-selected when there is only one student and it can still be used.
   const onlyStudent = students.data?.length === 1 ? students.data[0] : null;
-  const studentId =
-    pickedStudentId ??
-    (onlyStudent && !onlyStudent.hasRequestToday ? onlyStudent.studentSeasonId : null);
+  const studentId = pickedUsable
+    ? pickedStudentId
+    : onlyStudent && !onlyStudent.hasRequestToday
+      ? onlyStudent.studentSeasonId
+      : null;
 
   const options = useGateCreateOptions(studentId ?? undefined);
 
+  // Siblings sent are only those the latest options still offer as usable,
+  // so a sibling that became "already has a request today" is never resent.
+  const usableSiblingIds = useMemo(() => {
+    const usable = new Set(
+      (options.data?.siblings ?? [])
+        .filter((s) => !s.hasRequestToday)
+        .map((s) => s.studentSeasonId),
+    );
+    return siblingIds.filter((id) => usable.has(id));
+  }, [options.data, siblingIds]);
+
+  // Keep the stored selection in step with fresh students / options data
+  // (adjusting state while rendering, as React recommends over an effect):
+  // drop a main student that became unusable, with everything that depended
+  // on it, and drop siblings that became unusable.
+  const [syncedWith, setSyncedWith] = useState<{ s: unknown; o: unknown }>({
+    s: undefined,
+    o: undefined,
+  });
+  if (syncedWith.s !== students.data || syncedWith.o !== options.data) {
+    setSyncedWith({ s: students.data, o: options.data });
+    if (pickedStudentId !== null && students.data && !pickedUsable) {
+      setStudentId(null);
+      setSiblingIds([]);
+      setCollector(null);
+      setRelativeId(null);
+    } else if (options.data && usableSiblingIds.length !== siblingIds.length) {
+      setSiblingIds(usableSiblingIds);
+    }
+  }
+
   // Coming back from Relatives (after granting permission) should show the
-  // newly permitted relatives, so refetch the options on refocus.
+  // newly permitted relatives, so refetch the options on refocus. The student
+  // is read from a ref so picking one doesn't re-run this and double-fetch.
+  const studentIdRef = useRef(studentId);
+  useEffect(() => {
+    studentIdRef.current = studentId;
+  }, [studentId]);
   const firstFocus = useRef(true);
   const { refetch: refetchOptions } = options;
   useFocusEffect(
@@ -107,8 +152,8 @@ export default function AddGateRequestScreen({ navigation }: Props) {
         firstFocus.current = false;
         return;
       }
-      if (studentId !== null) void refetchOptions();
-    }, [studentId, refetchOptions]),
+      if (studentIdRef.current !== null) void refetchOptions();
+    }, [refetchOptions]),
   );
 
   const selectStudent = useCallback((id: number) => {
@@ -132,7 +177,7 @@ export default function AddGateRequestScreen({ navigation }: Props) {
 
   const stepTime = useCallback((delta: number) => {
     setTime((current) => {
-      const base = TIME_PATTERN.test(current) ? minutesOf(current) : minutesOf(nextQuarterHour());
+      const base = TIME_PATTERN.test(current.trim()) ? minutesOf(current) : minutesOf(nextQuarterHour());
       return toHHmm(Math.max(0, Math.min(LAST_MINUTE_OF_DAY, base + delta)));
     });
   }, []);
@@ -148,13 +193,14 @@ export default function AddGateRequestScreen({ navigation }: Props) {
 
   // A business rejection (e.g. "… already has a gate request today") means
   // the cached flags are stale: refresh them so the hints catch up.
+  // Runs once per error, not again on every later student change.
   const { refetch: refetchStudents } = students;
   useEffect(() => {
     if (submitError instanceof ApiError && submitError.status === 409 && !isProcessing) {
       void refetchStudents();
-      if (studentId !== null) void refetchOptions();
+      if (studentIdRef.current !== null) void refetchOptions();
     }
-  }, [submitError, isProcessing, refetchStudents, refetchOptions, studentId]);
+  }, [submitError, isProcessing, refetchStudents, refetchOptions]);
 
   // ── Validation ───────────────────────────────────────────────────────────
   const validate = (now: Date): Record<string, string | null> => ({
@@ -169,9 +215,9 @@ export default function AddGateRequestScreen({ navigation }: Props) {
       collector === GateCollectPerson.Relative && relativeId === null
         ? MESSAGES.relative
         : null,
-    time: !TIME_PATTERN.test(time)
+    time: !TIME_PATTERN.test(time.trim())
       ? MESSAGES.timeFormat
-      : minutesOf(time) < nowMinutes(now)
+      : minutesOf(normaliseTime(time)) < nowMinutes(now)
         ? MESSAGES.timePast
         : null,
     notes: notes.length > NOTES_MAX_LENGTH ? MESSAGES.notes : null,
@@ -192,11 +238,11 @@ export default function AddGateRequestScreen({ navigation }: Props) {
       return;
     }
     submit({
-      studentSeasonIds: [studentId, ...siblingIds],
+      studentSeasonIds: [studentId, ...usableSiblingIds],
       type,
       collectPerson: collector,
       studentRelativeId: collector === GateCollectPerson.Relative ? relativeId : null,
-      time,
+      time: normaliseTime(time),
       notes: notes.trim() || null,
     });
   };
@@ -247,12 +293,15 @@ export default function AddGateRequestScreen({ navigation }: Props) {
       title="New Gate Request"
       headerStyle={styles.header}
       bottomContent={
-        <FormButton
-          label={isPending ? "Sending…" : canRetry ? "Retry" : "Send request"}
-          Icon={PaperPlaneTiltIcon}
-          loading={isPending}
-          onPress={handleSend}
-        />
+        // Nothing to send while the students are loading, failed or empty.
+        studentList.length ? (
+          <FormButton
+            label={isPending ? "Sending…" : canRetry ? "Retry" : "Send request"}
+            Icon={PaperPlaneTiltIcon}
+            loading={isPending}
+            onPress={handleSend}
+          />
+        ) : undefined
       }
     >
       <QueryState
@@ -290,7 +339,7 @@ export default function AddGateRequestScreen({ navigation }: Props) {
               {options.data ? (
                 <OptionFields
                   options={options.data}
-                  siblingIds={siblingIds}
+                  siblingIds={usableSiblingIds}
                   onToggleSibling={toggleSibling}
                   type={type}
                   onType={setType}
@@ -311,6 +360,7 @@ export default function AddGateRequestScreen({ navigation }: Props) {
               <Pressable
                 onPress={() => stepTime(-QUARTER_HOUR)}
                 style={styles.stepButton}
+                accessibilityRole="button"
                 accessibilityLabel="15 minutes earlier"
                 hitSlop={4}
               >
@@ -323,6 +373,7 @@ export default function AddGateRequestScreen({ navigation }: Props) {
                   placeholder="HH:mm"
                   keyboardType="numbers-and-punctuation"
                   maxLength={5}
+                  accessibilityLabel="Pickup time, 24-hour, hours and minutes"
                   style={styles.timeInput}
                   invalid={!!show("time")}
                 />
@@ -330,6 +381,7 @@ export default function AddGateRequestScreen({ navigation }: Props) {
               <Pressable
                 onPress={() => stepTime(QUARTER_HOUR)}
                 style={styles.stepButton}
+                accessibilityRole="button"
                 accessibilityLabel="15 minutes later"
                 hitSlop={4}
               >
@@ -356,6 +408,10 @@ export default function AddGateRequestScreen({ navigation }: Props) {
 
           {isProcessing ? (
             <InfoHint text="Your request is still being processed. Don't send it again — retrying reuses the same request." />
+          ) : null}
+
+          {canRetry ? (
+            <InfoHint text="Retry resends your previous request exactly as it was sent. Changes made since then are not included." />
           ) : null}
 
           {errorMessage ? (
@@ -420,9 +476,19 @@ function OptionFields({
                 <Pressable
                   key={sibling.studentSeasonId}
                   onPress={() => onToggleSibling(sibling.studentSeasonId)}
-                  disabled={sibling.hasRequestToday}
+                  // Only ticking is blocked: a ticked sibling can always be
+                  // unticked, whatever the latest flags say.
+                  disabled={sibling.hasRequestToday && !checked}
                   accessibilityRole="checkbox"
-                  accessibilityState={{ checked, disabled: sibling.hasRequestToday }}
+                  accessibilityLabel={
+                    sibling.hasRequestToday
+                      ? `${sibling.name}, ${HAS_REQUEST_TODAY_HINT}`
+                      : sibling.name
+                  }
+                  accessibilityState={{
+                    checked,
+                    disabled: sibling.hasRequestToday && !checked,
+                  }}
                   style={[
                     styles.checkRow,
                     checked && { borderColor: Palette.action.primary },
@@ -483,7 +549,12 @@ function OptionFields({
         {options.permittedRelatives.length === 0 ? (
           <View style={styles.relativesHint}>
             <InfoHint text={NO_RELATIVES_HINT} />
-            <Pressable onPress={onOpenRelatives} hitSlop={8} style={styles.link}>
+            <Pressable
+              onPress={onOpenRelatives}
+              hitSlop={8}
+              style={styles.link}
+              accessibilityRole="link"
+            >
               <Text style={Type.link} color={Palette.action.primary}>
                 Go to Relatives
               </Text>

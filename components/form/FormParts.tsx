@@ -217,7 +217,9 @@ export function ChildOption({
     <Pressable
       onPress={onPress}
       disabled={disabled}
-      accessibilityState={{ selected, disabled: !!disabled }}
+      accessibilityRole="radio"
+      accessibilityLabel={hint ? `${name}, ${hint}` : name}
+      accessibilityState={{ checked: selected, selected, disabled: !!disabled }}
       style={[
         styles.child,
         selected && { borderColor: Palette.action.primary },

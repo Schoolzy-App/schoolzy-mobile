@@ -5,10 +5,10 @@ import {
   ProhibitIcon,
   XCircleIcon,
 } from "phosphor-react-native";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Alert, StyleSheet, View } from "react-native";
 
-import { ErrorBanner } from "@/components/form/FormParts";
+import { ErrorBanner, InfoHint } from "@/components/form/FormParts";
 import { Toast, type ToastMessage } from "@/components/form/Toast";
 import FormButton from "@/components/FormButton";
 import GateStatusChip from "@/components/gateRequests/GateStatusChip";
@@ -56,15 +56,31 @@ export default function GateRequestDetailsScreen({ route }: Props) {
   }, [cancelError, isProcessing, refetch]);
 
   const { submit, retry, canRetry } = cancel;
+  // One dialog at a time: a quick double tap must not stack two confirms.
+  const dialogOpen = useRef(false);
   const confirmCancel = useCallback(() => {
-    Alert.alert("Cancel this request?", "The school will no longer act on it.", [
-      { text: "Keep request", style: "cancel" },
-      {
-        text: "Cancel request",
-        style: "destructive",
-        onPress: () => (canRetry ? retry() : submit()),
-      },
-    ]);
+    if (dialogOpen.current) return;
+    dialogOpen.current = true;
+    const close = () => {
+      dialogOpen.current = false;
+    };
+    Alert.alert(
+      "Cancel this request?",
+      "The school will no longer act on it.",
+      [
+        { text: "Keep request", style: "cancel", onPress: close },
+        {
+          text: "Cancel request",
+          style: "destructive",
+          onPress: () => {
+            close();
+            if (canRetry) retry();
+            else submit();
+          },
+        },
+      ],
+      { cancelable: true, onDismiss: close },
+    );
   }, [canRetry, retry, submit]);
 
   const cancelMessage =
@@ -100,7 +116,11 @@ export default function GateRequestDetailsScreen({ route }: Props) {
               <>
                 <StatusBanner item={data} />
 
-                {cancelMessage ? (
+                {isProcessing ? (
+                  <InfoHint text="Your cancellation is still being processed. Trying again reuses the same request." />
+                ) : null}
+
+                {cancelMessage && !isProcessing ? (
                   <ErrorBanner
                     title="Couldn't cancel the request"
                     message={

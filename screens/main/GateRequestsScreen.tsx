@@ -13,8 +13,9 @@ import GateStatusChip from "@/components/gateRequests/GateStatusChip";
 import { QueryState, ScreenTemplate, Text } from "@/components/ui";
 import { Palette, Radius, Size, Spacing, Type } from "@/constants/tokens";
 import { useGateRequests } from "@/hooks";
+import { useRefetchOnRefocus } from "@/hooks/useRefetchOnRefocus";
 import type { RootStackScreenProps } from "@/navigation/types";
-import type { GateRequest } from "@/services/mappers";
+import { gateStatusLabel, type GateRequest } from "@/services/mappers";
 import { formatDate } from "@/utils/format";
 
 type Props = RootStackScreenProps<"GateRequests">;
@@ -22,6 +23,10 @@ type Props = RootStackScreenProps<"GateRequests">;
 /** Gate Requests list (spec §6.5.1): Today / Earlier, newest first. */
 export default function GateRequestsScreen({ navigation }: Props) {
   const { data, isLoading, error, refetch } = useGateRequests();
+
+  // Parents wait here for "Confirmed": refresh whenever the list is shown
+  // again (e.g. back from details), not only after staleTime on remount.
+  useRefetchOnRefocus(refetch);
 
   const handleOpen = useCallback(
     (request: GateRequest) =>
@@ -129,6 +134,15 @@ const GateRequestCard = memo(function GateRequestCard({
   return (
     <Pressable
       onPress={() => onSelect(request)}
+      accessibilityRole="button"
+      accessibilityLabel={[
+        request.studentName,
+        gateStatusLabel(request.status),
+        request.collectPersonName,
+        request.time,
+      ]
+        .filter(Boolean)
+        .join(", ")}
       style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
     >
       <View style={styles.cardTop}>
@@ -164,6 +178,13 @@ const GateRequestCard = memo(function GateRequestCard({
           </View>
         ) : null}
       </View>
+
+      {/* Pending is not valid at the gate yet (spec §4). */}
+      {request.status === "pending" ? (
+        <Text style={Type.caption} color={Palette.status.warning.fg}>
+          Awaiting school confirmation
+        </Text>
+      ) : null}
     </Pressable>
   );
 });
