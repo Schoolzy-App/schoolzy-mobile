@@ -19,6 +19,7 @@ import {
   TextField,
 } from "@/components/form/FormParts";
 import FormButton from "@/components/FormButton";
+import { SelectField } from "@/components/form/SelectField";
 import { QueryState, ScreenTemplate, Text } from "@/components/ui";
 import { Opacity, Palette, Radius, Size, Spacing, Type } from "@/constants/tokens";
 import {
@@ -27,6 +28,7 @@ import {
   useGateStudents,
 } from "@/hooks";
 import type { RootStackScreenProps } from "@/navigation/types";
+import { humanizeLabel } from "@/services/mappers";
 import type { GateCreateOptionsDto, GateLookupDto } from "@/types/api";
 import { ApiError, GateCollectPerson } from "@/types/api";
 
@@ -257,7 +259,7 @@ export default function AddGateRequestScreen({ navigation }: Props) {
 
   // ── Sent ─────────────────────────────────────────────────────────────────
   if (createdIds !== null) {
-    const backToList = () => navigation.navigate("GateRequests");
+    const backToList = () => navigation.popTo("GateRequests");
     return (
       <ScreenTemplate variant="form" title="Gate Requests" onBack={backToList}>
         <View style={styles.success}>
@@ -527,17 +529,17 @@ function OptionFields({
 
       {/* ── Reason ───────────────────────────────────────────────── */}
       <Field label="Reason" error={show("type")}>
-        <View style={styles.stack}>
-          {options.holdingTypes.map((option) => (
-            <RadioCard
-              key={option.id}
-              title={option.name}
-              selected={type === option.id}
-              onPress={() => onType(option.id)}
-              invalid={!!show("type")}
-            />
-          ))}
-        </View>
+        <SelectField
+          title="Reason"
+          placeholder="Choose a reason"
+          value={type == null ? "" : String(type)}
+          options={options.holdingTypes.map((option) => ({
+            value: String(option.id),
+            label: humanizeLabel(option.name),
+          }))}
+          onChange={(value) => onType(Number(value))}
+          invalid={!!show("type")}
+        />
       </Field>
 
       {/* ── Who will collect ─────────────────────────────────────── */}

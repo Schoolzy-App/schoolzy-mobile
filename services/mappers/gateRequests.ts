@@ -59,6 +59,19 @@ function toStatus(code: number): GateRequestStatus {
   }
 }
 
+/**
+ * Server lookups arrive as enum names ("SickLeave", "EarlyCheckout"). Split them
+ * into words for display; names that already contain spaces pass through.
+ */
+export function humanizeLabel(name: string): string {
+  if (!name || /\s/.test(name)) return name ?? "";
+  return name
+    .replace(/_/g, " ")
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .replace(/([A-Z]+)([A-Z][a-z])/g, "$1 $2")
+    .trim();
+}
+
 export function gateStatusTone(status: GateRequestStatus): GateStatusTone {
   if (status === "pending") return "warning";
   if (status === "confirmed") return "success";
@@ -95,7 +108,7 @@ export function toGateRequest(dto: GateRequestListItemDto): GateRequest {
     id: dto.id,
     studentSeasonId: dto.studentSeasonId,
     studentName: dto.studentName,
-    typeName: dto.typeName,
+    typeName: humanizeLabel(dto.typeName),
     collectPersonName: dto.collectPersonName,
     time: dto.time ?? null,
     status: toStatus(dto.status),

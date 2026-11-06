@@ -55,6 +55,7 @@ export {
   selectGroupedGateRequests,
   gateStatusTone,
   gateStatusLabel,
+  humanizeLabel,
 } from "./gateRequests";
 export type {
   GateRequest,

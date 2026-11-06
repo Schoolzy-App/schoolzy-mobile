@@ -206,13 +206,13 @@ export default function AddComplaintScreen({ navigation }: Props) {
   // ── Submitted ────────────────────────────────────────────────────────────
   if (createdId !== null) {
     return (
-      <ScreenTemplate variant="form" title="Complaint sent" onBack={() => navigation.navigate("Complaints")}>
+      <ScreenTemplate variant="form" title="Complaint sent" onBack={() => navigation.popTo("Complaints")}>
         <SubmittedView
           complaintId={createdId}
           onView={() =>
             navigation.replace("ComplaintDetails", { complaintId: createdId })
           }
-          onBackToList={() => navigation.navigate("Complaints")}
+          onBackToList={() => navigation.popTo("Complaints")}
         />
       </ScreenTemplate>
     );

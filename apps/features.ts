@@ -39,7 +39,7 @@ export interface AppFeatures {
 export const DEFAULT_FEATURES: AppFeatures = {
   chatTab: false,
   requestsTab: true,
-  gateRequestsTab: false,
+  gateRequestsTab: true,
   paymentMethods: {
     // InstaPay -> POST /student-payments/online (proof upload, starts Pending).
     // Wallet   -> POST /student-payments/wallet (completes immediately).
