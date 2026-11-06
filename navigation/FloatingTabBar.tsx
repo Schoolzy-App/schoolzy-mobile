@@ -8,6 +8,7 @@ import {
   DotsThreeOutlineIcon,
   HouseIcon,
   NewspaperIcon,
+  UsersThreeIcon,
   type Icon,
   type IconWeight,
 } from "phosphor-react-native";
@@ -30,9 +31,9 @@ import type { MainTabParamList, RootStackParamList } from "./types";
  * navigator would pull every tab screen in and make an import cycle.
  */
 
-/** Root routes that take no params — the only ones a tab may push. */
+/** Root routes whose params are optional — the only ones a tab may push. */
 type ParamlessRootRoute = {
-  [K in keyof RootStackParamList]: RootStackParamList[K] extends undefined
+  [K in keyof RootStackParamList]: undefined extends RootStackParamList[K]
     ? K
     : never;
 }[keyof RootStackParamList];
@@ -41,7 +42,7 @@ export type TabName = Exclude<keyof MainTabParamList, "Add">;
 
 type TabEntry = {
   /** A tab route, or a key for entries that only push a root screen. */
-  name: TabName | "Newsletters";
+  name: TabName | "Newsletters" | "Relatives" | "Complaints";
   label: string;
   Icon: Icon;
   /** Inactive weight; the active pill always uses fill. */
@@ -104,6 +105,22 @@ export const TABS: TabEntry[] = [
         },
       ]
     : []),
+  {
+    name: "Relatives",
+    label: "Relatives",
+    Icon: UsersThreeIcon,
+    weight: "fill",
+    pushesRoute: "Relatives",
+    more: true,
+  },
+  {
+    name: "Complaints",
+    label: "Complaints",
+    Icon: ChatCircleTextIcon,
+    weight: "fill",
+    pushesRoute: "Complaints",
+    more: true,
+  },
   { name: "Account", label: "Account", Icon: GearSixIcon, weight: "regular" },
 ];
 
