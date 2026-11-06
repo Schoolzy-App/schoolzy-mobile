@@ -225,7 +225,7 @@ export const Type = {
 export const Spacing = {
   screenX: 15,
   sectionTitleToContent: 10,
-  sectionGap: { home: 18, studentDashboard: 15, modules: 15 },
+  sectionGap: { home: 26, studentDashboard: 15, modules: 15 },
   contentTop: { home: 16, studentDashboard: 15, modules: 15 },
   cardPadding: {
     default: { paddingVertical: 14, paddingHorizontal: 15 },

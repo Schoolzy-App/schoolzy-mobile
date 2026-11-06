@@ -204,6 +204,12 @@ const CustomizeQuickActions = memo<CustomizeQuickActionsProps>(
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollBody}
         >
+          {/* Claims every touch inside the list so react-native-modal's
+              swipe-to-close PanResponder never takes it. Without this, a
+              touch on a non-touchable spot — every "Available" row once the
+              list is full, since they are all disabled — fell through to the
+              modal, which swallowed the drag and froze the scroll. */}
+          <View style={styles.scrollInner} onStartShouldSetResponder={() => true}>
           {/* ── On Home ──────────────────────────────────────── */}
           <GroupLabel title="On Home" />
           {draft.length === 0 ? (
@@ -317,6 +323,7 @@ const CustomizeQuickActions = memo<CustomizeQuickActionsProps>(
               ? `That's the maximum of ${max}. Remove one to add another.`
               : "Child shortcuts ask which child each time. Tap the chip to pin one to a single child and skip that step."}
           </Text>
+          </View>
         </ScrollView>
 
         {/* ── Footer ─────────────────────────────────────────── */}
@@ -403,6 +410,8 @@ const createStyles = (colors: ColorPalette) =>
     },
     scrollBody: {
       padding: Spacing.screenX,
+    },
+    scrollInner: {
       gap: 10,
     },
     emptyNote: {

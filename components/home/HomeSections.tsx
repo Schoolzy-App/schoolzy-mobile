@@ -1,13 +1,20 @@
 import {
   BusIcon,
   CalendarBlankIcon,
+  CalendarDotsIcon,
   CaretRightIcon,
+  ChartBarIcon,
+  type Icon as PhosphorIcon,
+  LightningIcon,
   NewspaperIcon,
   PlusIcon,
+  StudentIcon,
 } from "phosphor-react-native";
-import React, { memo } from "react";
+import React, { memo, useCallback, useState } from "react";
 import {
   Dimensions,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -49,12 +56,25 @@ import { moduleStyle } from "./moduleStyle";
 /** Width inside the screen's horizontal padding. */
 const contentWidth = () => Dimensions.get("window").width - Spacing.screenX * 2;
 
+/** Small brand-tinted icon that marks where each home section starts. */
+function TitleIcon({ Icon }: { Icon: PhosphorIcon }) {
+  const { colors } = useTheme();
+  const styles = useStyles(createStyles);
+  return (
+    <View style={[styles.titleIcon, { backgroundColor: `${colors.primary}14` }]}>
+      <Icon weight="fill" size={16} color={colors.primary} />
+    </View>
+  );
+}
+
 function SectionTitle({
   title,
+  Icon,
   action,
   onAction,
 }: {
   title: string;
+  Icon?: PhosphorIcon;
   action?: string;
   onAction?: () => void;
 }) {
@@ -62,7 +82,10 @@ function SectionTitle({
   const styles = useStyles(createStyles);
   return (
     <View style={styles.sectionHeader}>
-      <Text style={Type.sectionTitle}>{title}</Text>
+      <View style={styles.titleRow}>
+        {Icon ? <TitleIcon Icon={Icon} /> : null}
+        <Text style={[Type.sectionTitle, styles.titleText]}>{title}</Text>
+      </View>
       {action && onAction ? (
         <Pressable onPress={onAction} hitSlop={8}>
           <Text style={Type.link} color={colors.primary}>
@@ -104,7 +127,12 @@ export const QuickActionsRow = memo<QuickActionsRowProps>(
 
     return (
       <View style={styles.section}>
-        <SectionTitle title="Quick Actions" action="Edit" onAction={onCustomise} />
+        <SectionTitle
+          title="Quick Actions"
+          Icon={LightningIcon}
+          action="Edit"
+          onAction={onCustomise}
+        />
 
         {!ready ? null : actions.length === 0 ? (
           // The section stays, so Edit is still reachable — it just offers
@@ -187,16 +215,39 @@ export const ChildSummaryList = memo<ChildSummaryListProps>(
     // next one peeks in and the row reads as scrollable.
     const cardWidth =
       students.length > 1 ? contentWidth() * 0.68 : contentWidth();
+    const interval = cardWidth + Spacing.listGap.childCards;
+
+    /** Which card is in view, for the dots under the row. */
+    const [active, setActive] = useState(0);
+    const handleScroll = useCallback(
+      (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+        const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
+        const x = contentOffset.x;
+        // The last card can't scroll to the row's start — the row ends first —
+        // so reaching the end counts as being on it.
+        const atEnd = x + layoutMeasurement.width >= contentSize.width - 2;
+        const next = atEnd
+          ? students.length - 1
+          : Math.min(students.length - 1, Math.max(0, Math.round(x / interval)));
+        setActive((prev) => (prev === next ? prev : next));
+      },
+      [interval, students.length],
+    );
 
     return (
       <View style={styles.section}>
-        <SectionTitle title={students.length === 1 ? "My Child" : "My Children"} />
+        <SectionTitle
+          title={students.length === 1 ? "My Child" : "My Children"}
+          Icon={StudentIcon}
+        />
 
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          snapToInterval={students.length > 1 ? cardWidth + Spacing.listGap.childCards : undefined}
+          snapToInterval={students.length > 1 ? interval : undefined}
           decelerationRate="fast"
+          onScroll={students.length > 1 ? handleScroll : undefined}
+          scrollEventThrottle={32}
           style={styles.bleed}
           contentContainerStyle={styles.childRow}
         >
@@ -252,17 +303,47 @@ export const ChildSummaryList = memo<ChildSummaryListProps>(
             </Pressable>
           ))}
         </ScrollView>
+
+        {/* One dot per child: says how many there are and which is in view,
+            since only the next card's edge peeks in. */}
+        {students.length > 1 ? (
+          <View style={styles.dots}>
+            {students.map((child, index) => (
+              <View
+                key={child.id}
+                style={[styles.dot, index === active && styles.dotActive]}
+              />
+            ))}
+          </View>
+        ) : null}
       </View>
     );
   },
 );
 ChildSummaryList.displayName = "ChildSummaryList";
 
+/**
+ * Value over label, in an equal share of the row. Side by side on one line
+ * ("1,250 EGP Wallet") ran past the card on narrow phones such as the Z Flip;
+ * stacked, each stat only needs its own column, and a long value shrinks a
+ * little rather than clip.
+ */
 function Stat({ value, label }: { value: string; label: string }) {
+  const styles = useStyles(createStyles);
   return (
-    <Text style={Type.caption} color={Palette.text.tertiary} numberOfLines={1}>
-      <Text style={Type.statusChipText}>{value}</Text> {label}
-    </Text>
+    <View style={styles.stat}>
+      <Text
+        style={Type.statusChipText}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.75}
+      >
+        {value}
+      </Text>
+      <Text style={Type.caption} color={Palette.text.tertiary} numberOfLines={1}>
+        {label}
+      </Text>
+    </View>
   );
 }
 
@@ -281,7 +362,7 @@ export const GlanceGrid = memo<GlanceGridProps>(({ tiles, onSelect }) => {
 
   return (
     <View style={styles.section}>
-      <SectionTitle title="At a Glance" />
+      <SectionTitle title="At a Glance" Icon={ChartBarIcon} />
 
       <View style={[styles.wrapGrid, { gap }]}>
         {tiles.map((tile) => {
@@ -339,7 +420,12 @@ export const NewsletterList = memo<NewsletterListProps>(
 
     return (
       <View style={styles.section}>
-        <SectionTitle title="Latest Newsletters" action="See all" onAction={onSeeAll} />
+        <SectionTitle
+          title="Latest Newsletters"
+          Icon={NewspaperIcon}
+          action="See all"
+          onAction={onSeeAll}
+        />
 
         <View style={styles.list}>
           {items.map((item) => (
@@ -405,7 +491,7 @@ export const TodayList = memo<TodayListProps>(({ tiles, date, onSelect }) => {
   return (
     <View style={[styles.todayCard, Shadow.card]}>
       <View style={styles.sectionHeader}>
-        <Text style={Type.cardHeading}>Today</Text>
+        <Text style={[Type.sectionTitle, styles.titleText]}>Today</Text>
         {date ? (
           <Text style={Type.caption} color={Palette.text.tertiary}>
             {date}
@@ -462,7 +548,7 @@ export const UpcomingList = memo<UpcomingListProps>(({ items, onSelect }) => {
 
   return (
     <View style={styles.section}>
-      <SectionTitle title="Upcoming" />
+      <SectionTitle title="Upcoming" Icon={CalendarDotsIcon} />
 
       <View style={styles.upcomingCard}>
         {items.length === 0 ? (
@@ -593,6 +679,24 @@ const createStyles = (colors: ColorPalette) =>
       alignItems: "center",
       justifyContent: "space-between",
     },
+    titleRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      flexShrink: 1,
+    },
+    titleIcon: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    // A touch heavier than the default section title so each block's start stands out.
+    titleText: {
+      fontSize: 17,
+      fontWeight: "600",
+    },
     flex: {
       flex: 1,
     },
@@ -688,11 +792,32 @@ const createStyles = (colors: ColorPalette) =>
     },
     childStats: {
       flexDirection: "row",
-      gap: 14,
+      gap: 10,
       marginTop: 11,
       paddingTop: 10,
       borderTopWidth: 1,
       borderTopColor: Palette.border.divider,
+    },
+    stat: {
+      flex: 1,
+      minWidth: 0,
+      gap: 2,
+    },
+    dots: {
+      flexDirection: "row",
+      justifyContent: "center",
+      gap: 6,
+      marginTop: 2,
+    },
+    dot: {
+      width: 6,
+      height: 6,
+      borderRadius: 3,
+      backgroundColor: Palette.text.chevron,
+    },
+    dotActive: {
+      width: 16,
+      backgroundColor: colors.primary,
     },
 
     // At a Glance
