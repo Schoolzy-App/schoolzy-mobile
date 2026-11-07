@@ -15,6 +15,7 @@ import type {
   CreateGateRequestResponseDto,
   GateCreateOptionsDto,
   GateEligibilityDto,
+  GateOtpDto,
   GateRequestDetailDto,
   GateRequestListDto,
   GateStudentDto,
@@ -133,6 +134,49 @@ export function useCancelGateRequest(
         queryKey: queryKeys.gateRequests.students(),
       });
       onSuccess?.(detail);
+    },
+  });
+}
+
+/**
+ * POST /api/mobile/gate-requests/{id}/otp. Each call replaces the active code
+ * and uses one of the day's tries, so the key is reused on retry: a timed-out
+ * attempt replays the same code instead of burning another try. The detail is
+ * refetched afterwards for the authoritative `canGenerateOtp` / tries left.
+ */
+export function useGenerateGateOtp(
+  id: number,
+  onSuccess?: (otp: GateOtpDto) => void,
+) {
+  const queryClient = useQueryClient();
+
+  return useIdempotentMutation<void, GateOtpDto>({
+    operation: "GateRequests.GenerateOtp",
+    isInFlightConflict: isGateInFlightConflict,
+    mutationFn: (_input, idempotencyKey) =>
+      gateRequestsApi.generateOtp(id, idempotencyKey),
+    onSuccess: (otp) => {
+      queryClient.setQueryData<GateRequestDetailDto>(
+        queryKeys.gateRequests.detail(id),
+        (prev) =>
+          prev
+            ? {
+                ...prev,
+                activeOtp: {
+                  code: otp.code,
+                  expiresAtUtc: otp.expiresAtUtc,
+                  serverTimeUtc: otp.serverTimeUtc,
+                },
+                otpGenerationsLeft: otp.generationsLeft,
+                otpDailyLimit: otp.dailyLimit,
+                canGenerateOtp: prev.canGenerateOtp && otp.generationsLeft > 0,
+              }
+            : prev,
+      );
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.gateRequests.detail(id),
+      });
+      onSuccess?.(otp);
     },
   });
 }

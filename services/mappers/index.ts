@@ -56,8 +56,11 @@ export {
   gateStatusTone,
   gateStatusLabel,
   humanizeLabel,
+  toGateActiveOtp,
 } from "./gateRequests";
 export type {
+  GateActiveOtp,
+  GatePickupMethodName,
   GateRequest,
   GateRequestDetail,
   GateRequestStatus,

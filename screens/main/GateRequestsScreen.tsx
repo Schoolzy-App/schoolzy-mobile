@@ -17,7 +17,7 @@ import { useGateRequests } from "@/hooks";
 import { useRefetchOnRefocus } from "@/hooks/useRefetchOnRefocus";
 import type { RootStackScreenProps } from "@/navigation/types";
 import { gateStatusLabel, type GateRequest } from "@/services/mappers";
-import { formatDate } from "@/utils/format";
+import { formatDate, formatTime } from "@/utils/format";
 
 type Props = RootStackScreenProps<"GateRequests">;
 
@@ -190,6 +190,11 @@ const GateRequestCard = memo(function GateRequestCard({
       {request.status === "pending" ? (
         <Text style={Type.caption} color={Palette.status.warning.fg}>
           Awaiting school confirmation
+        </Text>
+      ) : null}
+      {request.collectedAt ? (
+        <Text style={Type.caption} color={Palette.status.success.fg}>
+          Collected at {formatTime(request.collectedAt.toISOString())}
         </Text>
       ) : null}
     </Pressable>

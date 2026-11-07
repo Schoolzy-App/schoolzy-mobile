@@ -31,7 +31,39 @@ export const GateCollectPerson = {
 /** GET /eligibility */
 export interface GateEligibilityDto {
   canUse: boolean;
+  /** The school's "Require pickup code (OTP)" option. */
+  pickupOtpEnabled?: boolean;
 }
+
+/** How staff recorded the pickup. */
+export const GatePickupMethod = {
+  Manual: 1,
+  Otp: 2,
+} as const;
+
+/** The current valid pickup code on a request. */
+export interface GateActiveOtpDto {
+  /** 6 digits. */
+  code: string;
+  expiresAtUtc: string;
+  /** Server clock at response time; count down from this, not the phone clock. */
+  serverTimeUtc: string;
+}
+
+/** POST /{id}/otp */
+export interface GateOtpDto extends GateActiveOtpDto {
+  generationsLeft: number;
+  dailyLimit: number;
+}
+
+/** `errors[0]` machine codes of POST /{id}/otp. */
+export const GateOtpErrorCode = {
+  Disabled: "GateOtpDisabled",
+  NotConfirmed: "GateOtpRequestNotConfirmed",
+  NotToday: "GateOtpRequestNotToday",
+  AlreadyCollected: "GateOtpAlreadyCollected",
+  DailyLimitReached: "GateOtpDailyLimitReached",
+} as const;
 
 /** GET /students, and `siblings` of /create-options. */
 export interface GateStudentDto {
@@ -78,6 +110,8 @@ export interface GateRequestListItemDto {
   createdAtUtc: string;
   /** Parent or relative display name of the creator; null when unmatched. */
   requestedByName: string | null;
+  /** Set once staff confirmed pickup (by code or manually). */
+  collectedAtUtc?: string | null;
 }
 
 /** GET /?pageNumber=&pageSize= */
@@ -92,6 +126,14 @@ export interface GateRequestDetailDto extends GateRequestListItemDto {
   confirmedAtUtc: string | null;
   cancelledAtUtc: string | null;
   canCancel: boolean;
+  pickupOtpEnabled?: boolean;
+  /** Show the Generate code button only when true. */
+  canGenerateOtp?: boolean;
+  otpGenerationsLeft?: number;
+  otpDailyLimit?: number;
+  activeOtp?: GateActiveOtpDto | null;
+  /** `GatePickupMethod` */
+  collectedMethod?: number | null;
 }
 
 /** POST / */

@@ -3,7 +3,7 @@ import type {
   GateRequestListDto,
   GateRequestListItemDto,
 } from "@/types/api";
-import { GateRequestStatusCode } from "@/types/api";
+import { GatePickupMethod, GateRequestStatusCode } from "@/types/api";
 
 /** Gate request lifecycle, mapped from the server's `status` 1-5. */
 export type GateRequestStatus =
@@ -27,6 +27,19 @@ export interface GateRequest {
   createdAt: Date;
   /** Parent or relative display name; null when the creator has none (row hidden). */
   requestedByName: string | null;
+  /** When staff confirmed pickup; null until then. */
+  collectedAt: Date | null;
+}
+
+export type GatePickupMethodName = "otp" | "manual";
+
+export interface GateActiveOtp {
+  code: string;
+  /**
+   * Expiry on the phone's clock: server expiry shifted by the server/phone
+   * clock difference at fetch time, so a wrong phone clock can't skew it.
+   */
+  expiresAt: Date;
 }
 
 export interface GateRequestDetail extends GateRequest {
@@ -34,6 +47,12 @@ export interface GateRequestDetail extends GateRequest {
   confirmedAt: Date | null;
   cancelledAt: Date | null;
   canCancel: boolean;
+  pickupOtpEnabled: boolean;
+  canGenerateOtp: boolean;
+  otpGenerationsLeft: number;
+  otpDailyLimit: number;
+  activeOtp: GateActiveOtp | null;
+  collectedMethod: GatePickupMethodName | null;
 }
 
 export interface GroupedGateRequests {
@@ -114,7 +133,25 @@ export function toGateRequest(dto: GateRequestListItemDto): GateRequest {
     status: toStatus(dto.status),
     createdAt: parseUtc(dto.createdAtUtc),
     requestedByName: dto.requestedByName ?? null,
+    collectedAt: parseUtcOrNull(dto.collectedAtUtc),
   };
+}
+
+/** Maps a server code (detail `activeOtp` or the POST /otp response). */
+export function toGateActiveOtp(
+  dto: { code: string; expiresAtUtc: string; serverTimeUtc: string } | null | undefined,
+  now: Date = new Date(),
+): GateActiveOtp | null {
+  if (!dto?.code) return null;
+  const remainingMs =
+    parseUtc(dto.expiresAtUtc).getTime() - parseUtc(dto.serverTimeUtc).getTime();
+  return { code: dto.code, expiresAt: new Date(now.getTime() + remainingMs) };
+}
+
+function toPickupMethod(code: number | null | undefined): GatePickupMethodName | null {
+  if (code === GatePickupMethod.Otp) return "otp";
+  if (code === GatePickupMethod.Manual) return "manual";
+  return null;
 }
 
 export function selectGateRequestDetail(
@@ -126,6 +163,12 @@ export function selectGateRequestDetail(
     confirmedAt: parseUtcOrNull(dto.confirmedAtUtc),
     cancelledAt: parseUtcOrNull(dto.cancelledAtUtc),
     canCancel: dto.canCancel,
+    pickupOtpEnabled: !!dto.pickupOtpEnabled,
+    canGenerateOtp: !!dto.canGenerateOtp,
+    otpGenerationsLeft: dto.otpGenerationsLeft ?? 0,
+    otpDailyLimit: dto.otpDailyLimit ?? 3,
+    activeOtp: toGateActiveOtp(dto.activeOtp),
+    collectedMethod: toPickupMethod(dto.collectedMethod),
   };
 }
 

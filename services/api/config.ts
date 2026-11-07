@@ -134,6 +134,7 @@ export const ROUTES = {
     create: "/api/mobile/gate-requests",
     detail: (id: number) => `/api/mobile/gate-requests/${id}`,
     cancel: (id: number) => `/api/mobile/gate-requests/${id}/cancel`,
+    otp: (id: number) => `/api/mobile/gate-requests/${id}/otp`,
   },
   documentRequests: {
     createOptions: "/api/mobile/document-requests/create-options",

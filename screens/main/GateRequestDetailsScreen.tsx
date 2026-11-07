@@ -1,5 +1,6 @@
 import {
   CheckCircleIcon,
+  HandshakeIcon,
   HourglassMediumIcon,
   type Icon,
   ProhibitIcon,
@@ -12,13 +13,15 @@ import { ErrorBanner, InfoHint } from "@/components/form/FormParts";
 import { Toast, type ToastMessage } from "@/components/form/Toast";
 import FormButton from "@/components/FormButton";
 import GateStatusChip from "@/components/gateRequests/GateStatusChip";
+import PickupCodeCard from "@/components/gateRequests/PickupCodeCard";
 import { QueryState, ScreenTemplate, Text } from "@/components/ui";
 import { Palette, Radius, Spacing, Type } from "@/constants/tokens";
 import { useCancelGateRequest, useGateRequest } from "@/hooks";
+import { useRefetchOnRefocus } from "@/hooks/useRefetchOnRefocus";
 import type { RootStackScreenProps } from "@/navigation/types";
 import type { GateRequestDetail } from "@/services/mappers";
 import { ApiError } from "@/types/api";
-import { formatDateTime } from "@/utils/format";
+import { formatDateTime, formatTime } from "@/utils/format";
 
 type Props = RootStackScreenProps<"GateRequestDetails">;
 
@@ -31,11 +34,16 @@ const CANCELLED_BY_SCHOOL_COPY =
   "The school cancelled this request. Please contact the school if needed.";
 
 const dateTime = (value: Date | null) => (value ? formatDateTime(value.toISOString()) : "");
+const timeOnly = (value: Date) => formatTime(value.toISOString());
 
 /** One gate request (spec §6.5.3). */
 export default function GateRequestDetailsScreen({ route }: Props) {
   const { requestId } = route.params;
   const { data, isLoading, error, refetch } = useGateRequest(requestId);
+  const refresh = useCallback(() => void refetch(), [refetch]);
+  // Pickup can be confirmed at the gate while the parent is away from this
+  // screen: show "Collected" (and the live code state) on return.
+  useRefetchOnRefocus(refetch);
 
   const [toast, setToast] = useState<ToastMessage | null>(null);
   const hideToast = useCallback(() => setToast(null), []);
@@ -137,6 +145,8 @@ export default function GateRequestDetailsScreen({ route }: Props) {
                   />
                 ) : null}
 
+                <PickupCodeCard item={data} onRefresh={refresh} />
+
                 <DetailCard item={data} />
               </>
             ) : null}
@@ -162,6 +172,21 @@ function StatusBanner({ item }: { item: GateRequestDetail }) {
         />
       );
     case "confirmed":
+      if (item.collectedAt) {
+        const how =
+          item.collectedMethod === "otp"
+            ? "The school confirmed pickup with your code."
+            : "The school confirmed pickup.";
+        return (
+          <Banner
+            Icon={HandshakeIcon}
+            color={Palette.status.success.fg}
+            tint={Palette.status.success.tint}
+            title={`Collected at ${timeOnly(item.collectedAt)}`}
+            text={how}
+          />
+        );
+      }
       return (
         <Banner
           Icon={CheckCircleIcon}

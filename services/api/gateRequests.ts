@@ -3,6 +3,7 @@ import type {
   CreateGateRequestResponseDto,
   GateCreateOptionsDto,
   GateEligibilityDto,
+  GateOtpDto,
   GateRequestDetailDto,
   GateRequestListDto,
   GateStudentDto,
@@ -77,6 +78,18 @@ export const gateRequestsApi = {
     return request<GateRequestDetailDto>({
       method: "POST",
       url: ROUTES.gateRequests.cancel(id),
+      headers: { "Idempotency-Key": idempotencyKey },
+    });
+  },
+
+  /**
+   * POST /api/mobile/gate-requests/{id}/otp — `Idempotency-Key` is required.
+   * Replaces any active code with a new 15-minute one.
+   */
+  generateOtp(id: number, idempotencyKey: string): Promise<GateOtpDto> {
+    return request<GateOtpDto>({
+      method: "POST",
+      url: ROUTES.gateRequests.otp(id),
       headers: { "Idempotency-Key": idempotencyKey },
     });
   },

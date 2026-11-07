@@ -45,6 +45,7 @@ export {
   useGateRequest,
   useCreateGateRequest,
   useCancelGateRequest,
+  useGenerateGateOtp,
 } from "./useGateRequests";
 export {
   useDocumentRequests,
