@@ -96,7 +96,7 @@ export const TABS: TabEntry[] = [
   ...(FeatureFlags.gateRequestsTab
     ? [
         {
-          name: "GateRequests" as const,
+          name: "GateTab" as const,
           label: "Gate",
           Icon: DoorIcon,
           weight: "fill" as const,
@@ -143,7 +143,7 @@ export function FloatingTabBar({ active, onSelect }: FloatingTabBarProps) {
   });
   const tabs = gateEligibility?.canUse
     ? TABS
-    : TABS.filter((tab) => tab.name !== "GateRequests");
+    : TABS.filter((tab) => tab.name !== "GateTab");
   // Home, Newsletters and Account stay on the bar; the rest sit under "More".
   const barTabs = tabs.filter((tab) => !tab.more);
   const moreTabs = tabs.filter((tab) => tab.more);

@@ -30,8 +30,12 @@ export type MainTabParamList = {
    * `Request` screen rather than rendering here — same pattern as `Chatting`.
    */
   Requests: undefined;
-  /** Placeholder for the optional Gate tab; pressing it pushes `GateRequests`. */
-  GateRequests: undefined;
+  /**
+   * Placeholder for the optional Gate tab; pressing it pushes the root
+   * `GateRequests` screen. Must not share that name, or tab screens'
+   * `navigate("GateRequests")` would land on this placeholder.
+   */
+  GateTab: undefined;
   Account: undefined;
   Add: undefined;
 };

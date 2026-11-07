@@ -59,8 +59,10 @@ export default function TabNavigator() {
       ) : null}
       {FeatureFlags.gateRequestsTab ? (
         // Placeholder like Requests: pressing it pushes the root GateRequests
-        // screen, so this component is never actually shown.
-        <Tab.Screen name="GateRequests" component={RequestScreen} />
+        // screen, so this component is never actually shown. Named "GateTab",
+        // not "GateRequests": a tab with the root route's name would capture
+        // navigate("GateRequests") from tab screens such as Account.
+        <Tab.Screen name="GateTab" component={RequestScreen} />
       ) : null}
       <Tab.Screen name="Account" component={AccountScreen} />
       <Tab.Screen name="Add" component={AddScreen} />
