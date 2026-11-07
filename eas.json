@@ -21,7 +21,8 @@
   "submit": {
     "production": {
       "ios": {
-        "appleId": "info@edugistics.com"
+        "appleId": "info@edugistics.com",
+        "ascAppId": "6463766894"
       },
       "android": {
         "serviceAccountKeyPath": "./credentials/play-service-account.json",

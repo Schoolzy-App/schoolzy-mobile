@@ -7,7 +7,8 @@ export const Config = {
    * Each app can point at its own host; override at build time with
    * EXPO_PUBLIC_API_URL when testing against another environment.
    */
-  apiUrl: "https://devapi.schoolzyapp.com",
+  // apiUrl: "https://devapi.schoolzyapp.com", // test
+  apiUrl: "https://apibbs.schoolzyapp.com", // prod
   /** Per-school feature toggles — see `apps/features.ts`. */
   features: DEFAULT_FEATURES as AppFeatures,
 };

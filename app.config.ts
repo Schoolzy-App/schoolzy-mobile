@@ -38,9 +38,16 @@ const configs: Record<string, ExpoConfig> = {
     // Identifies the EAS project — changing it would orphan the builds.
     slug: 'brighton',
     "owner": "schoolzy-app",
-    // Live on the stores is 2.0.0 (versionCode 47). This is a full rewrite —
-    // new codebase, live API, push notifications — hence the major bump.
-    version: '3.0.0',
+    /**
+     * ⚠️ Marketing version — bump this for every App Store submission.
+     * 3.0.0 is already approved, so Apple closed that train: a build
+     * resubmitted under it is rejected with 90062 / 90186.
+     *
+     * It also drives `runtimeVersion` (policy: appVersion) below, so changing
+     * it starts a NEW OTA runtime — updates published at the old version do
+     * not reach builds made from this one.
+     */
+    version: '3.1.0',
     orientation: 'portrait',
     // The app icon is its own opaque, full-bleed tile. `logo.png` stays the
     // transparent in-app mark (login, splash, brand slots) — the two have
