@@ -31,14 +31,22 @@ const log = createLogger("idempotency");
  * Everything else — validation, 403, a rejected category — means nothing was
  * created, so the next submit is a genuinely new attempt and gets a new key.
  */
-export function attemptMayExist(error: unknown): boolean {
+export function attemptMayExist(
+  error: unknown,
+  isInFlightConflict: (error: ApiError) => boolean = defaultInFlightConflict,
+): boolean {
   if (!(error instanceof ApiError)) return false;
   return (
     error.isNetworkError ||
     error.status === 0 ||
-    error.status === 409 ||
+    (error.status === 409 && isInFlightConflict(error)) ||
     error.status >= 500
   );
+}
+
+/** Historic behaviour: every 409 means "the first request is still running". */
+function defaultInFlightConflict(error: ApiError): boolean {
+  return error.status === 409;
 }
 
 export interface IdempotentMutationOptions<TVariables, TResult> {
@@ -46,6 +54,13 @@ export interface IdempotentMutationOptions<TVariables, TResult> {
   mutationFn: (variables: TVariables, idempotencyKey: string) => Promise<TResult>;
   onSuccess?: (result: TResult, variables: TVariables) => void;
   onError?: (error: Error, variables: TVariables) => void;
+  /**
+   * Which 409s mean "the first request is still running" (keep the key,
+   * `isProcessing` true). Defaults to every 409. Modules whose endpoints also
+   * return business 409s (already confirmed, duplicate for today) override this
+   * so those start a fresh attempt instead of reusing a stale key.
+   */
+  isInFlightConflict?: (error: ApiError) => boolean;
   /** Label for the logs, e.g. "StudentPayments.Wallet". */
   operation?: string;
 }
@@ -55,6 +70,7 @@ export function useIdempotentMutation<TVariables, TResult>({
   onSuccess,
   onError,
   operation = "command",
+  isInFlightConflict = defaultInFlightConflict,
 }: IdempotentMutationOptions<TVariables, TResult>) {
   /** The key for the attempt currently in flight, or awaiting a retry. */
   const keyRef = useRef<string | null>(null);
@@ -89,8 +105,11 @@ export function useIdempotentMutation<TVariables, TResult>({
       onSuccess?.(result, variables);
     },
     onError: (error, variables) => {
-      const keep = attemptMayExist(error);
-      const conflict = error instanceof ApiError && error.status === 409;
+      const keep = attemptMayExist(error, isInFlightConflict);
+      const conflict =
+        error instanceof ApiError &&
+        error.status === 409 &&
+        isInFlightConflict(error);
 
       log.warn(
         `✕ ${operation} failed key=${keyRef.current} ` +

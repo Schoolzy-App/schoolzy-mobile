@@ -9,9 +9,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import AddComplaintScreen from "@/screens/main/AddComplaintScreen";
 import AddRelativeScreen from "@/screens/main/AddRelativeScreen";
 import EditParentInfoScreen from "@/screens/main/EditParentInfoScreen";
-import ParentProfileScreen from "@/screens/main/ParentProfileScreen";
-import RelativeDetailsScreen from "@/screens/main/RelativeDetailsScreen";
+import RelativesScreen from "@/screens/main/RelativesScreen";
 import AddRequestScreen from "@/screens/main/AddRequestScreen";
+import AddGateRequestScreen from "@/screens/main/AddGateRequestScreen";
+import GateRequestDetailsScreen from "@/screens/main/GateRequestDetailsScreen";
+import GateRequestsScreen from "@/screens/main/GateRequestsScreen";
 import ComplaintDetailsScreen from "@/screens/main/ComplaintDetailsScreen";
 import ComplaintsScreen from "@/screens/main/ComplaintsScreen";
 import AgendaScreen from "@/screens/main/AgendaScreen";
@@ -20,6 +22,8 @@ import ConfirmDepositScreen from "@/screens/main/ConfirmDepositScreen";
 import FinancesScreen from "@/screens/main/FinancesScreen";
 import MealsScreen from "@/screens/main/MealsScreen";
 import NewsletterScreen from "@/screens/main/NewsletterScreen";
+import NewsletterDetailScreen from "@/screens/main/NewsletterDetailScreen";
+import ReportDetailScreen from "@/screens/main/ReportDetailScreen";
 import PaymentDetailsScreen from "@/screens/main/PaymentDetailsScreen";
 import ReportsScreen from "@/screens/main/ReportsScreen";
 import StudentProfileScreen from "@/screens/main/StudentProfileScreen";
@@ -45,14 +49,10 @@ export default function RootNavigator() {
           <Stack.Screen name="Main" component={TabNavigator} />
           <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
           <Stack.Screen name="ChatWithSchool" component={ChatWithSchoolScreen} />
-          <Stack.Screen name="ParentProfile" component={ParentProfileScreen} />
+          <Stack.Screen name="Relatives" component={RelativesScreen} />
           <Stack.Screen
             name="EditParentInfo"
             component={EditParentInfoScreen}
-          />
-          <Stack.Screen
-            name="RelativeDetails"
-            component={RelativeDetailsScreen}
           />
           <Stack.Screen name="AddRelative" component={AddRelativeScreen} />
           <Stack.Screen name="Complaints" component={ComplaintsScreen} />
@@ -67,6 +67,12 @@ export default function RootNavigator() {
             component={RequestDetailsScreen}
           />
           <Stack.Screen name="AddRequest" component={AddRequestScreen} />
+          <Stack.Screen name="GateRequests" component={GateRequestsScreen} />
+          <Stack.Screen name="AddGateRequest" component={AddGateRequestScreen} />
+          <Stack.Screen
+            name="GateRequestDetails"
+            component={GateRequestDetailsScreen}
+          />
           <Stack.Screen name="StudentProfile" component={StudentProfileScreen} />
           <Stack.Screen name="Reports" component={ReportsScreen} />
           <Stack.Screen name="Wellness" component={WellnessScreen} />
@@ -80,6 +86,11 @@ export default function RootNavigator() {
           <Stack.Screen name="Pdf" component={PdfScreen} />
           <Stack.Screen name="Notification" component={NotificationScreen} />
           <Stack.Screen name="Newsletter" component={NewsletterScreen} />
+          <Stack.Screen
+            name="NewsletterDetail"
+            component={NewsletterDetailScreen}
+          />
+          <Stack.Screen name="ReportDetail" component={ReportDetailScreen} />
         </Stack.Group>
       ) : (
         // ─── Unauthenticated: only the auth stack is reachable ─────────────

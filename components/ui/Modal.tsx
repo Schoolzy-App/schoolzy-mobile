@@ -6,6 +6,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { ColorPalette } from '@/apps';
+import { Palette, Radius, Size } from '@/constants/tokens';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useStyles } from '@/hooks';
 
@@ -13,9 +14,15 @@ type ModalProps = {
   isVisible?: boolean;
   children: React.ReactNode;
   closeModal(): void;
+  /**
+   * The design's bottom sheet (Parent Dashboard spec §10): grey body, radius
+   * 24, the handle on a white strip, no padding — the content lays out its
+   * own white header and footer.
+   */
+  bare?: boolean;
 };
 
-const Modal: FC<ModalProps> = ({ isVisible, closeModal, children }) => {
+const Modal: FC<ModalProps> = ({ isVisible, closeModal, children, bare }) => {
   const insets = useSafeAreaInsets();
   const styles = useStyles(createStyles);
   const { colors } = useTheme();
@@ -67,10 +74,20 @@ const Modal: FC<ModalProps> = ({ isVisible, closeModal, children }) => {
       style={styles.modal}
     >
       <GestureHandlerRootView
-        style={[styles.modalContainer, { paddingBottom: insets.bottom + 16 }]}
+        style={
+          bare
+            ? [styles.modalContainer, styles.bareContainer]
+            : [styles.modalContainer, { paddingBottom: insets.bottom + 16 }]
+        }
       >
         <GestureDetector gesture={panGesture}>
-          <View style={styles.swipeIndicator} />
+          {bare ? (
+            <View style={styles.bareHandleRow}>
+              <View style={styles.bareHandle} />
+            </View>
+          ) : (
+            <View style={styles.swipeIndicator} />
+          )}
         </GestureDetector>
         {children}
       </GestureHandlerRootView>
@@ -103,5 +120,28 @@ const createStyles = (colors: ColorPalette) =>
       height: 6,
       borderRadius: 3,
       backgroundColor: colors.border,
+    },
+    bareContainer: {
+      alignItems: 'stretch',
+      paddingHorizontal: 0,
+      paddingTop: 0,
+      borderTopStartRadius: Radius.sheet,
+      borderTopEndRadius: Radius.sheet,
+      backgroundColor: Palette.surface.page,
+      maxHeight: '86%',
+      gap: 0,
+      overflow: 'hidden',
+    },
+    bareHandleRow: {
+      alignItems: 'center',
+      paddingTop: 10,
+      paddingBottom: 6,
+      backgroundColor: Palette.surface.card,
+    },
+    bareHandle: {
+      width: Size.sheetHandle.width,
+      height: Size.sheetHandle.height,
+      borderRadius: 4,
+      backgroundColor: Palette.surface.sheetHandle,
     },
   });

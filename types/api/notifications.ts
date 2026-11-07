@@ -59,11 +59,27 @@ export interface PushMessage {
  * removed from the payload, so mis-labelled rows now route by their label or
  * not at all. Mismatches are no longer recoverable on the client.
  */
+/**
+ * Mirrors the backend's NotificationType. The inbox sends the number; a push
+ * sends the name ("ClinicReport") in `data.type`.
+ */
 export const NotificationType = {
+  Meeting: 1,
+  Timetable: 2,
+  Exam: 3,
+  Homework: 4,
   General: 5,
   DocumentRequest: 6,
   Complaint: 7,
+  Preparation: 8,
+  Newsletter: 9,
   MonthlyExamReport: 10,
+  ClinicReport: 11,
+  AdminForm: 12,
+  StudentDynamicReport: 13,
+  GateRequestSubmitted: 14,
+  GateRequestConfirmed: 15,
+  GateRequestCancelled: 16,
 } as const;
 
 export type NotificationType =
@@ -81,14 +97,10 @@ export interface NotificationDto {
   title: string | null;
   body: string | null;
   type: NotificationType | number;
-  /**
-   * Human label for `type`, e.g. "DocumentRequest" / "MonthlyExamReport".
-   *
-   * With `actionUrl` gone this drives navigation alongside `type`. The inbox
-   * payload has no `referenceId`, so a row can identify a *section* but never
-   * a specific entity — see `resolveTargetDestination`.
-   */
+  /** Human label for `type`, e.g. "DocumentRequest" / "MonthlyExamReport". */
   typeLabel: string | null;
+  /** Id of the record it's about: the report, complaint, request or newsletter. */
+  referenceId?: number | null;
   isRead: boolean;
   sentAt: IsoDateTime | null;
   /** Server-rendered relative time, e.g. "22h ago" / "Aug 30". */

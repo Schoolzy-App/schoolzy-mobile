@@ -15,6 +15,7 @@ export {
   useDeleteRelative,
   useUpdateLinkPermission,
   useGuardianStudents,
+  useGuardianStudentsRaw,
   useGenders,
   useRelativeTypes,
   useNationalities,
@@ -23,6 +24,7 @@ export {
 } from "./useParentProfile";
 export {
   useStudentToday,
+  useStudentFinancialSummary,
   useNeedsAttention,
   useLatestActivities,
 } from "./useStudentDashboard";
@@ -36,13 +38,23 @@ export {
   useCreateComplaint,
 } from "./useComplaints";
 export {
+  useGateEligibility,
+  useGateStudents,
+  useGateCreateOptions,
+  useGateRequests,
+  useGateRequest,
+  useCreateGateRequest,
+  useCancelGateRequest,
+  useGenerateGateOtp,
+} from "./useGateRequests";
+export {
   useDocumentRequests,
   useDocumentRequest,
   useDocumentRequestOptions,
   useCreateDocumentRequest,
   useUploadDocumentRequestFile,
 } from "./useDocumentRequests";
-export { useNewsletters, useHome } from "./useNewsletters";
+export { useNewsletters, useNewsletterDetail, useHome } from "./useNewsletters";
 export {
   useHealthProfile,
   useHealthProfileEdit,
@@ -55,6 +67,7 @@ export {
   useIgAccountOptions,
   useOnlinePayment,
   usePaymentCategories,
+  useWalletTopUpCategories,
   usePaymentHistory,
   useWalletPayment,
 } from "./usePayments";

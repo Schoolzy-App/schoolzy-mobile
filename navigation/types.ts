@@ -1,5 +1,6 @@
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import type { NativeStackNavigationProp, NativeStackScreenProps } from '@react-navigation/native-stack';
+import type { StudentReport } from '@/services/mappers';
 import type { ChildAvatarIcon } from '@/types/child';
 
 // ─── Auth Stack ──────────────────────────────────────────────────────────────
@@ -29,6 +30,12 @@ export type MainTabParamList = {
    * `Request` screen rather than rendering here — same pattern as `Chatting`.
    */
   Requests: undefined;
+  /**
+   * Placeholder for the optional Gate tab; pressing it pushes the root
+   * `GateRequests` screen. Must not share that name, or tab screens'
+   * `navigate("GateRequests")` would land on this placeholder.
+   */
+  GateTab: undefined;
   Account: undefined;
   Add: undefined;
 };
@@ -114,6 +121,11 @@ export type PaymentDetailsParams = {
   studentSeasonId?: number;
   /** Absent when the parent started a free-form payment. */
   prefill?: PaymentPrefill;
+  /**
+   * Wallet Top up: the category comes from `categories/wallet`, there are no
+   * School / IG tabs, and the wallet itself isn't offered as a method.
+   */
+  topUp?: boolean;
 };
 
 export type ConfirmDepositParams = {
@@ -129,11 +141,8 @@ export type ConfirmDepositParams = {
   payingFor?: string;
 };
 
-export type RelativeDetailsParams = {
-  relativeId: number;
-  /** Shown in the header until the relative loads. */
-  name?: string;
-};
+/** `toast`: a message handed back by the form ("Relative saved."). */
+export type RelativesParams = { toast?: string } | undefined;
 
 /** Omit `relativeId` to create; pass one to edit that relative. */
 export type AddRelativeParams = {
@@ -167,22 +176,32 @@ export type PdfParams = {
 };
 
 export type NotificationParams = undefined;
-export type ParentProfileParams = undefined;
 export type EditParentInfoParams = undefined;
 export type ComplaintsParams = undefined;
 export type AddComplaintParams = undefined;
 export type RequestParams = undefined;
 export type AddRequestParams = undefined;
 export type NewsletterParams = undefined;
+export type ReportDetailParams = {
+  studentSeasonId: number;
+  /** The list row itself: the API has no single-report endpoint. */
+  report: StudentReport;
+};
+export type NewsletterDetailParams = {
+  /** 1 Newsletter (Announcement), 2 StudentReport (Letter). */
+  source: 1 | 2;
+  id: number;
+  /** Shown while the detail loads. */
+  title?: string;
+};
 
 export type RootStackParamList = {
   Auth: undefined;
   Main: undefined;
   ChangePassword: undefined;
   ChatWithSchool: undefined;
-  ParentProfile: ParentProfileParams;
+  Relatives: RelativesParams;
   EditParentInfo: EditParentInfoParams;
-  RelativeDetails: RelativeDetailsParams;
   AddRelative: AddRelativeParams;
   Complaints: ComplaintsParams;
   ComplaintDetails: ComplaintDetailsParams;
@@ -190,6 +209,9 @@ export type RootStackParamList = {
   Request: RequestParams;
   RequestDetails: RequestDetailsParams;
   AddRequest: AddRequestParams;
+  GateRequests: undefined;
+  AddGateRequest: undefined;
+  GateRequestDetails: { requestId: number };
   StudentProfile: StudentProfileParams;
   Reports: ReportsParams;
   Wellness: WellnessParams;
@@ -203,6 +225,8 @@ export type RootStackParamList = {
   Pdf: PdfParams;
   Notification: NotificationParams;
   Newsletter: NewsletterParams;
+  NewsletterDetail: NewsletterDetailParams;
+  ReportDetail: ReportDetailParams;
 };
 
 export type RootStackNavigationProp<T extends keyof RootStackParamList> =

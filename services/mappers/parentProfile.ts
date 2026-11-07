@@ -2,6 +2,7 @@ import type { DefaultInputOption } from "@/components/ui";
 import { resolvePhotoUrl } from "@/services/api/parentProfile";
 import type {
   LocalizedLookupDto,
+  ParentInfoChangeDto,
   ParentInfoDto,
   RelativeDetailDto,
   RelativeDto,
@@ -69,6 +70,18 @@ export interface Relative {
   contact: string;
   /** First letter, for the fallback avatar when there is no photo. */
   initial: string;
+  /** Two letters from the server, falling back to the first letter. */
+  initials: string;
+  /** May collect at least one child from school. */
+  canPickUp: boolean;
+  /** Has a photo on file (the list colours the avatar by it). */
+  hasPhoto: boolean;
+  /** The children this relative is linked to. */
+  links: RelativeLink[];
+  /** The relationship, from the first link ("Uncle"). */
+  relationship: string;
+  /** The relationship type id from the first link, or null. */
+  relationshipType: number | null;
 }
 
 export function toRelative(dto: RelativeDto): Relative {
@@ -90,12 +103,19 @@ export function toRelative(dto: RelativeDto): Relative {
     photoUrl: resolvePhotoUrl(dto.photoUrl),
     contact: [dto.phone, dto.email].filter(Boolean).join(" · "),
     initial: name.charAt(0).toUpperCase(),
+    initials: dto.initials?.trim() || name.charAt(0).toUpperCase(),
+    canPickUp: (dto.links ?? []).some((link) => !!link.hasPermission),
+    hasPhoto: dto.hasPhoto ?? !!dto.photoUrl,
+    links: (dto.links ?? []).map(toRelativeLink),
+    relationship: dto.links?.[0]?.typeName?.trim() ?? "",
+    relationshipType: dto.links?.[0]?.type ?? null,
   };
 }
 
 /** `select` for the relatives query. */
 export function selectRelatives(dto: RelativesResponseDto): Relative[] {
-  return (dto?.relatives ?? []).map(toRelative);
+  // Newest first (Relative Setting §2); ids grow with creation.
+  return (dto?.relatives ?? []).map(toRelative).sort((a, b) => b.relativeId - a.relativeId);
 }
 
 // ─── Relative detail ────────────────────────────────────────────────────────
@@ -107,9 +127,13 @@ export interface RelativeLink {
   linkId: number | null;
   studentSeasonId: number | null;
   studentName: string;
+  type: number | null;
   typeName: string;
+  mainParentId: number | null;
   mainParentName: string;
   hasPermission: boolean;
+  /** The child's educational mandate — the school's, not removable here. */
+  isEducationalMandate: boolean;
 }
 
 export interface RelativeDetail extends Relative {
@@ -132,9 +156,12 @@ function toRelativeLink(dto: RelativeLinkDto, index: number): RelativeLink {
     linkId,
     studentSeasonId: dto.studentSeasonId ?? null,
     studentName: dto.studentName ?? "",
+    type: dto.type ?? null,
     typeName: dto.typeName ?? "",
+    mainParentId: dto.mainParentId ?? null,
     mainParentName: dto.mainParentName ?? "",
     hasPermission: !!dto.hasPermission,
+    isEducationalMandate: !!dto.isEducationalMandate,
   };
 }
 
@@ -158,6 +185,11 @@ export interface GuardianStudent {
    * rebuilt for each selected student rather than shared.
    */
   parentOptions: DefaultInputOption[];
+  /** This student's father / mother Parents.Id — a link's `mainParentId`. */
+  fatherId: number | null;
+  motherId: number | null;
+  fatherName: string;
+  motherName: string;
 }
 
 export function selectGuardianStudents(
@@ -183,6 +215,10 @@ export function selectGuardianStudents(
       studentSeasonId: dto.studentSeasonId,
       studentName: dto.studentName ?? "",
       parentOptions,
+      fatherId: dto.father?.id ?? null,
+      motherId: dto.mother?.id ?? null,
+      fatherName: dto.father?.name?.trim() ?? "",
+      motherName: dto.mother?.name?.trim() ?? "",
     };
   });
 }
@@ -206,6 +242,41 @@ export interface ParentInfo {
   nationalityId: number | null;
   nationalityName: string;
   photoUrl: string | null;
+  /** Read-only, changed by the school office. */
+  nationalId: string;
+  loginEmail: string;
+  canEdit: boolean;
+  /** Field keys that go to the school for review when changed. */
+  reviewFields: string[];
+  /** The latest change per field ("name", "mobile"… → change). */
+  changes: Record<string, ParentInfoChange>;
+}
+
+export interface ParentInfoChange {
+  status: "pending" | "approved" | "rejected";
+  requestedValue: string;
+  rejectReason: string;
+}
+
+const CHANGE_STATUS: Record<number, ParentInfoChange["status"] | undefined> = {
+  1: "pending",
+  2: "approved",
+  3: "rejected",
+};
+
+/** Pending first, then the latest decision — one entry per field. */
+function toChanges(dtos: ParentInfoChangeDto[] | null | undefined) {
+  const changes: Record<string, ParentInfoChange> = {};
+  (dtos ?? []).forEach((dto) => {
+    const status = CHANGE_STATUS[dto.status];
+    if (!status || !dto.fieldKey || changes[dto.fieldKey]) return;
+    changes[dto.fieldKey] = {
+      status,
+      requestedValue: dto.requestedValue?.trim() ?? "",
+      rejectReason: dto.rejectReason?.trim() ?? "",
+    };
+  });
+  return changes;
 }
 
 export function selectParentInfo(dto: ParentInfoDto): ParentInfo {
@@ -220,6 +291,11 @@ export function selectParentInfo(dto: ParentInfoDto): ParentInfo {
     nationalityId: dto.nationalityId ?? null,
     nationalityName: dto.nationalityName?.trim() ?? "",
     photoUrl: resolvePhotoUrl(dto.photoUrl),
+    nationalId: dto.nationalId?.trim() ?? "",
+    loginEmail: dto.loginEmail?.trim() ?? "",
+    canEdit: dto.canEdit ?? true,
+    reviewFields: dto.reviewFields ?? [],
+    changes: toChanges(dto.pendingChanges),
   };
 }
 

@@ -111,7 +111,8 @@ export default Text;
 const baseStyle: TextStyle = {
   fontSize: 16,
   lineHeight: 24,
-  fontFamily: "Inter",
+  // System font (SF Pro / Roboto), per the design. "Inter" was named here but
+  // never loaded, so it only ever fell back to the system font anyway.
   textAlign: "left",
   fontWeight: "400",
 };

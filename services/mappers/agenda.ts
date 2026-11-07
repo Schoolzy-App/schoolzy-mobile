@@ -1,5 +1,4 @@
 import type { AgendaDto, AgendaItemDto } from "@/types/api";
-import type { DynamicStateData } from "@/components/DynamicStateItem";
 import { formatDate, formatTime } from "@/utils/format";
 
 /**
@@ -20,44 +19,54 @@ function toAttendanceState(status: string): AttendanceState {
   return "unknown";
 }
 
-/** Attendance percentage rendered by the CircularProgress ring. */
+/** One homework or exam on the selected day (Agenda spec §4). */
+export interface AgendaEntry {
+  id: string;
+  kind: "homework" | "exam";
+  title: string;
+  /** "Maths · Due 28/10/2026" — the subject plus whatever the API knows. */
+  subtitle: string;
+}
+
 export interface AgendaSummary {
   studentName: string;
   /** The server's own wording, shown as-is. */
   attendanceStatus: string;
   /** `attendanceStatus` reduced to something the UI can branch on. */
   attendanceState: AttendanceState;
+  /** Year-level, not per selected day. */
   attendancePercentage: number;
-  items: DynamicStateData[];
+  entries: AgendaEntry[];
   /** Marked days for the calendar strip — absences, when the API reports one. */
   isAbsent: boolean;
 }
 
-/** The API sends a loose string discriminator; normalize it once here. */
-function toStateType(item: AgendaItemDto): DynamicStateData["type"] {
-  const type = item.type?.toLowerCase() ?? "";
-  if (type.includes("exam")) return "medical";
-  if (type.includes("homework")) return "homework";
-  return "homework";
-}
-
+/**
+ * The design's sub line is "{subject} · {teacher}" or "{subject} · Period n";
+ * the API has neither teacher nor period, so the subject is paired with the
+ * most useful thing it does have: done, due date, or start time.
+ */
 function toSubtitle(item: AgendaItemDto): string {
-  // Completion is the most useful thing to a parent, so it wins over the date.
-  if (item.isCompleted) return "Completed";
-  if (item.endDate) return `Due ${formatDate(item.endDate)}`;
-  if (item.startDate) return formatTime(item.startDate);
-  return item.examStatus ?? item.homeworkSource ?? "";
+  const detail = item.isCompleted
+    ? "Completed"
+    : item.endDate
+      ? `Due ${formatDate(item.endDate)}`
+      : item.startDate
+        ? formatTime(item.startDate)
+        : (item.examType ?? "");
+  return [item.subjectName?.trim(), detail].filter(Boolean).join(" · ");
 }
 
 export function selectAgenda(dto: AgendaDto): AgendaSummary {
-  const items = (dto.items ?? []).map<DynamicStateData>((item) => ({
-    id: String(item.id),
-    type: toStateType(item),
-    title: item.subjectName
-      ? `${item.title ?? ""} · ${item.subjectName}`.trim()
-      : (item.title ?? ""),
-    subtitle: toSubtitle(item),
-  }));
+  // Exams first, as the design recommends; the API's order otherwise.
+  const entries = (dto.items ?? [])
+    .map<AgendaEntry>((item) => ({
+      id: String(item.id),
+      kind: item.type?.toLowerCase().includes("exam") ? "exam" : "homework",
+      title: item.title?.trim() || item.subjectName?.trim() || "",
+      subtitle: toSubtitle(item),
+    }))
+    .sort((a, b) => (a.kind === b.kind ? 0 : a.kind === "exam" ? -1 : 1));
 
   const status = dto.attendance?.status ?? "";
   const state = toAttendanceState(status);
@@ -69,7 +78,7 @@ export function selectAgenda(dto: AgendaDto): AgendaSummary {
     attendancePercentage: Math.round(
       dto.attendance?.yearAttendancePercentage ?? 0,
     ),
-    items,
+    entries,
     isAbsent: state === "absent",
   };
 }

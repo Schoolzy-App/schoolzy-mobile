@@ -1,25 +1,24 @@
+import { BellIcon } from "phosphor-react-native";
 import React, { memo } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 
-import ParentAvatar from "@/components/ParentAvatar";
-import { IconContainer, Text } from "@/components/ui";
-import { Icons } from "@/constants";
+import type { ColorPalette } from "@/apps";
+import { Text } from "@/components/ui";
+import { IconSize, Palette, Size, Type } from "@/constants/tokens";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useStyles } from "@/hooks";
 
-const { NotificationIcon } = Icons;
-
 export interface ParentHeaderProps {
   parentName: string;
-  /** Drives the avatar illustration. From /home/current-user. */
-  gender?: string;
+  /** Shown in the avatar circle, e.g. "RH". */
+  initials: string;
   onNotificationPress?: () => void;
   /** Unread notification count; the badge is hidden when 0 or undefined. */
   unreadCount?: number;
 }
 
 const ParentHeader = memo<ParentHeaderProps>(
-  ({ parentName, gender, onNotificationPress, unreadCount = 0 }) => {
+  ({ parentName, initials, onNotificationPress, unreadCount = 0 }) => {
     const { colors } = useTheme();
     const styles = useStyles(createStyles);
 
@@ -27,21 +26,19 @@ const ParentHeader = memo<ParentHeaderProps>(
       <View style={styles.container}>
         {/* Left: avatar + greeting */}
         <View style={styles.left}>
-          <IconContainer size={44} color={colors.surface}>
-            <ParentAvatar gender={gender} size={24} />
-          </IconContainer>
+          <View style={styles.avatar}>
+            <Text style={[styles.initials, { color: colors.primary }]}>
+              {initials}
+            </Text>
+          </View>
           <View style={styles.textGroup}>
-            <Text
-              variant="body3"
-              weight="regular"
-              color={colors.textPrimaryInverted}
-            >
+            <Text style={Type.meta} color={colors.textPrimaryInverted}>
               Welcome Back!
             </Text>
             <Text
-              variant="label1"
-              weight="medium"
+              style={Type.listTitleRead}
               color={colors.textPrimaryInverted}
+              numberOfLines={1}
             >
               {parentName}
             </Text>
@@ -49,18 +46,20 @@ const ParentHeader = memo<ParentHeaderProps>(
         </View>
 
         {/* Right: notification bell */}
-        <Pressable onPress={onNotificationPress} hitSlop={8}>
-          <IconContainer size={44} color={colors.background}>
-            <NotificationIcon width={20} height={20} />
-          </IconContainer>
+        <Pressable
+          onPress={onNotificationPress}
+          hitSlop={8}
+          style={({ pressed }) => [styles.bell, pressed && styles.pressed]}
+        >
+          <BellIcon
+            weight="fill"
+            size={IconSize.bell}
+            color={Palette.nav.active}
+          />
 
           {unreadCount > 0 ? (
-            <View style={[styles.badge, { backgroundColor: colors.danger }]}>
-              <Text
-                variant="caption2"
-                weight="bold"
-                color={colors.textPrimaryInverted}
-              >
+            <View style={styles.badge}>
+              <Text style={Type.badge} color={Palette.text.onBrand}>
                 {unreadCount > 99 ? "99+" : unreadCount}
               </Text>
             </View>
@@ -74,31 +73,55 @@ const ParentHeader = memo<ParentHeaderProps>(
 ParentHeader.displayName = "ParentHeader";
 export default ParentHeader;
 
-const createStyles = () =>
+const createStyles = (colors: ColorPalette) =>
   StyleSheet.create({
     container: {
       flexDirection: "row",
       alignItems: "center",
-      justifyContent: "space-between",
-      paddingHorizontal: 16,
-    },
-    badge: {
-      position: "absolute",
-      top: -2,
-      right: -2,
-      minWidth: 20,
-      height: 20,
-      borderRadius: 10,
-      paddingHorizontal: 5,
-      alignItems: "center",
-      justifyContent: "center",
+      gap: 10,
     },
     left: {
+      flex: 1,
       flexDirection: "row",
       alignItems: "center",
       gap: 10,
     },
+    avatar: {
+      width: Size.avatar.parent,
+      height: Size.avatar.parent,
+      borderRadius: Size.avatar.parent / 2,
+      backgroundColor: colors.surface,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    initials: {
+      fontSize: 15,
+      fontWeight: "600",
+      lineHeight: 18,
+    },
     textGroup: {
-      gap: 1,
+      flex: 1,
+    },
+    bell: {
+      width: Size.avatar.parent,
+      height: Size.avatar.parent,
+      borderRadius: Size.avatar.parent / 2,
+      backgroundColor: Palette.surface.iconButton,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    pressed: {
+      opacity: 0.7,
+    },
+    badge: {
+      position: "absolute",
+      top: -4,
+      right: -4,
+      borderRadius: 10,
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      backgroundColor: Palette.nav.badge,
+      alignItems: "center",
+      justifyContent: "center",
     },
   });

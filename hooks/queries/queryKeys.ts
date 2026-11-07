@@ -9,8 +9,9 @@ export const queryKeys = {
     list: () => [...queryKeys.students.all, "list"] as const,
     profile: (studentSeasonId: number) =>
       [...queryKeys.students.all, "profile", studentSeasonId] as const,
-    reports: (studentSeasonId: number) =>
-      [...queryKeys.students.all, "reports", studentSeasonId] as const,
+    /** Paging is the infinite query's; the category chip is part of the key. */
+    reports: (studentSeasonId: number, category?: number) =>
+      [...queryKeys.students.all, "reports", studentSeasonId, category ?? "all"] as const,
   },
 
   agenda: {
@@ -47,15 +48,30 @@ export const queryKeys = {
       [...queryKeys.dashboard.all, "needsAttention", studentSeasonId] as const,
     latest: (studentSeasonId: number) =>
       [...queryKeys.dashboard.all, "latest", studentSeasonId] as const,
+    financialSummary: (studentSeasonId: number) =>
+      [...queryKeys.dashboard.all, "financialSummary", studentSeasonId] as const,
   },
   complaints: {
     all: ["complaints"] as const,
+    /** Prefix of every filtered list — invalidating it refreshes them all. */
     list: () => [...queryKeys.complaints.all, "list"] as const,
+    listByStatus: (status?: number) =>
+      [...queryKeys.complaints.list(), status ?? "all"] as const,
     detail: (id: number) =>
       [...queryKeys.complaints.all, "detail", id] as const,
     /** The four create-form lookups, cached independently of the list. */
     lookups: (name: string) =>
       [...queryKeys.complaints.all, "lookup", name] as const,
+  },
+  gateRequests: {
+    all: ["gateRequests"] as const,
+    list: () => [...queryKeys.gateRequests.all, "list"] as const,
+    detail: (id: number) =>
+      [...queryKeys.gateRequests.all, "detail", id] as const,
+    eligibility: () => [...queryKeys.gateRequests.all, "eligibility"] as const,
+    students: () => [...queryKeys.gateRequests.all, "students"] as const,
+    createOptions: (studentSeasonId: number) =>
+      [...queryKeys.gateRequests.all, "createOptions", studentSeasonId] as const,
   },
   documentRequests: {
     all: ["documentRequests"] as const,
@@ -69,6 +85,8 @@ export const queryKeys = {
   newsletters: {
     all: ["newsletters"] as const,
     list: () => [...queryKeys.newsletters.all, "list"] as const,
+    detail: (source: number, id: number) =>
+      [...queryKeys.newsletters.all, "detail", source, id] as const,
   },
 
   healthProfile: {
@@ -81,12 +99,16 @@ export const queryKeys = {
 
   payments: {
     all: ["payments"] as const,
-    due: (studentSeasonId: number) =>
-      [...queryKeys.payments.all, "due", studentSeasonId] as const,
-    /** Paging is handled by the infinite query, not the key. */
-    history: (studentSeasonId: number) =>
-      [...queryKeys.payments.all, "history", studentSeasonId] as const,
+    due: (studentSeasonId: number, all = false) =>
+      [...queryKeys.payments.all, "due", studentSeasonId, { all }] as const,
+    /**
+     * Paging is handled by the infinite query, not the key; the kind filter
+     * is part of it, since each chip is its own list.
+     */
+    history: (studentSeasonId: number, type?: number) =>
+      [...queryKeys.payments.all, "history", studentSeasonId, type ?? "all"] as const,
     categories: () => [...queryKeys.payments.all, "categories"] as const,
+    walletCategories: () => [...queryKeys.payments.all, "walletCategories"] as const,
     igAccountOptions: (studentSeasonId: number) =>
       [...queryKeys.payments.all, "igAccountOptions", studentSeasonId] as const,
   },

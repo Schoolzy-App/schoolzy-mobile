@@ -5,6 +5,7 @@ import { Button, PasswordInput, Text } from "@/components/ui";
 import { useTheme } from "@/contexts/ThemeContext";
 import type { AuthStackScreenProps } from "@/navigation/types";
 import { authApi } from "@/services/api";
+import { clearBiometricEnrollmentAfterPasswordChange } from "@/services/biometric";
 import { ApiError } from "@/types/api";
 
 import AuthFormLayout from "./AuthFormLayout";
@@ -46,9 +47,15 @@ export default function ResetPasswordScreen({ navigation, route }: Props) {
     setIsSaving(true);
     try {
       await authApi.resetPassword({ email, resetToken, newPassword: password });
+      // The server ended biometric sign-in with the old password; drop the
+      // local credential too so the login screen stops offering it.
+      const biometricLabel = await clearBiometricEnrollmentAfterPasswordChange();
       Alert.alert(
         "Password updated",
-        "You can now sign in with your new password.",
+        "You can now sign in with your new password." +
+          (biometricLabel
+            ? ` Turn ${biometricLabel} sign-in on again in Account.`
+            : ""),
         // Collapse the recovery stack rather than leaving it behind the login
         // screen, so Back can't return to a spent reset token.
         [{ text: "OK", onPress: () => navigation.popToTop() }],

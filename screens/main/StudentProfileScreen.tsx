@@ -1,27 +1,55 @@
+import { CommonActions } from "@react-navigation/native";
+import {
+  ArrowUUpLeftIcon,
+  BookOpenIcon,
+  BowlFoodIcon,
+  ClipboardTextIcon,
+  ClockIcon,
+  CurrencyCircleDollarIcon,
+  GearSixIcon,
+  HeartIcon,
+  type Icon,
+} from "phosphor-react-native";
 import React, { useCallback } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { Dimensions, Pressable, StyleSheet, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import type { ColorPalette } from "@/apps";
 import {
+  FinanceSummaryCard,
   LatestActivityList,
   NeedsAttentionList,
-  StudentCard,
+  StudentSummaryCard,
   TodayTiles,
 } from "@/components";
 import { BottomSection, QueryState, ScreenTemplate, Text } from "@/components/ui";
 import { Icons } from "@/constants";
+import { TAB_BAR_HEIGHT } from "@/constants/layout";
+import {
+  IconSize,
+  Opacity,
+  Palette,
+  Radius,
+  Size,
+  Spacing,
+  Type,
+} from "@/constants/tokens";
 import {
   useLatestActivities,
   useNeedsAttention,
+  useStudentFinancialSummary,
   useStudentProfile,
+  useStudentsRaw,
   useStudentToday,
+  useWalletBalance,
 } from "@/hooks";
 import { useStyles } from "@/hooks";
+import { StackTabBar } from "@/navigation/FloatingTabBar";
 import type { RootStackScreenProps } from "@/navigation/types";
 import { studentsApi } from "@/services/api";
 import type { AttentionItem, LatestActivity } from "@/services/mappers";
 
-// ─── Quick‑action grid config ────────────────────────────────────────────────
+// ─── Module grid config ──────────────────────────────────────────────────────
 type QuickActionKey =
   | "finances"
   | "reports"
@@ -33,20 +61,24 @@ type QuickActionKey =
 const QUICK_ACTIONS: {
   key: QuickActionKey;
   label: string;
-  Icon: React.FC<{ width?: number; height?: number }>;
+  Icon: Icon;
+  color: string;
 }[] = [
-  { key: "finances", label: "Finances", Icon: Icons.FinanceIcon },
-  { key: "reports", label: "Reports", Icon: Icons.ReportIcon },
-  { key: "wellness", label: "Wellness", Icon: Icons.WellnessIcon },
-  { key: "agenda", label: "Agenda", Icon: Icons.AgendaIcon },
-  { key: "meals", label: "Meals", Icon: Icons.MealsIcon },
-  { key: "timesheet", label: "Timesheet", Icon: Icons.AgendaIcon },
+  { key: "finances", label: "Finances", Icon: CurrencyCircleDollarIcon, color: Palette.module.finance.solid },
+  { key: "reports", label: "Reports", Icon: ClipboardTextIcon, color: Palette.module.reports.solid },
+  { key: "wellness", label: "Wellness", Icon: HeartIcon, color: Palette.module.wellness.solid },
+  { key: "agenda", label: "Agenda", Icon: BookOpenIcon, color: Palette.module.agenda.solid },
+  { key: "meals", label: "Meals", Icon: BowlFoodIcon, color: Palette.module.meals.solid },
+  { key: "timesheet", label: "Timesheet", Icon: ClockIcon, color: Palette.module.timesheet.solid },
 ];
+
+const GRID_COLUMNS = 3;
 
 type Props = RootStackScreenProps<"StudentProfile">;
 
 export default function StudentProfileScreen({ navigation, route }: Props) {
   const styles = useStyles(createStyles);
+  const insets = useSafeAreaInsets();
 
   const {
     studentSeasonId,
@@ -67,18 +99,32 @@ export default function StudentProfileScreen({ navigation, route }: Props) {
   // header renders instantly instead of waiting on the request.
   const displayName = profile?.name || name;
   const displayYear = profile?.year || year;
-  // Gender arrives with the profile, so the avatar corrects itself once loaded.
-  const displayAvatar = profile
-    ? profile.gender === "male"
-      ? Icons.BoyAvatar
-      : Icons.GirlAvatar
-    : avatarIcon;
 
   // Three independent dashboard sections. Separate queries so one slow or
   // failing section never holds up the others.
   const today = useStudentToday(studentSeasonId);
   const attention = useNeedsAttention(studentSeasonId);
   const latest = useLatestActivities(studentSeasonId);
+
+  // Modules the school hasn't switched on are left out. Until the profile
+  // loads everything shows, so nothing flickers out of a correct grid.
+  const showMeals = profile?.features.meals ?? true;
+  const showFinance = profile?.features.finance ?? true;
+  const modules = QUICK_ACTIONS.filter(
+    (action) =>
+      (action.key !== "meals" || showMeals) &&
+      (action.key !== "finances" || showFinance),
+  );
+
+  const finance = useStudentFinancialSummary(studentSeasonId, showFinance);
+  const wallet = useWalletBalance(studentSeasonId, showFinance);
+
+  // Today's attendance status only comes on the students list — a cached
+  // request the rest of the app already makes.
+  const { data: students } = useStudentsRaw();
+  const attendanceToday = students?.find(
+    (s) => s.studentSeasonId === studentSeasonId,
+  )?.attendance;
 
   // ── Dispatch a quick-action tap to the matching screen ──────────────────
   const handleQuickAction = useCallback(
@@ -242,89 +288,145 @@ export default function StudentProfileScreen({ navigation, route }: Props) {
     [handleDestination],
   );
 
+  const goToFinances = useCallback(
+    () =>
+      navigation.navigate("Finances", {
+        studentName: displayName,
+        studentSeasonId,
+      }),
+    [navigation, displayName, studentSeasonId],
+  );
+
+  // No dedicated settings screen is registered; Account is where the app's
+  // settings live, so the header's gear opens that tab.
+  const goToSettings = useCallback(
+    () =>
+      navigation.dispatch(
+        CommonActions.navigate({ name: "Main", params: { screen: "Account" } }),
+      ),
+    [navigation],
+  );
+
+  const tileWidth = Math.floor(
+    (Dimensions.get("window").width -
+      Spacing.screenX * 2 -
+      Spacing.gridGap.modulesColumn * (GRID_COLUMNS - 1)) /
+      GRID_COLUMNS,
+  );
+
   return (
-    <ScreenTemplate title="Student Profile">
-      {/* ── Student Card ──────────────────────────────────────────────── */}
-      <StudentCard
-        name={displayName}
-        year={displayYear}
-        activeBus={activeBus}
-        allergies={allergies}
-        bloodType={bloodType}
-        attendance={attendance}
-        avatarIcon={displayAvatar}
-      />
-
-      {/* ── Needs Attention ───────────────────────────────────────────
-          Above the module grid: these are the things the parent may need to
-          act on today, so they shouldn't sit below six navigation tiles. */}
-      {attention.isLoading || attention.data ? (
-        <View style={styles.section}>
-          <Text variant="label2" weight="semiBold" style={styles.sectionTitle}>
-            Needs Attention
-          </Text>
-          <View style={styles.sectionBody}>
-            <QueryState
-              isLoading={attention.isLoading}
-              error={attention.error}
-              onRetry={attention.refetch}
+    <View style={styles.root}>
+      <ScreenTemplate
+        scrollHeader
+        headerStyle={styles.header}
+        headerContent={
+          <View style={styles.headerRow}>
+            <Pressable
+              onPress={() => navigation.goBack()}
+              hitSlop={8}
+              style={({ pressed }) => [styles.headerButton, pressed && styles.pressed]}
             >
-              <NeedsAttentionList
-                data={attention.data}
-                onSelect={handleAttentionPress}
+              <ArrowUUpLeftIcon
+                weight="bold"
+                size={IconSize.header}
+                color={Palette.text.primary}
               />
-            </QueryState>
+            </Pressable>
+            <Text style={Type.headerTitle} color={Palette.text.onBrand}>
+              Student Profile
+            </Text>
+            <Pressable
+              onPress={goToSettings}
+              hitSlop={8}
+              style={({ pressed }) => [styles.headerButton, pressed && styles.pressed]}
+            >
+              <GearSixIcon size={20} color={Palette.text.primary} />
+            </Pressable>
           </View>
-        </View>
-      ) : null}
+        }
+        // The Latest sheet runs to the screen bottom, under the tab bar.
+        contentStyle={styles.content}
+      >
+        <View style={styles.body}>
+          <StudentSummaryCard
+            name={displayName}
+            year={displayYear}
+            hasBus={activeBus}
+            attendanceToday={attendanceToday}
+          />
 
-      {/* ── Today ─────────────────────────────────────────────────────── */}
-      <View style={styles.section}>
-        <Text variant="label2" weight="semiBold" style={styles.sectionTitle}>
-          Today
-        </Text>
-        <QueryState
-          isLoading={today.isLoading}
-          error={today.error}
-          onRetry={today.refetch}
-        >
-          {today.data ? (
-            <TodayTiles
-              tiles={today.data.tiles}
-              isPartial={today.data.isPartial}
+          {/* ── Modules ──────────────────────────────────────────────── */}
+          <View style={styles.grid}>
+            {modules.map((action) => (
+              <QuickAction
+                key={action.key}
+                action={action}
+                width={tileWidth}
+                onPress={handleQuickAction}
+              />
+            ))}
+          </View>
+
+          {/* ── Needs attention — hides itself when there's nothing ────── */}
+          <QueryState
+            isLoading={attention.isLoading}
+            error={attention.error}
+            onRetry={attention.refetch}
+          >
+            <NeedsAttentionList
+              data={attention.data}
+              onSelect={handleAttentionPress}
+            />
+          </QueryState>
+
+          {/* ── Today ────────────────────────────────────────────────── */}
+          <QueryState
+            isLoading={today.isLoading}
+            error={today.error}
+            onRetry={today.refetch}
+          >
+            {today.data ? (
+              <TodayTiles
+                tiles={today.data.tiles}
+                isPartial={today.data.isPartial}
+              />
+            ) : null}
+          </QueryState>
+
+          {/* ── Finance summary ──────────────────────────────────────── */}
+          {showFinance && finance.data ? (
+            <FinanceSummaryCard
+              outstanding={finance.data.totalOutstanding}
+              overdue={finance.data.overdueAmount}
+              currency={finance.data.currency}
+              wallet={wallet.data?.amount}
+              onPress={goToFinances}
             />
           ) : null}
-        </QueryState>
-      </View>
+        </View>
 
-      {/* ── Quick Actions Grid ────────────────────────────────────────── */}
-      <View style={styles.actionsGrid}>
-        {QUICK_ACTIONS.map((action) => (
-          <QuickAction
-            key={action.key}
-            action={action}
-            onPress={handleQuickAction}
-            style={styles.actionItem}
-          />
-        ))}
-      </View>
-
-      {/* ── Latest Section ────────────────────────────────────────────── */}
-      <BottomSection title={`Latest For ${displayName.split(" ")[0]}`}>
-        <QueryState
-          isLoading={latest.isLoading}
-          error={latest.error}
-          isEmpty={!latest.data?.length}
-          emptyMessage="Nothing new right now"
-          onRetry={latest.refetch}
+        {/* ── Latest ─────────────────────────────────────────────────── */}
+        <BottomSection
+          title={`Latest For ${displayName.split(" ")[0]}`}
+          bottomInset={TAB_BAR_HEIGHT + insets.bottom}
         >
-          <LatestActivityList
-            activities={latest.data ?? []}
-            onSelect={handleActivityPress}
-          />
-        </QueryState>
-      </BottomSection>
-    </ScreenTemplate>
+          <QueryState
+            isLoading={latest.isLoading}
+            error={latest.error}
+            isEmpty={!latest.data?.length}
+            emptyMessage="Nothing new right now"
+            onRetry={latest.refetch}
+          >
+            <LatestActivityList
+              activities={latest.data ?? []}
+              onSelect={handleActivityPress}
+            />
+          </QueryState>
+        </BottomSection>
+      </ScreenTemplate>
+
+      <StackTabBar active="Home" />
+    </View>
   );
 }
 
@@ -332,62 +434,78 @@ export default function StudentProfileScreen({ navigation, route }: Props) {
 // Keeps each tile from re-rendering when unrelated screen state changes.
 interface QuickActionProps {
   action: (typeof QUICK_ACTIONS)[number];
+  width: number;
   onPress: (key: QuickActionKey) => void;
-  style: object;
 }
 
-const QuickAction = React.memo<QuickActionProps>(
-  ({ action, onPress, style }) => (
-    <Pressable style={style} onPress={() => onPress(action.key)}>
-      <action.Icon width={32} height={32} />
-      <Text variant="label3" weight="medium">
+const QuickAction = React.memo<QuickActionProps>(({ action, width, onPress }) => {
+  const styles = useStyles(createStyles);
+  return (
+    <Pressable
+      style={({ pressed }) => [styles.tile, { width }, pressed && styles.pressed]}
+      onPress={() => onPress(action.key)}
+    >
+      <action.Icon weight="fill" size={IconSize.module} color={action.color} />
+      <Text style={Type.moduleLabel} numberOfLines={1}>
         {action.label}
       </Text>
     </Pressable>
-  ),
-);
+  );
+});
 QuickAction.displayName = "QuickAction";
 
 const createStyles = (colors: ColorPalette) =>
   StyleSheet.create({
-    // ── Quick Actions ────────────────────────────────────────
-    actionsGrid: {
+    root: {
+      flex: 1,
+    },
+    header: {
+      minHeight: Size.headerHeight.studentDashboard,
+      borderBottomLeftRadius: Radius.header,
+      borderBottomRightRadius: Radius.header,
+      paddingBottom: 10,
+    },
+    headerRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: Spacing.screenX,
+    },
+    headerButton: {
+      width: Size.headerButton,
+      height: Size.headerButton,
+      borderRadius: Size.headerButton / 2,
+      backgroundColor: colors.surface,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    pressed: {
+      opacity: Opacity.pressed,
+    },
+    content: {
+      paddingBottom: 0,
+    },
+    body: {
+      width: "100%",
+      paddingHorizontal: Spacing.screenX,
+      paddingTop: Spacing.contentTop.studentDashboard,
+      paddingBottom: 15,
+      gap: Spacing.sectionGap.studentDashboard,
+    },
+
+    // ── Modules ──────────────────────────────────────────────
+    grid: {
       flexDirection: "row",
       flexWrap: "wrap",
-      justifyContent: "space-between",
-      padding: 16,
-      gap: 12,
-      width: "100%",
+      rowGap: Spacing.gridGap.modulesRow,
+      columnGap: Spacing.gridGap.modulesColumn,
     },
-    actionItem: {
-      width: "30%",
+    tile: {
+      height: Size.moduleTile,
       alignItems: "center",
+      justifyContent: "center",
+      gap: 9,
       backgroundColor: colors.surface,
-      borderRadius: 16,
-      paddingVertical: 16,
-      gap: 8,
-    },
-
-    // ── Dashboard sections ───────────────────────────────────
-    section: {
-      width: "100%",
-      paddingTop: 16,
-      gap: 10,
-    },
-    // Only the title and body are inset: TodayTiles scrolls edge to edge, so
-    // its own padding lives inside the component.
-    sectionTitle: {
-      paddingHorizontal: 16,
-    },
-    sectionBody: {
-      paddingHorizontal: 16,
-    },
-
-    // ── Latest Section ───────────────────────────────────────
-    latestItem: {
-      borderRadius: 12,
-      borderWidth: 1,
-      borderColor: colors.border,
-      overflow: "hidden",
+      borderRadius: Radius.moduleTile,
     },
   });

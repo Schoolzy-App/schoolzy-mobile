@@ -19,11 +19,9 @@ import {
   useStyles,
   useWalletBalance,
   useWalletPayment,
+  useWalletTopUpCategories,
 } from "@/hooks";
-import type {
-  PaymentFeeKind,
-  RootStackScreenProps,
-} from "@/navigation/types";
+import type { PaymentFeeKind, RootStackScreenProps } from "@/navigation/types";
 import { ApiError } from "@/types/api";
 import { formatCurrency } from "@/utils/format";
 import {
@@ -80,7 +78,7 @@ type Props = RootStackScreenProps<"PaymentDetails">;
 export default function PaymentDetailsScreen({ navigation, route }: Props) {
   const { colors } = useTheme();
   const styles = useStyles(createStyles);
-  const { studentName, studentSeasonId, prefill } = route.params;
+  const { studentName, studentSeasonId, prefill, topUp = false } = route.params;
 
   // ── Form state ────────────────────────────────────────────────────────────
   // Empty means "not chosen explicitly"; the effective values below fall back
@@ -102,11 +100,22 @@ export default function PaymentDetailsScreen({ navigation, route }: Props) {
     isLoading: categoriesLoading,
     error: categoriesError,
     refetch: refetchCategories,
-  } = usePaymentCategories();
+  } = usePaymentCategories(!topUp);
+
+  // Top up pays into the wallet top-up category, which the general list leaves out.
+  const {
+    data: topUpCategories,
+    isLoading: topUpCategoriesLoading,
+    error: topUpCategoriesError,
+    refetch: refetchTopUpCategories,
+  } = useWalletTopUpCategories(topUp);
 
   // Which fee streams the server actually offers, and the active one. Deriving
   // rather than syncing in an effect keeps this to a single render.
-  const feeKinds = useMemo(() => availableFeeKinds(categories), [categories]);
+  const feeKinds = useMemo(
+    () => (topUp ? [] : availableFeeKinds(categories)),
+    [topUp, categories],
+  );
   const activeKind: PaymentFeeKind | null =
     feeKind && feeKinds.includes(feeKind) ? feeKind : (feeKinds[0] ?? null);
 
@@ -117,15 +126,21 @@ export default function PaymentDetailsScreen({ navigation, route }: Props) {
 
   /** Only the categories belonging to the active tab are selectable. */
   const kindCategories = useMemo(
-    () => (activeKind ? categoriesForKind(categories, activeKind) : []),
-    [categories, activeKind],
+    () =>
+      topUp
+        ? (topUpCategories ?? [])
+        : activeKind
+          ? categoriesForKind(categories, activeKind)
+          : [],
+    [topUp, topUpCategories, categories, activeKind],
   );
 
   // A tab with exactly one category selects it; otherwise the parent picks.
   const effectiveCategoryId = categoryId || soleCategoryId(kindCategories);
 
   const selectedCategory = useMemo(
-    () => kindCategories.find((c) => String(c.id) === effectiveCategoryId) ?? null,
+    () =>
+      kindCategories.find((c) => String(c.id) === effectiveCategoryId) ?? null,
     [kindCategories, effectiveCategoryId],
   );
 
@@ -171,7 +186,11 @@ export default function PaymentDetailsScreen({ navigation, route }: Props) {
     : null;
 
   const validationError = useMemo(() => {
-    if (!activeKind) return "No payment categories are available.";
+    if (topUp) {
+      if (!kindCategories.length)
+        return "Wallet top-up isn't available for this school.";
+      if (!selectedCategory) return "Select what to top up.";
+    } else if (!activeKind) return "No payment categories are available.";
     if (!selectedCategory)
       return activeKind === "ig"
         ? "Select an IG fee category."
@@ -182,6 +201,8 @@ export default function PaymentDetailsScreen({ navigation, route }: Props) {
     if (!selectedMethod) return "Select a payment method.";
     return null;
   }, [
+    topUp,
+    kindCategories.length,
     activeKind,
     selectedCategory,
     needsSubjectAccount,
@@ -191,7 +212,9 @@ export default function PaymentDetailsScreen({ navigation, route }: Props) {
   ]);
 
   const canSubmit =
-    !validationError && typeof studentSeasonId === "number" && !wallet.isPending;
+    !validationError &&
+    typeof studentSeasonId === "number" &&
+    !wallet.isPending;
 
   // Changing the category invalidates any account picked under the old one.
   const handleCategoryChange = useCallback((value: string) => {
@@ -244,7 +267,7 @@ export default function PaymentDetailsScreen({ navigation, route }: Props) {
       categoryId: selectedCategory.id,
       subjectAccountId: needsSubjectAccount ? subjectAccountValue : null,
       categoryName: selectedCategory.name,
-      payingFor: prefill?.label,
+      payingFor: topUp ? "Wallet top-up" : prefill?.label,
     });
   }, [
     canSubmit,
@@ -258,12 +281,24 @@ export default function PaymentDetailsScreen({ navigation, route }: Props) {
     navigation,
     studentName,
     prefill,
+    topUp,
   ]);
 
   const handleDone = useCallback(() => {
     setShowSuccess(false);
-    navigation.navigate("Finances", { studentName, studentSeasonId });
+    // Pop back to the Finances already in the stack (navigate would push a
+    // second copy, and Back would return to the payment form).
+    navigation.popTo("Finances", { studentName, studentSeasonId });
   }, [navigation, studentName, studentSeasonId]);
+
+  // The wallet can't top itself up (the API rejects it), so Top up hides it.
+  const methods = useMemo(
+    () =>
+      topUp
+        ? PAYMENT_METHODS.filter((m) => m.id !== "wallet")
+        : PAYMENT_METHODS,
+    [topUp],
+  );
 
   const submitLabel = wallet.isPending
     ? "Processing…"
@@ -273,7 +308,7 @@ export default function PaymentDetailsScreen({ navigation, route }: Props) {
 
   return (
     <ScreenTemplate
-      title="Payment Details"
+      title={topUp ? "Top up wallet" : "Payment Details"}
       bottomContent={
         <Pressable
           style={[
@@ -293,8 +328,8 @@ export default function PaymentDetailsScreen({ navigation, route }: Props) {
       {/* ── What is being paid ────────────────────────────────────── */}
       <View style={styles.cardWrapper}>
         <PaymentCard
-          id={prefill?.label ?? "new"}
-          title={prefill?.label ?? "New payment"}
+          id={topUp ? "top-up" : (prefill?.label ?? "new")}
+          title={topUp ? "Wallet top-up" : (prefill?.label ?? "New payment")}
           amount={formatCurrency(prefill?.amountValue ?? amountValue)}
           subtitle={prefill?.subjects?.join(", ")}
           dueDate={prefill?.dueDate}
@@ -303,11 +338,15 @@ export default function PaymentDetailsScreen({ navigation, route }: Props) {
       </View>
 
       <QueryState
-        isLoading={categoriesLoading}
-        error={categoriesError}
+        isLoading={topUp ? topUpCategoriesLoading : categoriesLoading}
+        error={topUp ? topUpCategoriesError : categoriesError}
         isEmpty={!categoryOptions.length}
-        emptyMessage="No payment categories are available."
-        onRetry={refetchCategories}
+        emptyMessage={
+          topUp
+            ? "Wallet top-up isn't available for this school."
+            : "No payment categories are available."
+        }
+        onRetry={topUp ? refetchTopUpCategories : refetchCategories}
       >
         <View style={styles.form}>
           {/* School vs IG. The two streams have separate category lists, so
@@ -322,20 +361,32 @@ export default function PaymentDetailsScreen({ navigation, route }: Props) {
 
           {/* z-index descends top-to-bottom so each open dropdown overlays
               whatever follows it */}
-          <View style={styles.dropdownTop}>
-            <DefaultInput
-              label={activeKind === "ig" ? "IG Fee" : "School Fee"}
-              value={effectiveCategoryId}
-              onChange={handleCategoryChange}
-              type="select"
-              placeholder={
-                activeKind === "ig"
-                  ? "Select an IG fee"
-                  : "Select a school fee"
-              }
-              options={categoryOptions}
-            />
-          </View>
+          {/* A single top-up category is picked for the parent, so the
+              picker only shows when there's a real choice. */}
+          {topUp && categoryOptions.length === 1 ? null : (
+            <View style={styles.dropdownTop}>
+              <DefaultInput
+                label={
+                  topUp
+                    ? "Top up"
+                    : activeKind === "ig"
+                      ? "IG Fee"
+                      : "School Fee"
+                }
+                value={effectiveCategoryId}
+                onChange={handleCategoryChange}
+                type="select"
+                placeholder={
+                  topUp
+                    ? "Select what to top up"
+                    : activeKind === "ig"
+                      ? "Select an IG fee"
+                      : "Select a school fee"
+                }
+                options={categoryOptions}
+              />
+            </View>
+          )}
 
           {/* Shown only when the chosen category requires it (§6) */}
           {needsSubjectAccount ? (
@@ -393,7 +444,7 @@ export default function PaymentDetailsScreen({ navigation, route }: Props) {
 
       {/* ── Payment Method List ──────────────────────────────────── */}
       <View style={styles.methodList}>
-        {PAYMENT_METHODS.length === 0 ? (
+        {methods.length === 0 ? (
           <Text
             variant="label3"
             weight="regular"
@@ -404,7 +455,7 @@ export default function PaymentDetailsScreen({ navigation, route }: Props) {
             school to arrange payment.
           </Text>
         ) : (
-          PAYMENT_METHODS.map((method) => (
+          methods.map((method) => (
             <PaymentMethodItem
               key={method.id}
               {...method}

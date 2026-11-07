@@ -67,6 +67,20 @@ export const FeatureFlags = {
   ),
 
   /**
+   * Whether Gate Requests appears as a tab in the bottom navigation bar.
+   *
+   * Off by default: Gate Requests is reachable from the Account screen either
+   * way, so this only adds a second entry point. Pressing the tab pushes the
+   * root `GateRequests` screen.
+   *
+   * Override with `EXPO_PUBLIC_ENABLE_GATE_REQUESTS_TAB=1`.
+   */
+  gateRequestsTab: envFlag(
+    process.env.EXPO_PUBLIC_ENABLE_GATE_REQUESTS_TAB,
+    appFeatures.gateRequestsTab,
+  ),
+
+  /**
    * Which payment methods are offered on the Payment Details screen.
    *
    * Only InstaPay is live today — Apple Pay and the in-app wallet have no

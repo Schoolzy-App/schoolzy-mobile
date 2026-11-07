@@ -54,6 +54,16 @@ export interface RelativeDto {
    * host, and it is behind auth like every other file endpoint. May be null.
    */
   photoUrl: string | null;
+  /** First letters of the first two words of the name, upper case. */
+  initials?: string;
+  hasPhoto?: boolean;
+  nationalityName?: string | null;
+  /**
+   * The students this relative is linked to. The backend's list DTO
+   * (FamilyRelativeDto) carries these too, with `hasPermission` = may collect
+   * the student from school.
+   */
+  links?: RelativeLinkDto[] | null;
 }
 
 /** GET /api/mobile/parent-profile/relatives */
@@ -100,11 +110,12 @@ export interface RelativeLinkDto {
   mainParentId?: number | null;
   mainParentName?: string | null;
   hasPermission?: boolean | null;
+  /** The child's educational mandate — cannot be removed from the app. */
+  isEducationalMandate?: boolean | null;
 }
 
 export interface RelativeDetailDto extends RelativeDto {
   students?: RelativeLinkDto[] | null;
-  links?: RelativeLinkDto[] | null;
   studentRelatives?: RelativeLinkDto[] | null;
 }
 
@@ -200,6 +211,47 @@ export interface ParentInfoDto {
   nationalityId?: number | null;
   nationalityName?: string | null;
   photoUrl?: string | null;
+  /** Read-only on the app: changed by the school office. */
+  nationalId?: string | null;
+  /** The account's sign-in email (not the contact email). */
+  loginEmail?: string | null;
+  canEdit?: boolean;
+  /** Field keys ("name", "mobile"…) that go to the school for review. */
+  reviewFields?: string[] | null;
+  hasPendingChanges?: boolean;
+  /** Changes waiting for the school, then the latest decisions. */
+  pendingChanges?: ParentInfoChangeDto[] | null;
+}
+
+/** 1 Pending · 2 Approved · 3 Rejected · 4 Superseded */
+export enum ParentInfoItemStatus {
+  Pending = 1,
+  Approved = 2,
+  Rejected = 3,
+  Superseded = 4,
+}
+
+export interface ParentInfoChangeDto {
+  id: number;
+  /** "name", "mobile", "phone", "email", "address", "job", "nationalityId" */
+  fieldKey: string;
+  fieldDisplay?: string | null;
+  currentValue?: string | null;
+  requestedValue?: string | null;
+  status: ParentInfoItemStatus;
+  statusDisplay?: string | null;
+  rejectReason?: string | null;
+  submittedAt?: string | null;
+  decidedAt?: string | null;
+}
+
+/** PUT /api/mobile/parent/profile → data */
+export interface ParentInfoSaveResultDto {
+  /** Field keys saved at once. */
+  applied: string[];
+  /** Field keys sent to the school for review. */
+  pendingReview: string[];
+  profile: ParentInfoDto;
 }
 
 /**

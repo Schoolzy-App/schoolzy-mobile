@@ -2,6 +2,7 @@ import React, { FC } from "react";
 import { StyleSheet, View } from "react-native";
 
 import type { ColorPalette } from "@/apps";
+import { Palette, Radius, Size, Spacing, Type } from "@/constants/tokens";
 import { useStyles } from "@/hooks";
 
 import Text from "./Text";
@@ -11,12 +12,18 @@ type BottomSectionProps = {
   children: React.ReactNode;
   /** Optional node rendered on the right side of the title row (e.g. a "See all" button). */
   headerAction?: React.ReactNode;
+  /**
+   * Extra space under the content, inside the sheet — so the white runs to
+   * the screen bottom behind a floating tab bar instead of ending above it.
+   */
+  bottomInset?: number;
 };
 
 const BottomSection: FC<BottomSectionProps> = ({
   title,
   children,
   headerAction,
+  bottomInset = 0,
 }) => {
   const styles = useStyles(createStyles);
 
@@ -27,13 +34,15 @@ const BottomSection: FC<BottomSectionProps> = ({
       </View>
 
       <View style={styles.titleRow}>
-        <Text variant="label2" weight="medium" style={styles.title}>
+        <Text style={[Type.sectionTitle, styles.title]} numberOfLines={1}>
           {title}
         </Text>
         {headerAction ? <View style={styles.action}>{headerAction}</View> : null}
       </View>
 
-      <View style={styles.content}>{children}</View>
+      <View style={[styles.content, { paddingBottom: 40 + bottomInset }]}>
+        {children}
+      </View>
     </View>
   );
 };
@@ -42,30 +51,32 @@ export default BottomSection;
 
 const createStyles = (colors: ColorPalette) =>
   StyleSheet.create({
+    // The "Latest" sheet from the Student Dashboard spec §8.
     container: {
       flex: 1,
       width: "100%",
+      minHeight: 300,
       backgroundColor: colors.surface,
-      borderTopLeftRadius: 24,
-      borderTopRightRadius: 24,
-      paddingTop: 4,
+      borderTopLeftRadius: Radius.sheet,
+      borderTopRightRadius: Radius.sheet,
+      paddingTop: 10,
     },
     handleRow: {
       alignItems: "center",
-      paddingVertical: 8,
+      marginBottom: 16,
     },
     handle: {
-      width: 100,
-      height: 8,
+      width: Size.sheetHandle.width,
+      height: Size.sheetHandle.height,
       borderRadius: 4,
-      backgroundColor: colors.border,
+      backgroundColor: Palette.surface.sheetHandle,
     },
     titleRow: {
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
-      paddingHorizontal: 16,
-      paddingBottom: 8,
+      paddingHorizontal: Spacing.screenX,
+      paddingBottom: 11,
     },
     title: {
       flex: 1,
@@ -74,8 +85,8 @@ const createStyles = (colors: ColorPalette) =>
       paddingLeft: 12,
     },
     content: {
-      paddingHorizontal: 16,
-      gap: 12,
-      paddingBottom: 24,
+      paddingHorizontal: Spacing.screenX,
+      gap: 11,
+      paddingBottom: 40,
     },
   });

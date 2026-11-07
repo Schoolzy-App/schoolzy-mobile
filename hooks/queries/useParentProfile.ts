@@ -23,6 +23,7 @@ import type {
   SaveRelativeInput,
   SaveRelativeResponseDto,
   StudentGuardiansDto,
+  ParentInfoSaveResultDto,
   UpdateParentInfoInput,
   UpdateRelativePermissionInput,
 } from "@/types/api";
@@ -113,13 +114,17 @@ export function useUpdateLinkPermission(relativeId?: number) {
 
   return useMutation<unknown, Error, UpdateRelativePermissionInput>({
     mutationFn: (input) => parentProfileApi.updateLinkPermission(input),
-    onSuccess: () => {
-      if (typeof relativeId === "number") {
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.parentProfile.relative(relativeId),
-        });
-      }
-    },
+    // Returned so the caller's mutateAsync resolves once the list has the
+    // new value — the toggle stays pending until then.
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.parentProfile.relatives() }),
+        typeof relativeId === "number"
+          ? queryClient.invalidateQueries({
+              queryKey: queryKeys.parentProfile.relative(relativeId),
+            })
+          : undefined,
+      ]),
   });
 }
 
@@ -130,6 +135,19 @@ export function useGuardianStudents(enabled = true) {
     queryKey: queryKeys.parentProfile.guardians(),
     queryFn: () => parentProfileApi.guardians(),
     select: selectGuardianStudents,
+    staleTime: LOOKUP_STALE_TIME,
+    enabled,
+  });
+}
+
+/**
+ * The same guardians list unmapped — each child's father and mother by name,
+ * which the Account screen uses to show the other parent.
+ */
+export function useGuardianStudentsRaw(enabled = true) {
+  return useQuery<StudentGuardiansDto[]>({
+    queryKey: queryKeys.parentProfile.guardians(),
+    queryFn: () => parentProfileApi.guardians(),
     staleTime: LOOKUP_STALE_TIME,
     enabled,
   });
@@ -187,7 +205,7 @@ export function useParentInfo(enabled = true) {
 export function useUpdateParentInfo() {
   const queryClient = useQueryClient();
 
-  return useMutation<unknown, Error, UpdateParentInfoInput>({
+  return useMutation<ParentInfoSaveResultDto, Error, UpdateParentInfoInput>({
     mutationFn: (input) => parentProfileApi.updateProfile(input),
     onSuccess: () => {
       queryClient.invalidateQueries({

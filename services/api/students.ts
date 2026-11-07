@@ -1,9 +1,11 @@
 import type {
   LatestActivitiesDto,
   NeedsAttentionDto,
+  StudentFinancialSummaryDto,
   StudentListItemDto,
   StudentProfileDto,
   StudentReportsDto,
+  StudentReportsParams,
   StudentTodayDto,
 } from "@/types/api";
 
@@ -28,11 +30,19 @@ export const studentsApi = {
     });
   },
 
-  /** GET /api/mobile/students/{studentSeasonId}/reports */
-  reports(studentSeasonId: number): Promise<StudentReportsDto> {
+  /**
+   * GET /api/mobile/students/{studentSeasonId}/reports
+   *
+   * `category` filters `items`; `counts` always cover every category.
+   */
+  reports(
+    studentSeasonId: number,
+    params: StudentReportsParams = {},
+  ): Promise<StudentReportsDto> {
     return request<StudentReportsDto>({
       method: "GET",
       url: ROUTES.students.reports(studentSeasonId),
+      params,
     });
   },
 
@@ -64,6 +74,16 @@ export const studentsApi = {
     });
   },
 
+  /** GET /api/mobile/students/{studentSeasonId}/dashboard/financial-summary */
+  dashboardFinancialSummary(
+    studentSeasonId: number,
+  ): Promise<StudentFinancialSummaryDto> {
+    return request<StudentFinancialSummaryDto>({
+      method: "GET",
+      url: ROUTES.students.dashboardFinancialSummary(studentSeasonId),
+    });
+  },
+
   /**
    * GET /api/mobile/students/{studentSeasonId}/reports/{reportId}/file returns
    * raw bytes. The list payload no longer carries a `fileUrl`, and unlike the
@@ -72,6 +92,11 @@ export const studentsApi = {
    */
   getReportFileUrl(studentSeasonId: number, reportId: number): string {
     return `${API_BASE_URL}${ROUTES.students.reportFile(studentSeasonId, reportId)}?api-version=${API_VERSION}`;
+  },
+
+  /** GET /api/mobile/reports/{reportId}/file — no student needed. */
+  getReportFileUrlById(reportId: number): string {
+    return `${API_BASE_URL}${ROUTES.students.reportFileById(reportId)}?api-version=${API_VERSION}`;
   },
 
   /** Auth headers for the binary endpoint above. */

@@ -80,6 +80,37 @@ export function extractResetToken(payload: unknown): string | null {
   return null;
 }
 
+/**
+ * Turns a login-shaped response into a stored session. Shared by password and
+ * biometric login, which return the same payload.
+ */
+async function persistLoginResponse(payload: unknown): Promise<AuthSession> {
+  const tokens = extractTokens(payload);
+  if (!tokens) {
+    throw new ApiError(
+      "Login succeeded but no access token was returned. Confirm the login response shape with the backend.",
+      200,
+    );
+  }
+
+  const user = extractUser(payload);
+  await tokenStorage.save(tokens);
+  await tokenStorage.saveUser(user);
+
+  return { tokens, user };
+}
+
+/** `biometricToken` from the enroll response, enveloped or bare. */
+function extractBiometricToken(payload: unknown): string | null {
+  if (!payload || typeof payload !== "object") return null;
+  const root = payload as Record<string, unknown>;
+  const body = (
+    root.data && typeof root.data === "object" ? root.data : root
+  ) as Record<string, unknown>;
+  const token = body.biometricToken;
+  return typeof token === "string" && token ? token : null;
+}
+
 export const authApi = {
   /**
    * POST /api/v1/auth/login
@@ -92,25 +123,69 @@ export const authApi = {
       data: credentials,
     });
 
-    const tokens = extractTokens(payload);
-    if (!tokens) {
+    return persistLoginResponse(payload);
+  },
+
+  /**
+   * POST /api/v1/auth/biometric/enroll — requires an authenticated session.
+   * Returns the device-bound biometric token. It is a long-lived secret, so
+   * neither the request nor the response body is logged.
+   */
+  async biometricEnroll(deviceId: string): Promise<string> {
+    const payload = await requestRaw<unknown>({
+      method: "POST",
+      url: ROUTES.auth.biometricEnroll,
+      data: { deviceId },
+      _skipBodyLog: true,
+    });
+
+    const token = extractBiometricToken(payload);
+    if (!token) {
       throw new ApiError(
-        "Login succeeded but no access token was returned. Confirm the login response shape with the backend.",
+        "Biometric enrollment succeeded but no biometric token was returned.",
         200,
       );
     }
+    return token;
+  },
 
-    const user = extractUser(payload);
-    await tokenStorage.save(tokens);
-    await tokenStorage.saveUser(user);
+  /**
+   * POST /api/v1/auth/biometric/login — anonymous.
+   * Exchanges the biometric token for a brand-new session, stored exactly as
+   * a password login would be. Any rejection is a 401, which `client.ts`
+   * passes straight through instead of trying a refresh.
+   */
+  async biometricLogin(
+    deviceId: string,
+    biometricToken: string,
+  ): Promise<AuthSession> {
+    const payload = await requestRaw<unknown>({
+      method: "POST",
+      url: ROUTES.auth.biometricLogin,
+      data: { deviceId, biometricToken },
+      _skipBodyLog: true,
+    });
 
-    return { tokens, user };
+    return persistLoginResponse(payload);
+  },
+
+  /** POST /api/v1/auth/biometric/revoke — requires an authenticated session. */
+  async biometricRevoke(deviceId: string): Promise<void> {
+    await requestRaw({
+      method: "POST",
+      url: ROUTES.auth.biometricRevoke,
+      data: { deviceId },
+      _skipBodyLog: true,
+    });
   },
 
   /**
    * POST /api/v1/auth/logout
    * Always clears local credentials, even when the server call fails —
    * a network error must not strand the user in a signed-in state.
+   *
+   * The biometric credential is deliberately untouched (server and device):
+   * it is what lets the parent sign back in with a scan.
    */
   async logout(): Promise<void> {
     const tokens = tokenStorage.getCached();
