@@ -1,0 +1,163 @@
+/**
+ * Centralized query keys. Hierarchical so a parent key invalidates every child:
+ * `invalidateQueries({ queryKey: queryKeys.students.all })` clears the list and
+ * every per-student profile.
+ */
+export const queryKeys = {
+  students: {
+    all: ["students"] as const,
+    list: () => [...queryKeys.students.all, "list"] as const,
+    profile: (studentSeasonId: number) =>
+      [...queryKeys.students.all, "profile", studentSeasonId] as const,
+    /** Paging is the infinite query's; the category chip is part of the key. */
+    reports: (studentSeasonId: number, category?: number) =>
+      [...queryKeys.students.all, "reports", studentSeasonId, category ?? "all"] as const,
+  },
+
+  agenda: {
+    all: ["agenda"] as const,
+    /** `date` is the yyyy-mm-dd key so the cache is per day, not per timestamp. */
+    byDate: (studentSeasonId: number, date?: string) =>
+      [...queryKeys.agenda.all, studentSeasonId, date ?? "today"] as const,
+  },
+
+  parentDashboard: {
+    all: ["parentDashboard"] as const,
+    root: (date?: string) =>
+      [...queryKeys.parentDashboard.all, "root", date ?? "today"] as const,
+    quickActions: () =>
+      [...queryKeys.parentDashboard.all, "quickActions"] as const,
+    catalog: () => [...queryKeys.parentDashboard.all, "catalog"] as const,
+  },
+  parentProfile: {
+    all: ["parentProfile"] as const,
+    relatives: () => [...queryKeys.parentProfile.all, "relatives"] as const,
+    relative: (id: number) =>
+      [...queryKeys.parentProfile.all, "relative", id] as const,
+    guardians: () => [...queryKeys.parentProfile.all, "guardians"] as const,
+    lookup: (name: string) =>
+      [...queryKeys.parentProfile.all, "lookup", name] as const,
+    /** The signed-in parent's own record. */
+    info: () => [...queryKeys.parentProfile.all, "info"] as const,
+  },
+  dashboard: {
+    all: ["dashboard"] as const,
+    today: (studentSeasonId: number) =>
+      [...queryKeys.dashboard.all, "today", studentSeasonId] as const,
+    needsAttention: (studentSeasonId: number) =>
+      [...queryKeys.dashboard.all, "needsAttention", studentSeasonId] as const,
+    latest: (studentSeasonId: number) =>
+      [...queryKeys.dashboard.all, "latest", studentSeasonId] as const,
+    financialSummary: (studentSeasonId: number) =>
+      [...queryKeys.dashboard.all, "financialSummary", studentSeasonId] as const,
+  },
+  complaints: {
+    all: ["complaints"] as const,
+    /** Prefix of every filtered list — invalidating it refreshes them all. */
+    list: () => [...queryKeys.complaints.all, "list"] as const,
+    listByStatus: (status?: number) =>
+      [...queryKeys.complaints.list(), status ?? "all"] as const,
+    detail: (id: number) =>
+      [...queryKeys.complaints.all, "detail", id] as const,
+    /** The four create-form lookups, cached independently of the list. */
+    lookups: (name: string) =>
+      [...queryKeys.complaints.all, "lookup", name] as const,
+  },
+  gateRequests: {
+    all: ["gateRequests"] as const,
+    list: () => [...queryKeys.gateRequests.all, "list"] as const,
+    detail: (id: number) =>
+      [...queryKeys.gateRequests.all, "detail", id] as const,
+    eligibility: () => [...queryKeys.gateRequests.all, "eligibility"] as const,
+    students: () => [...queryKeys.gateRequests.all, "students"] as const,
+    createOptions: (studentSeasonId: number) =>
+      [...queryKeys.gateRequests.all, "createOptions", studentSeasonId] as const,
+  },
+  documentRequests: {
+    all: ["documentRequests"] as const,
+    list: () => [...queryKeys.documentRequests.all, "list"] as const,
+    detail: (id: number) =>
+      [...queryKeys.documentRequests.all, "detail", id] as const,
+    createOptions: () =>
+      [...queryKeys.documentRequests.all, "createOptions"] as const,
+  },
+
+  newsletters: {
+    all: ["newsletters"] as const,
+    list: () => [...queryKeys.newsletters.all, "list"] as const,
+    detail: (source: number, id: number) =>
+      [...queryKeys.newsletters.all, "detail", source, id] as const,
+  },
+
+  healthProfile: {
+    all: ["healthProfile"] as const,
+    overview: (studentSeasonId: number) =>
+      [...queryKeys.healthProfile.all, "overview", studentSeasonId] as const,
+    edit: (studentSeasonId: number) =>
+      [...queryKeys.healthProfile.all, "edit", studentSeasonId] as const,
+  },
+
+  payments: {
+    all: ["payments"] as const,
+    due: (studentSeasonId: number, all = false) =>
+      [...queryKeys.payments.all, "due", studentSeasonId, { all }] as const,
+    /**
+     * Paging is handled by the infinite query, not the key; the kind filter
+     * is part of it, since each chip is its own list.
+     */
+    history: (studentSeasonId: number, type?: number) =>
+      [...queryKeys.payments.all, "history", studentSeasonId, type ?? "all"] as const,
+    categories: () => [...queryKeys.payments.all, "categories"] as const,
+    walletCategories: () => [...queryKeys.payments.all, "walletCategories"] as const,
+    igAccountOptions: (studentSeasonId: number) =>
+      [...queryKeys.payments.all, "igAccountOptions", studentSeasonId] as const,
+  },
+
+  cafeteria: {
+    all: ["cafeteria"] as const,
+    meals: () => [...queryKeys.cafeteria.all, "meals"] as const,
+    mealItems: (mealId: number) =>
+      [...queryKeys.cafeteria.all, "items", mealId] as const,
+    /** `date` is the yyyy-mm-dd key so the cache is per day. */
+    orders: (studentSeasonId: number, date?: string) =>
+      [
+        ...queryKeys.cafeteria.all,
+        "orders",
+        studentSeasonId,
+        date ?? "today",
+      ] as const,
+    paymentOptions: (studentSeasonId: number) =>
+      [...queryKeys.cafeteria.all, "paymentOptions", studentSeasonId] as const,
+  },
+
+  notifications: {
+    all: ["notifications"] as const,
+    /** Single key: paging is handled by the infinite query, not the key. */
+    list: () => [...queryKeys.notifications.all, "list"] as const,
+    recent: () => [...queryKeys.notifications.all, "recent"] as const,
+    unreadCount: () =>
+      [...queryKeys.notifications.all, "unreadCount"] as const,
+  },
+
+  wallet: {
+    all: ["wallet"] as const,
+    balance: (studentSeasonId: number) =>
+      [...queryKeys.wallet.all, "balance", studentSeasonId] as const,
+    balances: () => [...queryKeys.wallet.all, "balances"] as const,
+  },
+
+  timetable: {
+    all: ["timetable"] as const,
+    /** `date` is the yyyy-mm-dd key so the cache is per day, not per timestamp. */
+    byDate: (studentSeasonId: number, date?: string) =>
+      [...queryKeys.timetable.all, studentSeasonId, date ?? "today"] as const,
+  },
+
+  currentUser: {
+    all: ["currentUser"] as const,
+  },
+
+  home: {
+    all: ["home"] as const,
+  },
+} as const;

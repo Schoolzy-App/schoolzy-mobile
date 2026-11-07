@@ -1,0 +1,101 @@
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import React from "react";
+
+import AuthNavigator from "./AuthNavigator";
+import TabNavigator from "./TabNavigator";
+import type { RootStackParamList } from "./types";
+
+import { useAuth } from "@/contexts/AuthContext";
+import AddComplaintScreen from "@/screens/main/AddComplaintScreen";
+import AddRelativeScreen from "@/screens/main/AddRelativeScreen";
+import EditParentInfoScreen from "@/screens/main/EditParentInfoScreen";
+import RelativesScreen from "@/screens/main/RelativesScreen";
+import AddRequestScreen from "@/screens/main/AddRequestScreen";
+import AddGateRequestScreen from "@/screens/main/AddGateRequestScreen";
+import GateRequestDetailsScreen from "@/screens/main/GateRequestDetailsScreen";
+import GateRequestsScreen from "@/screens/main/GateRequestsScreen";
+import ComplaintDetailsScreen from "@/screens/main/ComplaintDetailsScreen";
+import ComplaintsScreen from "@/screens/main/ComplaintsScreen";
+import AgendaScreen from "@/screens/main/AgendaScreen";
+import ChangePasswordScreen from "@/screens/main/ChangePasswordScreen";
+import ConfirmDepositScreen from "@/screens/main/ConfirmDepositScreen";
+import FinancesScreen from "@/screens/main/FinancesScreen";
+import MealsScreen from "@/screens/main/MealsScreen";
+import NewsletterScreen from "@/screens/main/NewsletterScreen";
+import NewsletterDetailScreen from "@/screens/main/NewsletterDetailScreen";
+import ReportDetailScreen from "@/screens/main/ReportDetailScreen";
+import PaymentDetailsScreen from "@/screens/main/PaymentDetailsScreen";
+import ReportsScreen from "@/screens/main/ReportsScreen";
+import StudentProfileScreen from "@/screens/main/StudentProfileScreen";
+import TimesheetScreen from "@/screens/main/TimesheetScreen";
+import WellnessEditScreen from "@/screens/main/WellnessEditScreen";
+import WellnessScreen from "@/screens/main/WellnessScreen";
+import ChatWithSchoolScreen from "../screens/main/ChatWithSchoolScreen";
+import NotificationScreen from "../screens/main/NotificationScreen";
+import PdfScreen from "../screens/main/PdfScreen";
+import RequestDetailsScreen from "../screens/main/RequestDetailsScreen";
+import RequestScreen from "../screens/main/RequestScreen";
+
+const Stack = createNativeStackNavigator<RootStackParamList>();
+
+export default function RootNavigator() {
+  const { authenticated } = useAuth();
+
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      {authenticated ? (
+        // ─── Authenticated: main app + every nested screen ─────────────────
+        <Stack.Group>
+          <Stack.Screen name="Main" component={TabNavigator} />
+          <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
+          <Stack.Screen name="ChatWithSchool" component={ChatWithSchoolScreen} />
+          <Stack.Screen name="Relatives" component={RelativesScreen} />
+          <Stack.Screen
+            name="EditParentInfo"
+            component={EditParentInfoScreen}
+          />
+          <Stack.Screen name="AddRelative" component={AddRelativeScreen} />
+          <Stack.Screen name="Complaints" component={ComplaintsScreen} />
+          <Stack.Screen
+            name="ComplaintDetails"
+            component={ComplaintDetailsScreen}
+          />
+          <Stack.Screen name="AddComplaint" component={AddComplaintScreen} />
+          <Stack.Screen name="Request" component={RequestScreen} />
+          <Stack.Screen
+            name="RequestDetails"
+            component={RequestDetailsScreen}
+          />
+          <Stack.Screen name="AddRequest" component={AddRequestScreen} />
+          <Stack.Screen name="GateRequests" component={GateRequestsScreen} />
+          <Stack.Screen name="AddGateRequest" component={AddGateRequestScreen} />
+          <Stack.Screen
+            name="GateRequestDetails"
+            component={GateRequestDetailsScreen}
+          />
+          <Stack.Screen name="StudentProfile" component={StudentProfileScreen} />
+          <Stack.Screen name="Reports" component={ReportsScreen} />
+          <Stack.Screen name="Wellness" component={WellnessScreen} />
+          <Stack.Screen name="WellnessEdit" component={WellnessEditScreen} />
+          <Stack.Screen name="Agenda" component={AgendaScreen} />
+          <Stack.Screen name="Timesheet" component={TimesheetScreen} />
+          <Stack.Screen name="Meals" component={MealsScreen} />
+          <Stack.Screen name="Finances" component={FinancesScreen} />
+          <Stack.Screen name="PaymentDetails" component={PaymentDetailsScreen} />
+          <Stack.Screen name="ConfirmDeposit" component={ConfirmDepositScreen} />
+          <Stack.Screen name="Pdf" component={PdfScreen} />
+          <Stack.Screen name="Notification" component={NotificationScreen} />
+          <Stack.Screen name="Newsletter" component={NewsletterScreen} />
+          <Stack.Screen
+            name="NewsletterDetail"
+            component={NewsletterDetailScreen}
+          />
+          <Stack.Screen name="ReportDetail" component={ReportDetailScreen} />
+        </Stack.Group>
+      ) : (
+        // ─── Unauthenticated: only the auth stack is reachable ─────────────
+        <Stack.Screen name="Auth" component={AuthNavigator} />
+      )}
+    </Stack.Navigator>
+  );
+}

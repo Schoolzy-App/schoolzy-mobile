@@ -1,0 +1,250 @@
+import { useCallback, useState } from "react";
+import {
+  Alert,
+  Image,
+  ImageStyle,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  StyleSheet,
+  View,
+} from "react-native";
+
+import { AppConfig, type ColorPalette } from "@/apps";
+import { Button, Input, PasswordInput, Text } from "@/components/ui";
+import { Icons, Images } from "@/constants";
+import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/contexts/ThemeContext";
+import { useBiometricSetting, useStyles } from "@/hooks";
+import { ApiError } from "@/types/api";
+import type { AuthStackScreenProps } from "@/navigation/types";
+
+const { MailInactive } = Icons;
+
+type Props = AuthStackScreenProps<"Login">;
+
+export default function LoginScreen({ navigation }: Props) {
+  const { colors } = useTheme();
+  const { login, loginWithBiometric, isLoggingIn } = useAuth();
+  const styles = useStyles(createStyles);
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  /**
+   * Capability and enrollment together: the button appears only when the
+   * device can do it AND a parent turned it on in Account on this phone.
+   */
+  const {
+    available: biometricAvailable,
+    label: biometricLabel,
+    enabled: biometricEnabled,
+    ready: biometricReady,
+    refresh: refreshBiometric,
+  } = useBiometricSetting();
+
+  const handleForgotPassword = useCallback(
+    () => navigation.navigate("ForgotPassword"),
+    [navigation],
+  );
+
+  // ─── Password login ─────────────────────────────────────────────────────────
+  const handleLogin = useCallback(async () => {
+    if (!email || !password || isLoggingIn) return;
+    setError(null);
+    try {
+      await login(email, password);
+      // On success the root navigator swaps to the main stack automatically.
+    } catch (e) {
+      setError(
+        e instanceof ApiError
+          ? e.message
+          : "Unable to sign in. Please try again.",
+      );
+    }
+  }, [email, password, isLoggingIn, login]);
+
+  /**
+   * Biometric sign-in exchanges the device-bound credential for a new session —
+   * the password is never written to the device. One scan; a cancelled scan
+   * does nothing, so the parent can just tap again.
+   */
+  const handleBiometricLogin = useCallback(async () => {
+    try {
+      const outcome = await loginWithBiometric(biometricLabel);
+      if (outcome === "invalidated") {
+        Alert.alert(
+          `${biometricLabel} changed`,
+          `Sign in with your password, then turn ${biometricLabel} sign-in on again in Account.`,
+        );
+        void refreshBiometric();
+      } else if (outcome === "rejected") {
+        Alert.alert(
+          `${biometricLabel} sign-in turned off`,
+          "Your password may have changed. Sign in with your password, then turn it on again in Account.",
+        );
+        void refreshBiometric();
+      }
+      // "ok": the root navigator swaps to the main stack. "cancelled": nothing.
+    } catch (e) {
+      // Enrollment is kept — a dropped connection or a lockout is not a reason
+      // to make the parent turn biometrics on again.
+      Alert.alert(
+        "Unable to sign in",
+        e instanceof ApiError && e.isNetworkError
+          ? "No connection. Check your network and try again."
+          : e instanceof ApiError
+            ? e.message
+            : "Unable to sign in. Please try again.",
+      );
+    }
+  }, [loginWithBiometric, biometricLabel, refreshBiometric]);
+
+  const canSubmit = !!email && !!password && !isLoggingIn;
+
+  return (
+    <KeyboardAvoidingView
+      style={styles.flex}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+    >
+      <View style={styles.center}>
+        {/* ── Logo ─────────────────────────────────────────────────── */}
+        <Image
+          source={Images.loginLogo}
+          style={styles.logo as ImageStyle}
+          resizeMode="contain"
+        />
+
+        {/* ── Title & Subtitle ─────────────────────────────────────── */}
+        <Text variant="h6" weight="medium" style={styles.title}>
+          Welcome to {AppConfig.name} Schools
+        </Text>
+        <Text
+          variant="body3"
+          weight="regular"
+          color={colors.textSecondary}
+          style={styles.subtitle}
+        >
+          Here you&apos;ll easily track your child&apos;s finances, meals,
+          schedules, and more..
+        </Text>
+
+        {/* ── Form ─────────────────────────────────────────────────── */}
+        <View style={styles.form}>
+          <Input
+            label="Email Address"
+            placeholder="Email Address"
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="email-address"
+            returnKeyType="next"
+            change={setEmail}
+            renderLeft={() => <MailInactive />}
+          />
+
+          <PasswordInput
+            label="Password"
+            placeholder="Password"
+            onSubmit={setPassword}
+          />
+
+          {error ? (
+            <Text variant="label3" weight="regular" color={colors.errorText}>
+              {error}
+            </Text>
+          ) : null}
+
+          {/* Forget password */}
+          <Pressable
+            style={styles.forgotRow}
+            disabled={isLoggingIn}
+            onPress={handleForgotPassword}
+            hitSlop={8}
+          >
+            <Text
+              variant="label2"
+              weight="regular"
+              color={colors.textSecondary}
+            >
+              Forget password?
+            </Text>
+          </Pressable>
+
+          {/* Login button */}
+          <Button
+            text="Log in"
+            onPress={handleLogin}
+            isLoading={isLoggingIn}
+            disabled={!canSubmit}
+            style={styles.loginButton}
+          />
+
+          {/* Biometric login. Three conditions, all required: the probe has
+              finished (so the button doesn't flash in and out), the device has
+              a usable biometric, and a credential is enrolled on this phone.
+              It survives logout on purpose. */}
+          {biometricReady && biometricAvailable && biometricEnabled ? (
+            <Pressable
+              style={styles.biometricButton}
+              onPress={handleBiometricLogin}
+              disabled={isLoggingIn}
+            >
+              <Text variant="label2" weight="regular" color={colors.primary}>
+                Sign in with {biometricLabel}
+              </Text>
+            </Pressable>
+          ) : null}
+        </View>
+      </View>
+    </KeyboardAvoidingView>
+  );
+}
+
+const createStyles = (colors: ColorPalette) =>
+  StyleSheet.create({
+    flex: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    center: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: 24,
+      paddingVertical: 40,
+    },
+    logo: {
+      width: 100,
+      height: 100,
+      marginBottom: 24,
+    } as ImageStyle,
+    title: {
+      textAlign: "center",
+      marginBottom: 8,
+    },
+    subtitle: {
+      textAlign: "center",
+      marginBottom: 32,
+    },
+    form: {
+      width: "100%",
+      gap: 16,
+    },
+    forgotRow: {
+      alignSelf: "flex-end",
+      marginTop: -4,
+    },
+    loginButton: {
+      marginTop: 8,
+    },
+    biometricButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      height: 56,
+      borderRadius: 52,
+      borderWidth: 1.5,
+      borderColor: colors.primary,
+      backgroundColor: "transparent",
+    },
+  });

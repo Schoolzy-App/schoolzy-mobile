@@ -1,0 +1,230 @@
+import Constants from "expo-constants";
+
+import { AppConfig } from "@/apps";
+import type { NewsletterItemSource } from "@/types/api";
+
+/**
+ * Base URL resolution, highest priority first:
+ *
+ * 1. `EXPO_PUBLIC_API_URL` — build-time override for pointing a build at a
+ *    different environment without touching code.
+ * 2. `Config.apiUrl` in `apps/<variant>.ts` — the per-app default, so Brighton,
+ *    Schoolzy and Ajial can each move to their own host independently.
+ * 3. `extra.apiUrl` in `app.config.ts` — optional per-variant escape hatch.
+ *
+ * (The Swagger spec ships an empty `servers` array, so the host has to come
+ * from the app rather than the schema.)
+ */
+const extra = (Constants.expoConfig?.extra ?? {}) as { apiUrl?: string };
+
+/** Trailing slashes would produce `//api/...` once joined with a route. */
+const stripTrailingSlash = (url: string) => url.replace(/\/+$/, "");
+
+export const API_BASE_URL = stripTrailingSlash(
+  process.env.EXPO_PUBLIC_API_URL ?? AppConfig.apiUrl ?? extra.apiUrl ?? "",
+);
+
+/**
+ * Every `/api/mobile/*` endpoint accepts an optional `api-version` query
+ * parameter. It is sent on all mobile requests so the backend can route
+ * versioned handlers; override with `EXPO_PUBLIC_API_VERSION` if needed.
+ */
+export const API_VERSION = process.env.EXPO_PUBLIC_API_VERSION ?? "1.0";
+
+/** Request timeout in milliseconds. */
+export const API_TIMEOUT_MS = 20_000;
+
+/**
+ * The API exposes two route prefixes:
+ * - `/api/v1/*`     — auth, home, ping
+ * - `/api/mobile/*` — students, agenda, document requests, newsletters
+ */
+export const ROUTES = {
+  auth: {
+    login: "/api/v1/auth/login",
+    refreshToken: "/api/v1/auth/refresh-token",
+    logout: "/api/v1/auth/logout",
+    sendOtp: "/api/v1/auth/otp/send",
+    verifyOtp: "/api/v1/auth/otp/verify",
+    resetPassword: "/api/v1/auth/reset-password",
+    changePassword: "/api/v1/auth/change-password",
+    /** Issue a device-bound biometric credential — requires a session. */
+    biometricEnroll: "/api/v1/auth/biometric/enroll",
+    /** Exchange the biometric credential for a new session — anonymous. */
+    biometricLogin: "/api/v1/auth/biometric/login",
+    /** Revoke this device's biometric credential — requires a session. */
+    biometricRevoke: "/api/v1/auth/biometric/revoke",
+  },
+  home: "/api/v1/home",
+  /** Name, user type and gender of the signed-in parent/relative. */
+  currentUser: "/api/v1/home/current-user",
+  ping: "/api/v1/Ping",
+  students: {
+    list: "/api/mobile/students",
+    profile: (studentSeasonId: number) =>
+      `/api/mobile/students/${studentSeasonId}/profile`,
+    agenda: (studentSeasonId: number) =>
+      `/api/mobile/students/${studentSeasonId}/agenda`,
+    reports: (studentSeasonId: number) =>
+      `/api/mobile/students/${studentSeasonId}/reports`,
+    /** Summary tiles for the profile screen. */
+    dashboardToday: (studentSeasonId: number) =>
+      `/api/mobile/students/${studentSeasonId}/dashboard/today`,
+    /** Actionable items: overdue installments, empty wallet, unordered meal. */
+    dashboardNeedsAttention: (studentSeasonId: number) =>
+      `/api/mobile/students/${studentSeasonId}/dashboard/needs-attention`,
+    /** Newest activity per source — reports, exams, homework, health. */
+    dashboardLatest: (studentSeasonId: number) =>
+      `/api/mobile/students/${studentSeasonId}/dashboard/latest`,
+    /** School-fee totals: outstanding, overdue, next installment. */
+    dashboardFinancialSummary: (studentSeasonId: number) =>
+      `/api/mobile/students/${studentSeasonId}/dashboard/financial-summary`,
+    /**
+     * Report files used to arrive as an absolute `fileUrl` on another host.
+     * They are now served from here and require the bearer token.
+     */
+    /** The same file by report id alone — what a notification carries. */
+    reportFileById: (reportId: number) =>
+      `/api/mobile/reports/${reportId}/file`,
+    reportFile: (studentSeasonId: number, reportId: number) =>
+      `/api/mobile/students/${studentSeasonId}/reports/${reportId}/file`,
+  },
+  parentDashboard: {
+    /** The whole Home screen in one request. `date` is optional. */
+    root: "/api/v1/parent/dashboard",
+    quickActions: "/api/v1/parent/dashboard/quick-actions",
+    quickActionsCatalog: "/api/v1/parent/dashboard/quick-actions/catalog",
+  },
+  parentProfile: {
+    relatives: "/api/mobile/parent-profile/relatives",
+    relative: (relativeId: number) =>
+      `/api/mobile/parent-profile/relatives/${relativeId}`,
+    /** linkId is the StudentRelatives row id, not the relative's id. */
+    linkPermission: (linkId: number) =>
+      `/api/mobile/parent-profile/relatives/links/${linkId}/permission`,
+    genders: "/api/mobile/parent-profile/genders",
+    /** Names for the RelativeType enum, which Swagger exposes only as ints. */
+    relativeTypes: "/api/mobile/parent-profile/relative-types",
+    guardians: "/api/mobile/parent-profile/students/guardians",
+  },
+  parent: {
+    /** "My Information" — the signed-in parent's own record. */
+    profile: "/api/mobile/parent/profile",
+    nationalities: "/api/mobile/parent/nationalities",
+  },
+  complaints: {
+    list: "/api/mobile/complaints",
+    create: "/api/mobile/complaints",
+    detail: (id: number) => `/api/mobile/complaints/${id}`,
+    /** Binary — the parent's own attachment. Only when `hasAttachment`. */
+    attachment: (id: number) => `/api/mobile/complaints/${id}/attachment`,
+    /** Binary — the school's reply. Only when `hasResponseAttachment`. */
+    responseAttachment: (id: number) =>
+      `/api/mobile/complaints/${id}/response-attachment`,
+    students: "/api/mobile/complaints/students",
+    categories: "/api/mobile/complaints/categories",
+    priorities: "/api/mobile/complaints/priorities",
+    contactMethods: "/api/mobile/complaints/contact-methods",
+  },
+  gateRequests: {
+    eligibility: "/api/mobile/gate-requests/eligibility",
+    students: "/api/mobile/gate-requests/students",
+    createOptions: "/api/mobile/gate-requests/create-options",
+    list: "/api/mobile/gate-requests",
+    create: "/api/mobile/gate-requests",
+    detail: (id: number) => `/api/mobile/gate-requests/${id}`,
+    cancel: (id: number) => `/api/mobile/gate-requests/${id}/cancel`,
+    otp: (id: number) => `/api/mobile/gate-requests/${id}/otp`,
+  },
+  documentRequests: {
+    createOptions: "/api/mobile/document-requests/create-options",
+    list: "/api/mobile/document-requests",
+    create: "/api/mobile/document-requests",
+    detail: (id: number) => `/api/mobile/document-requests/${id}`,
+    file: (fileId: number) => `/api/mobile/document-requests/files/${fileId}`,
+    uploadFile: (requestId: number) =>
+      `/api/mobile/document-requests/${requestId}/files`,
+  },
+  newsletters: {
+    list: "/api/mobile/newsletters",
+    /**
+     * Source-scoped: the list mixes real newsletters with student reports, and
+     * their ids come from different tables and can collide. The backend needs
+     * `source` to know which table to look in.
+     */
+    file: (source: NewsletterItemSource, id: number) =>
+      `/api/mobile/newsletters/${source}/${id}/file`,
+    /** Body and attachment; opening it marks the newsletter read. */
+    detail: (source: NewsletterItemSource, id: number) =>
+      `/api/mobile/newsletters/${source}/${id}`,
+  },
+  healthProfile: {
+    overview: (studentSeasonId: number) =>
+      `/api/mobile/health-profile/${studentSeasonId}`,
+    edit: (studentSeasonId: number) =>
+      `/api/mobile/health-profile/${studentSeasonId}/edit`,
+    save: (studentSeasonId: number) =>
+      `/api/mobile/health-profile/${studentSeasonId}`,
+    attachments: (studentSeasonId: number) =>
+      `/api/mobile/health-profile/${studentSeasonId}/attachments`,
+    attachment: (studentSeasonId: number, attachmentId: number) =>
+      `/api/mobile/health-profile/${studentSeasonId}/attachments/${attachmentId}`,
+    attachmentFile: (studentSeasonId: number, attachmentId: number) =>
+      `/api/mobile/health-profile/${studentSeasonId}/attachments/${attachmentId}/file`,
+  },
+  payments: {
+    history: (studentSeasonId: number) =>
+      `/api/mobile/student-payments/${studentSeasonId}/history`,
+    due: (studentSeasonId: number) =>
+      `/api/mobile/student-payments/${studentSeasonId}/due`,
+    /**
+     * Not student-scoped — the category list is the same for every student.
+     * Excludes the cafeteria and wallet top-up categories.
+     */
+    categories: () =>
+      `/api/mobile/student-payments/categories/without-wallet-and-cafeteria`,
+    /** Only the wallet top-up category, for the Top up flow. */
+    walletCategories: () => `/api/mobile/student-payments/categories/wallet`,
+    igAccountOptions: (studentSeasonId: number) =>
+      `/api/mobile/student-payments/${studentSeasonId}/ig-account-options`,
+    /** Idempotency-protected. Completes immediately. */
+    wallet: () => `/api/mobile/student-payments/wallet`,
+    /** Idempotency-protected, multipart. Starts as "Pending". */
+    online: () => `/api/mobile/student-payments/online`,
+  },
+  /** Daily class schedule. Student-scoped via the query string, not the path. */
+  timetable: "/api/mobile/timetable",
+
+  wallet: {
+    balance: (studentSeasonId: number) =>
+      `/api/mobile/wallet/${studentSeasonId}/balance`,
+    /** Every student the authenticated user can access. */
+    balances: "/api/mobile/wallet/balances",
+  },
+
+  notifications: {
+    devices: "/api/mobile/notifications/devices",
+    list: "/api/mobile/notifications",
+    recent: "/api/mobile/notifications/recent",
+    unreadCount: "/api/mobile/notifications/unread-count",
+    markRead: (notificationId: number) =>
+      `/api/mobile/notifications/${notificationId}/read`,
+    markAllRead: "/api/mobile/notifications/read-all",
+  },
+  // "cafeteriaa" (double A) is the real server spelling — verified on dev.
+  cafeteria: {
+    meals: "/api/mobile/cafeteriaa/meals",
+    mealItems: (mealId: number) =>
+      `/api/mobile/cafeteriaa/meals/${mealId}/items`,
+    mealOrders: "/api/mobile/cafeteriaa/meal-orders",
+    /** Wallet balance + the available payment methods. */
+    paymentOptions: "/api/mobile/cafeteriaa/payment-options",
+    /** Idempotency-protected. One order per meal. */
+    checkoutWallet: "/api/mobile/cafeteriaa/checkout/wallet",
+    /** Idempotency-protected, multipart with payment proof. */
+    checkoutInsta: "/api/mobile/cafeteriaa/checkout/insta",
+  },
+} as const;
+
+/** True when a path belongs to the versioned mobile surface. */
+export const isMobileRoute = (url: string) => url.startsWith("/api/mobile");
