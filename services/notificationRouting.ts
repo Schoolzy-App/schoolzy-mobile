@@ -83,13 +83,15 @@ async function reportPdf(reportId: number, studentSeasonId?: number) {
 }
 
 /**
- * A Behaviour notification (25) is about points (referenceId = point id), a
- * certificate (the StudentReport id) or an escalation (the alert id).
+ * A Behaviour notification (25) is about points or an escalation
+ * (referenceId = the child's studentSeasonId) or a certificate (the
+ * StudentReport id).
  *
  * The URL names the child or the report when the server sends it. Without
- * it, each child's summary is checked: a certificate with that report id
- * opens the PDF, a recent entry with that id opens that child. A parent with
- * one child lands on that child's screen whatever the id was.
+ * it, an id that is one of the children's seasons opens that child; otherwise
+ * each child's summary is checked: a certificate with that report id opens the
+ * PDF, a recent entry with that id opens that child. A parent with one child
+ * lands on that child's screen whatever the id was.
  */
 async function resolveBehaviour(
   id: number | null,
@@ -103,6 +105,13 @@ async function resolveBehaviour(
 
   const students = await studentsApi.list();
   if (id !== null) {
+    const child = students.find((s) => s.studentSeasonId === id);
+    if (child) {
+      return {
+        screen: "Behaviour",
+        params: { studentSeasonId: child.studentSeasonId, studentName: child.name ?? undefined },
+      };
+    }
     for (const student of students) {
       try {
         const summary = await behaviourApi.student(student.studentSeasonId);
