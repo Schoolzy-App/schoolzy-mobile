@@ -80,6 +80,8 @@ export const NotificationType = {
   GateRequestSubmitted: 14,
   GateRequestConfirmed: 15,
   GateRequestCancelled: 16,
+  /** A consent form waiting for the parent; `referenceId` is the recipient id. */
+  ConsentForm: 20,
 } as const;
 
 export type NotificationType =

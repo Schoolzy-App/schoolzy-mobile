@@ -17,6 +17,7 @@ import {
   NotebookIcon,
   PaperPlaneTiltIcon,
   PlusCircleIcon,
+  SignatureIcon,
   UserCircleIcon,
   WalletIcon,
 } from "phosphor-react-native";
@@ -53,6 +54,7 @@ const BY_CODE: Record<string, ModuleStyle> = {
   meals: { Icon: BowlFoodIcon, color: Palette.module.meals.solid },
   timesheet: { Icon: ClockIcon, color: Palette.module.timesheet.solid },
   bus: { Icon: BusIcon, color: Palette.module.agenda.solid },
+  "consent-forms": { Icon: SignatureIcon, color: BRAND },
 };
 
 /**

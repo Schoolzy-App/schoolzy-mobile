@@ -14,6 +14,8 @@ import AddRequestScreen from "@/screens/main/AddRequestScreen";
 import AddGateRequestScreen from "@/screens/main/AddGateRequestScreen";
 import GateRequestDetailsScreen from "@/screens/main/GateRequestDetailsScreen";
 import GateRequestsScreen from "@/screens/main/GateRequestsScreen";
+import ConsentFormDetailsScreen from "@/screens/main/ConsentFormDetailsScreen";
+import ConsentFormsScreen from "@/screens/main/ConsentFormsScreen";
 import ComplaintDetailsScreen from "@/screens/main/ComplaintDetailsScreen";
 import ComplaintsScreen from "@/screens/main/ComplaintsScreen";
 import AgendaScreen from "@/screens/main/AgendaScreen";
@@ -72,6 +74,11 @@ export default function RootNavigator() {
           <Stack.Screen
             name="GateRequestDetails"
             component={GateRequestDetailsScreen}
+          />
+          <Stack.Screen name="ConsentForms" component={ConsentFormsScreen} />
+          <Stack.Screen
+            name="ConsentFormDetails"
+            component={ConsentFormDetailsScreen}
           />
           <Stack.Screen name="StudentProfile" component={StudentProfileScreen} />
           <Stack.Screen name="Reports" component={ReportsScreen} />

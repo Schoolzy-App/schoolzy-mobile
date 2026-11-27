@@ -136,6 +136,17 @@ export const ROUTES = {
     cancel: (id: number) => `/api/mobile/gate-requests/${id}/cancel`,
     otp: (id: number) => `/api/mobile/gate-requests/${id}/otp`,
   },
+  consentForms: {
+    /** `?status=pending|answered`; omit for all. */
+    list: "/api/mobile/consent-forms",
+    pendingCount: "/api/mobile/consent-forms/pending-count",
+    detail: (recipientId: number) => `/api/mobile/consent-forms/${recipientId}`,
+    /** Binary, inline. Only when `hasAttachment`. */
+    attachment: (recipientId: number) =>
+      `/api/mobile/consent-forms/${recipientId}/attachment`,
+    respond: (recipientId: number) =>
+      `/api/mobile/consent-forms/${recipientId}/respond`,
+  },
   documentRequests: {
     createOptions: "/api/mobile/document-requests/create-options",
     list: "/api/mobile/document-requests",

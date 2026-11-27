@@ -212,6 +212,9 @@ export type RootStackParamList = {
   GateRequests: undefined;
   AddGateRequest: undefined;
   GateRequestDetails: { requestId: number };
+  ConsentForms: undefined;
+  /** `recipientId` is the consent form recipient row (the notification's referenceId). */
+  ConsentFormDetails: { recipientId: number };
   StudentProfile: StudentProfileParams;
   Reports: ReportsParams;
   Wellness: WellnessParams;

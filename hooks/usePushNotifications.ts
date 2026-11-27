@@ -31,7 +31,9 @@ function invalidateFor(message: PushMessage) {
     kind === NotificationType.GateRequestConfirmed ||
     kind === NotificationType.GateRequestCancelled;
 
-  if (isGateRequest) {
+  if (kind === NotificationType.ConsentForm) {
+    queryClient.invalidateQueries({ queryKey: queryKeys.consentForms.all });
+  } else if (isGateRequest) {
     // Checked first: the type name contains "request", which would otherwise
     // refresh document requests instead.
     queryClient.invalidateQueries({ queryKey: queryKeys.gateRequests.all });

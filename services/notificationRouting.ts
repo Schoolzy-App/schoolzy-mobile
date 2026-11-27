@@ -123,6 +123,12 @@ export async function resolveNotification(
       case NotificationType.GateRequestSubmitted:
         return null;
 
+      // referenceId is the consent form recipient id (one per child).
+      case NotificationType.ConsentForm:
+        return hasId
+          ? { screen: "ConsentFormDetails", params: { recipientId: id } }
+          : { screen: "ConsentForms" };
+
       // Exams, homework, timetable, meetings and general notices name no
       // student, so there's no screen they can open on their own.
       default:

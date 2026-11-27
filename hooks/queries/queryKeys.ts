@@ -73,6 +73,16 @@ export const queryKeys = {
     createOptions: (studentSeasonId: number) =>
       [...queryKeys.gateRequests.all, "createOptions", studentSeasonId] as const,
   },
+  consentForms: {
+    all: ["consentForms"] as const,
+    /** Prefix of every filtered list — invalidating it refreshes both tabs. */
+    list: () => [...queryKeys.consentForms.all, "list"] as const,
+    listByStatus: (status?: string) =>
+      [...queryKeys.consentForms.list(), status ?? "all"] as const,
+    detail: (recipientId: number) =>
+      [...queryKeys.consentForms.all, "detail", recipientId] as const,
+    pendingCount: () => [...queryKeys.consentForms.all, "pendingCount"] as const,
+  },
   documentRequests: {
     all: ["documentRequests"] as const,
     list: () => [...queryKeys.documentRequests.all, "list"] as const,

@@ -11,6 +11,7 @@ import {
   IdentificationCardIcon,
   LockSimpleIcon,
   PlusIcon,
+  SignatureIcon,
   SignOutIcon,
   UserMinusIcon,
   UsersThreeIcon,
@@ -20,12 +21,14 @@ import { Alert, Pressable, StyleSheet, Switch, View } from "react-native";
 
 import type { ColorPalette } from "@/apps";
 import { ScreenTemplate, Text } from "@/components/ui";
+import { consentStrings } from "@/constants/consentFormStrings";
 import { Palette, Radius, Spacing, Type } from "@/constants/tokens";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import {
   useBiometricSetting,
   useComplaints,
+  useConsentPendingCount,
   useCurrentUser,
   useDocumentRequests,
   useGateEligibility,
@@ -85,6 +88,8 @@ export default function AccountScreen() {
   const { data: complaints } = useComplaints();
   const { data: requests } = useDocumentRequests();
   const { data: gateEligibility } = useGateEligibility();
+  const { data: consentPending = 0 } = useConsentPendingCount();
+  const consentText = consentStrings();
 
   // ── Header ────────────────────────────────────────────────────────────
   const name = info?.name || currentUser?.name || "";
@@ -312,6 +317,34 @@ export default function AccountScreen() {
             <CaretRightIcon weight="bold" size={14} color={Palette.text.chevron} />
           </Tile>
         ) : null}
+
+        {/* ── Consent forms ───────────────────────────────────────── */}
+        <Tile
+          style={styles.gate}
+          onPress={() => navigation.navigate("ConsentForms")}
+        >
+          <View style={[styles.iconTile, { backgroundColor: Palette.status.info.tint }]}>
+            <SignatureIcon weight="fill" size={22} color={Palette.status.info.fg} />
+          </View>
+          <View style={[styles.flex, styles.titleBlock]}>
+            <Text style={styles.tileTitle} numberOfLines={1}>
+              {consentText.title}
+            </Text>
+            <Text style={Type.caption} color={Palette.text.tertiary} numberOfLines={1}>
+              {consentPending > 0
+                ? consentText.pendingCount(consentPending)
+                : consentText.menuSubtitle}
+            </Text>
+          </View>
+          {consentPending > 0 ? (
+            <View style={styles.consentBadge}>
+              <Text style={Type.badge} color={Palette.text.onBrand}>
+                {consentPending > 99 ? "99+" : consentPending}
+              </Text>
+            </View>
+          ) : null}
+          <CaretRightIcon weight="bold" size={14} color={Palette.text.chevron} />
+        </Tile>
 
         <View style={styles.row}>
           <RequestsTile
@@ -730,6 +763,15 @@ const createStyles = (colors: ColorPalette) =>
       alignItems: "center",
       gap: 12,
       padding: 14,
+    },
+    consentBadge: {
+      minWidth: 20,
+      height: 20,
+      paddingHorizontal: 6,
+      borderRadius: 10,
+      backgroundColor: Palette.nav.badge,
+      alignItems: "center",
+      justifyContent: "center",
     },
     biometric: {
       flexDirection: "row",
