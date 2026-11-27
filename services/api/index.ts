@@ -18,3 +18,4 @@ export { notificationsApi } from "./notifications";
 export { homeApi, pingApi, currentUserApi } from "./misc";
 export { timetableApi } from "./timetable";
 export { walletApi } from "./wallet";
+export { behaviourApi, BEHAVIOUR_PAGE_SIZE } from "./behaviour";

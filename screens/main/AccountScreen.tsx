@@ -12,6 +12,7 @@ import {
   LockSimpleIcon,
   PlusIcon,
   SignOutIcon,
+  StarIcon,
   UserMinusIcon,
   UsersThreeIcon,
 } from "phosphor-react-native";
@@ -19,11 +20,14 @@ import React, { useCallback } from "react";
 import { Alert, Pressable, StyleSheet, Switch, View } from "react-native";
 
 import type { ColorPalette } from "@/apps";
+import SegmentedControl from "@/components/SegmentedControl";
 import { ScreenTemplate, Text } from "@/components/ui";
+import { FeatureFlags } from "@/constants/featureFlags";
 import { Palette, Radius, Spacing, Type } from "@/constants/tokens";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import {
+  useBehaviourNotificationSetting,
   useBiometricSetting,
   useComplaints,
   useCurrentUser,
@@ -32,10 +36,13 @@ import {
   useGuardianStudentsRaw,
   useParentInfo,
   useRelatives,
+  useSaveBehaviourNotificationSetting,
   useStudents,
   useStyles,
 } from "@/hooks";
+import { behaviourStrings } from "@/i18n/behaviour";
 import type { RootStackParamList } from "@/navigation/types";
+import type { BehaviourNotificationMode } from "@/types/api";
 
 /** Avatar colours, in order, for people without one of their own. */
 const PEOPLE = ["#4E7FD0", "#B0627E", "#5BA3A0", "#C07A12"];
@@ -313,6 +320,8 @@ export default function AccountScreen() {
           </Tile>
         ) : null}
 
+        {FeatureFlags.behaviour ? <BehaviourNotificationsCard /> : null}
+
         <View style={styles.row}>
           <RequestsTile
             pending={pendingRequests}
@@ -391,6 +400,57 @@ export default function AccountScreen() {
 }
 
 // ─── Pieces ──────────────────────────────────────────────────────────────────
+
+/**
+ * Which behaviour pushes this parent gets. Hidden until the current choice
+ * loads (or if the server doesn't have the endpoint), so it never shows a
+ * value that isn't the saved one.
+ */
+function BehaviourNotificationsCard() {
+  const styles = useStyles(createStyles);
+  const t = behaviourStrings();
+  const { data: mode } = useBehaviourNotificationSetting();
+  const { mutate: save } = useSaveBehaviourNotificationSetting();
+
+  const handleChange = useCallback(
+    (next: BehaviourNotificationMode) => {
+      if (next === mode) return;
+      save(next, {
+        onError: () => Alert.alert(t.notificationsTitle, t.saveFailed),
+      });
+    },
+    [mode, save, t],
+  );
+
+  if (!mode) return null;
+
+  return (
+    <View style={styles.behaviourCard}>
+      <View style={styles.behaviourHead}>
+        <View style={[styles.iconTile, { backgroundColor: Palette.module.behaviour.tint }]}>
+          <StarIcon weight="fill" size={22} color={Palette.module.behaviour.solid} />
+        </View>
+        <View style={[styles.flex, styles.titleBlock]}>
+          <Text style={styles.tileTitle} numberOfLines={1}>
+            {t.notificationsTitle}
+          </Text>
+          <Text style={Type.caption} color={Palette.text.tertiary}>
+            {t.notificationsHint}
+          </Text>
+        </View>
+      </View>
+      <SegmentedControl<BehaviourNotificationMode>
+        options={[
+          { value: "All", label: t.modeAll },
+          { value: "PositiveOnly", label: t.modePositive },
+          { value: "None", label: t.modeNone },
+        ]}
+        value={mode}
+        onChange={handleChange}
+      />
+    </View>
+  );
+}
 
 function Tile({
   children,
@@ -730,6 +790,17 @@ const createStyles = (colors: ColorPalette) =>
       alignItems: "center",
       gap: 12,
       padding: 14,
+    },
+    behaviourCard: {
+      gap: 12,
+      padding: 14,
+      borderRadius: Radius.financeCard,
+      backgroundColor: colors.surface,
+    },
+    behaviourHead: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
     },
     biometric: {
       flexDirection: "row",

@@ -92,6 +92,12 @@ export type MealsParams = {
   studentSeasonId?: number;
 };
 
+export type BehaviourParams = {
+  studentSeasonId: number;
+  /** Shown until the summary loads; a notification tap may not have it. */
+  studentName?: string;
+};
+
 export type FinancesParams = {
   studentName: string;
   studentSeasonId?: number;
@@ -220,6 +226,7 @@ export type RootStackParamList = {
   Timesheet: TimesheetParams;
   Meals: MealsParams;
   Finances: FinancesParams;
+  Behaviour: BehaviourParams;
   PaymentDetails: PaymentDetailsParams;
   ConfirmDeposit: ConfirmDepositParams;
   Pdf: PdfParams;

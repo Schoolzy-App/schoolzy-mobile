@@ -57,7 +57,11 @@ export default function NotificationScreen({ navigation }: Props) {
     async (item: NotificationListItem) => {
       if (item.unread) markRead(item.notificationId);
 
-      const destination = await resolveNotification(item.type, item.referenceId);
+      const destination = await resolveNotification(
+        item.type,
+        item.referenceId,
+        item.actionUrl,
+      );
       if (!destination) return;
 
       const navigate = navigation.navigate as (

@@ -194,3 +194,16 @@ export {
   selectStudentReports,
 } from "./reports";
 export type { ReportChip, StudentReport, StudentReports } from "./reports";
+
+export {
+  DEFAULT_HOUSE_COLOUR,
+  nextBehaviourPage,
+  selectStudentBehaviour,
+  toBehaviourEntry,
+} from "./behaviour";
+export type {
+  BehaviourCertificate,
+  BehaviourEntry,
+  BehaviourHouse,
+  StudentBehaviour,
+} from "./behaviour";

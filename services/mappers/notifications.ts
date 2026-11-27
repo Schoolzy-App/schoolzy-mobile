@@ -41,6 +41,8 @@ export interface NotificationListItem extends NotificationData {
   type: number;
   /** The record it's about; null when the server sent none. */
   referenceId: number | null;
+  /** Web route, when the server sends one (not in today's payload). */
+  actionUrl: string | null;
 }
 
 export function toNotificationItem(dto: NotificationDto): NotificationListItem {
@@ -57,6 +59,7 @@ export function toNotificationItem(dto: NotificationDto): NotificationListItem {
     target: toNotificationTarget(dto.typeLabel),
     type: dto.type,
     referenceId: dto.referenceId ?? null,
+    actionUrl: dto.actionUrl ?? null,
   };
 }
 
