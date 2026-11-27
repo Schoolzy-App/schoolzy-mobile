@@ -95,3 +95,8 @@ export { useTimetable } from "./useTimetable";
 export { useWalletBalance, useWalletBalances } from "./useWallet";
 export { useCurrentUser } from "./useCurrentUser";
 export { useStudentReports } from "./useStudentReports";
+export {
+  useStudentBehaviour,
+  useBehaviourNotificationSetting,
+  useSaveBehaviourNotificationSetting,
+} from "./useBehaviour";

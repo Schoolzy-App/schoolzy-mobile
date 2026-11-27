@@ -17,3 +17,4 @@ export * from "./wallet";
 export * from "./currentUser";
 export * from "./reports";
 export * from "./notifications";
+export * from "./behaviour";

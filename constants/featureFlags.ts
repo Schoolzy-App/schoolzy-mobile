@@ -81,6 +81,18 @@ export const FeatureFlags = {
   ),
 
   /**
+   * Whether the Behaviour module (points, house, certificates) is offered:
+   * the tile on the child dashboard, the Home quick-action code and the
+   * "Behaviour notifications" choice on Account. On for every app.
+   *
+   * Override with `EXPO_PUBLIC_ENABLE_BEHAVIOUR=0`.
+   */
+  behaviour: envFlag(
+    process.env.EXPO_PUBLIC_ENABLE_BEHAVIOUR,
+    appFeatures.behaviour,
+  ),
+
+  /**
    * Which payment methods are offered on the Payment Details screen.
    *
    * Only InstaPay is live today — Apple Pay and the in-app wallet have no

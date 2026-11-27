@@ -3,6 +3,7 @@ import { useNavigation } from "@react-navigation/native";
 import React, { FC, useContext } from "react";
 import {
   Pressable,
+  RefreshControlProps,
   ScrollView,
   StyleProp,
   StyleSheet,
@@ -46,6 +47,8 @@ type ScreenTemplateProps = {
   title?: string | React.ReactElement;
   onBack?: () => void;
   bottomContent?: React.ReactNode;
+  /** Pull-to-refresh. The page bounces only when one is given. */
+  refreshControl?: React.ReactElement<RefreshControlProps>;
 };
 
 const ScreenTemplate: FC<ScreenTemplateProps> = ({
@@ -61,6 +64,7 @@ const ScreenTemplate: FC<ScreenTemplateProps> = ({
   title,
   onBack,
   bottomContent,
+  refreshControl,
 }) => {
   const insets = useSafeAreaInsets();
   const styles = useStyles(createStyles);
@@ -145,7 +149,8 @@ const ScreenTemplate: FC<ScreenTemplateProps> = ({
           { paddingBottom: bottomClearance },
           contentStyle,
         ]}
-        bounces={false}
+        bounces={!!refreshControl}
+        refreshControl={refreshControl}
         showsVerticalScrollIndicator={false}
       >
         {scrollHeader ? header : null}

@@ -71,6 +71,7 @@ export const Palette = {
     agenda: { solid: "#4E7FD0", tint: "#4E7FD01A" },
     timesheet: { solid: "#4E7FD0", tint: "#4E7FD01A" },
     meals: { solid: "#9437F0", tint: "#9437F01A" },
+    behaviour: { solid: "#E09A12", tint: "#E09A121A" },
   },
   avatar: {
     children: ["#4E7FD0", "#B0627E", "#5BA3A0"],

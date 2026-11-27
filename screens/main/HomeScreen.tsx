@@ -17,6 +17,7 @@ import {
   UpcomingList,
 } from "@/components/home/HomeSections";
 import { QueryState, ScreenTemplate } from "@/components/ui";
+import { FeatureFlags } from "@/constants/featureFlags";
 import { Radius, Spacing } from "@/constants/tokens";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -152,6 +153,15 @@ export default function HomeScreen() {
         case "timesheet":
           navigation.navigate("Timesheet", params);
           return;
+        case "behaviour":
+        case "behavior":
+        case "house-points":
+          if (FeatureFlags.behaviour) {
+            navigation.navigate("Behaviour", params);
+            return;
+          }
+        // Switched off for this app: land on the profile like any unknown code.
+        // falls through
         default:
           // Unknown code: the student profile is the safe landing place.
           navigation.navigate("StudentProfile", {

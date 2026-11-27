@@ -8,6 +8,7 @@ import {
   CurrencyCircleDollarIcon,
   GearSixIcon,
   HeartIcon,
+  StarIcon,
   type Icon,
 } from "phosphor-react-native";
 import React, { useCallback } from "react";
@@ -24,6 +25,7 @@ import {
 } from "@/components";
 import { BottomSection, QueryState, ScreenTemplate, Text } from "@/components/ui";
 import { Icons } from "@/constants";
+import { FeatureFlags } from "@/constants/featureFlags";
 import { TAB_BAR_HEIGHT } from "@/constants/layout";
 import {
   IconSize,
@@ -46,6 +48,7 @@ import {
 import { useStyles } from "@/hooks";
 import { StackTabBar } from "@/navigation/FloatingTabBar";
 import type { RootStackScreenProps } from "@/navigation/types";
+import { behaviourStrings } from "@/i18n/behaviour";
 import { studentsApi } from "@/services/api";
 import type { AttentionItem, LatestActivity } from "@/services/mappers";
 
@@ -56,7 +59,8 @@ type QuickActionKey =
   | "wellness"
   | "agenda"
   | "meals"
-  | "timesheet";
+  | "timesheet"
+  | "behaviour";
 
 const QUICK_ACTIONS: {
   key: QuickActionKey;
@@ -70,6 +74,7 @@ const QUICK_ACTIONS: {
   { key: "agenda", label: "Agenda", Icon: BookOpenIcon, color: Palette.module.agenda.solid },
   { key: "meals", label: "Meals", Icon: BowlFoodIcon, color: Palette.module.meals.solid },
   { key: "timesheet", label: "Timesheet", Icon: ClockIcon, color: Palette.module.timesheet.solid },
+  { key: "behaviour", label: behaviourStrings().module, Icon: StarIcon, color: Palette.module.behaviour.solid },
 ];
 
 const GRID_COLUMNS = 3;
@@ -113,7 +118,8 @@ export default function StudentProfileScreen({ navigation, route }: Props) {
   const modules = QUICK_ACTIONS.filter(
     (action) =>
       (action.key !== "meals" || showMeals) &&
-      (action.key !== "finances" || showFinance),
+      (action.key !== "finances" || showFinance) &&
+      (action.key !== "behaviour" || FeatureFlags.behaviour),
   );
 
   const finance = useStudentFinancialSummary(studentSeasonId, showFinance);
@@ -168,6 +174,12 @@ export default function StudentProfileScreen({ navigation, route }: Props) {
           return;
         case "finances":
           navigation.navigate("Finances", {
+            studentName: displayName,
+            studentSeasonId,
+          });
+          return;
+        case "behaviour":
+          navigation.navigate("Behaviour", {
             studentName: displayName,
             studentSeasonId,
           });

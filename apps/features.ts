@@ -23,6 +23,11 @@ export interface AppFeatures {
    * stays either way.
    */
   gateRequestsTab: boolean;
+  /**
+   * Behaviour + house points: the Behaviour module on the child dashboard,
+   * its push routing and the notification choice on Account.
+   */
+  behaviour: boolean;
   /** Payment methods offered on the Payment Details screen. */
   paymentMethods: {
     applePay: boolean;
@@ -40,6 +45,7 @@ export const DEFAULT_FEATURES: AppFeatures = {
   chatTab: false,
   requestsTab: true,
   gateRequestsTab: true,
+  behaviour: true,
   paymentMethods: {
     // InstaPay -> POST /student-payments/online (proof upload, starts Pending).
     // Wallet   -> POST /student-payments/wallet (completes immediately).

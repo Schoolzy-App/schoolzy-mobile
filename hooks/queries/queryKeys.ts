@@ -12,6 +12,18 @@ export const queryKeys = {
     /** Paging is the infinite query's; the category chip is part of the key. */
     reports: (studentSeasonId: number, category?: number) =>
       [...queryKeys.students.all, "reports", studentSeasonId, category ?? "all"] as const,
+    /**
+     * Under `students` so a push (which invalidates `students.all`) refreshes
+     * it too. Paging is the infinite query's.
+     */
+    behaviour: (studentSeasonId: number) =>
+      [...queryKeys.students.all, "behaviour", studentSeasonId] as const,
+  },
+
+  settings: {
+    all: ["settings"] as const,
+    behaviourNotifications: () =>
+      [...queryKeys.settings.all, "behaviourNotifications"] as const,
   },
 
   agenda: {

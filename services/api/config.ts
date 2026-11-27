@@ -88,6 +88,13 @@ export const ROUTES = {
       `/api/mobile/reports/${reportId}/file`,
     reportFile: (studentSeasonId: number, reportId: number) =>
       `/api/mobile/students/${studentSeasonId}/reports/${reportId}/file`,
+    /** Points, house, certificates and paged history for the year. */
+    behaviour: (studentSeasonId: number) =>
+      `/api/mobile/students/${studentSeasonId}/behaviour`,
+  },
+  settings: {
+    /** GET / PUT — which behaviour pushes this parent gets. */
+    behaviourNotifications: "/api/mobile/settings/behaviour-notifications",
   },
   parentDashboard: {
     /** The whole Home screen in one request. `date` is optional. */

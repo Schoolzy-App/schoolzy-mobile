@@ -35,6 +35,13 @@ function invalidateFor(message: PushMessage) {
     // Checked first: the type name contains "request", which would otherwise
     // refresh document requests instead.
     queryClient.invalidateQueries({ queryKey: queryKeys.gateRequests.all });
+  } else if (
+    kind === NotificationType.Behaviour ||
+    kind === NotificationType.BehaviourAlert
+  ) {
+    // Behaviour lives under `students` (refreshed below for every type); a
+    // certificate is also a published report, so newsletters go stale too.
+    queryClient.invalidateQueries({ queryKey: queryKeys.newsletters.all });
   } else if (type.includes("newsletter") || type.includes("report")) {
     // A published report shows up in both places.
     queryClient.invalidateQueries({ queryKey: queryKeys.newsletters.all });
@@ -77,6 +84,7 @@ export function usePushNotifications() {
       const destination = await resolveNotification(
         message.data.type,
         message.data.referenceId,
+        message.data.actionUrl,
       );
       if (!destination) {
         log.warn(

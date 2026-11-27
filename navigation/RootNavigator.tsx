@@ -17,6 +17,7 @@ import GateRequestsScreen from "@/screens/main/GateRequestsScreen";
 import ComplaintDetailsScreen from "@/screens/main/ComplaintDetailsScreen";
 import ComplaintsScreen from "@/screens/main/ComplaintsScreen";
 import AgendaScreen from "@/screens/main/AgendaScreen";
+import BehaviourScreen from "@/screens/main/BehaviourScreen";
 import ChangePasswordScreen from "@/screens/main/ChangePasswordScreen";
 import ConfirmDepositScreen from "@/screens/main/ConfirmDepositScreen";
 import FinancesScreen from "@/screens/main/FinancesScreen";
@@ -81,6 +82,7 @@ export default function RootNavigator() {
           <Stack.Screen name="Timesheet" component={TimesheetScreen} />
           <Stack.Screen name="Meals" component={MealsScreen} />
           <Stack.Screen name="Finances" component={FinancesScreen} />
+          <Stack.Screen name="Behaviour" component={BehaviourScreen} />
           <Stack.Screen name="PaymentDetails" component={PaymentDetailsScreen} />
           <Stack.Screen name="ConfirmDeposit" component={ConfirmDepositScreen} />
           <Stack.Screen name="Pdf" component={PdfScreen} />

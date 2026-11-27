@@ -38,6 +38,13 @@ export interface PushNotificationData {
   type?: string;
   /** Id of the referenced entity within that domain. */
   referenceId?: string;
+  /**
+   * Web route the notification points at, when the server sends one. Behaviour
+   * notifications put the child in it (`?studentSeasonId=`) or the report
+   * (`/Parent/NewsletterReport/ShowReport/{id}`). Not sent today; routing
+   * falls back to `referenceId` without it.
+   */
+  actionUrl?: string;
 }
 
 /** A received message, normalized across foreground/background/quit delivery. */
@@ -80,6 +87,10 @@ export const NotificationType = {
   GateRequestSubmitted: 14,
   GateRequestConfirmed: 15,
   GateRequestCancelled: 16,
+  /** Points given, a certificate ready, or the school asking to call in. */
+  Behaviour: 25,
+  /** Staff only (coordinators) — a parent never receives it. */
+  BehaviourAlert: 26,
 } as const;
 
 export type NotificationType =
@@ -101,6 +112,8 @@ export interface NotificationDto {
   typeLabel: string | null;
   /** Id of the record it's about: the report, complaint, request or newsletter. */
   referenceId?: number | null;
+  /** Not in today's payload — read when present (see `PushNotificationData`). */
+  actionUrl?: string | null;
   isRead: boolean;
   sentAt: IsoDateTime | null;
   /** Server-rendered relative time, e.g. "22h ago" / "Aug 30". */

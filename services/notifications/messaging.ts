@@ -136,6 +136,10 @@ export function toPushMessage(remote: RemoteMessage): PushMessage {
       type: data.type != null ? String(data.type) : undefined,
       referenceId:
         data.referenceId != null ? String(data.referenceId) : undefined,
+      actionUrl:
+        typeof data.actionUrl === "string" && data.actionUrl
+          ? data.actionUrl
+          : undefined,
     },
   };
 }
