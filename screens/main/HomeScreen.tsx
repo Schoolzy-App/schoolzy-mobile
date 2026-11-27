@@ -17,9 +17,11 @@ import {
   UpcomingList,
 } from "@/components/home/HomeSections";
 import { QueryState, ScreenTemplate } from "@/components/ui";
+import { consentStrings } from "@/constants/consentFormStrings";
 import { Radius, Spacing } from "@/constants/tokens";
 import { useAuth } from "@/contexts/AuthContext";
 import {
+  useConsentPendingCount,
   useCurrentUser,
   useParentDashboard,
   useQuickActionsCatalog,
@@ -54,7 +56,11 @@ const PARENT_ONLY = new Set([
   "newsletter",
   "update-data",
   "change-password",
+  "consent-forms",
 ]);
+
+/** Catalogue-style code for the client-side consent forms attention item. */
+const CONSENT_FORMS_CODE = "consent-forms";
 
 // ─── Screen ──────────────────────────────────────────────────────────────────
 export default function HomeScreen() {
@@ -68,6 +74,30 @@ export default function HomeScreen() {
   const { data: currentUser } = useCurrentUser();
 
   const { data, isLoading, error, refetch } = useParentDashboard();
+
+  // Consent forms waiting for an answer lead the attention card. The
+  // dashboard payload doesn't carry them, so the item is added here unless
+  // the server already sent one.
+  const { data: consentPending = 0 } = useConsentPendingCount();
+  const attention = useMemo<DashboardAttention[]>(() => {
+    const items = data?.attention ?? [];
+    if (consentPending <= 0 || items.some((a) => a.actionCode === CONSENT_FORMS_CODE)) {
+      return items;
+    }
+    const s = consentStrings();
+    return [
+      {
+        id: `consent-forms-${consentPending}`,
+        type: "ConsentForms",
+        title: s.attentionTitle(consentPending),
+        subtitle: s.attentionSubtitle,
+        actionLabel: s.attentionAction,
+        actionCode: CONSENT_FORMS_CODE,
+        studentId: null,
+      },
+      ...items,
+    ];
+  }, [data?.attention, consentPending]);
 
   const [editing, setEditing] = useState(false);
   /**
@@ -190,6 +220,9 @@ export default function HomeScreen() {
           return true;
         case "change-password":
           navigation.navigate("ChangePassword");
+          return true;
+        case CONSENT_FORMS_CODE:
+          navigation.navigate("ConsentForms");
           return true;
         default:
           return false;
@@ -348,7 +381,7 @@ export default function HomeScreen() {
           {/* Held back until the dashboard loads, so the quiet state doesn't
               flash before real attention items arrive. */}
           {data ? (
-            <AttentionCard items={data.attention} onAction={handleAttention} />
+            <AttentionCard items={attention} onAction={handleAttention} />
           ) : null}
         </View>
       }

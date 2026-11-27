@@ -7,6 +7,7 @@ export { studentsApi } from "./students";
 export { agendaApi } from "./agenda";
 export { complaintsApi, COMPLAINTS_PAGE_SIZE } from "./complaints";
 export { gateRequestsApi, GATE_REQUESTS_PAGE_SIZE } from "./gateRequests";
+export { consentFormsApi } from "./consentForms";
 export { documentRequestsApi } from "./documentRequests";
 export { newslettersApi } from "./newsletters";
 export { parentDashboardApi } from "./parentDashboard";

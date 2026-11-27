@@ -69,6 +69,24 @@ export type {
 } from "./gateRequests";
 
 export {
+  toConsentForm,
+  selectConsentForms,
+  selectConsentFormDetail,
+  consentLinkLabel,
+  consentStatusLabel,
+  consentPolicyLabel,
+} from "./consentForms";
+export type {
+  ConsentForm,
+  ConsentFormDetail,
+  ConsentLinkKind,
+  ConsentQuestion,
+  ConsentQuestionKind,
+  ConsentQuestionOption,
+  ConsentStatus,
+} from "./consentForms";
+
+export {
   selectTodayTiles,
   selectNeedsAttention,
   selectLatestActivities,

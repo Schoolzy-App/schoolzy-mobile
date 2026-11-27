@@ -48,6 +48,12 @@ export {
   useGenerateGateOtp,
 } from "./useGateRequests";
 export {
+  useConsentForms,
+  useConsentForm,
+  useConsentPendingCount,
+  useRespondConsentForm,
+} from "./useConsentForms";
+export {
   useDocumentRequests,
   useDocumentRequest,
   useDocumentRequestOptions,

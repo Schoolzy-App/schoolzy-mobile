@@ -8,6 +8,7 @@ import {
   DotsThreeOutlineIcon,
   HouseIcon,
   NewspaperIcon,
+  SignatureIcon,
   UsersThreeIcon,
   type Icon,
   type IconWeight,
@@ -18,7 +19,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Text } from "@/components/ui";
 import { FeatureFlags } from "@/constants";
+import { consentStrings } from "@/constants/consentFormStrings";
 import { IconSize, Palette, Radius, Shadow, Size, Spacing } from "@/constants/tokens";
+import { useConsentPendingCount } from "@/hooks/queries/useConsentForms";
 import { useGateEligibility } from "@/hooks/queries/useGateRequests";
 
 import type { MainTabParamList, RootStackParamList } from "./types";
@@ -42,7 +45,7 @@ export type TabName = Exclude<keyof MainTabParamList, "Add">;
 
 type TabEntry = {
   /** A tab route, or a key for entries that only push a root screen. */
-  name: TabName | "Newsletters" | "Relatives" | "Complaints";
+  name: TabName | "Newsletters" | "Relatives" | "Complaints" | "ConsentForms";
   label: string;
   Icon: Icon;
   /** Inactive weight; the active pill always uses fill. */
@@ -121,6 +124,14 @@ export const TABS: TabEntry[] = [
     pushesRoute: "Complaints",
     more: true,
   },
+  {
+    name: "ConsentForms",
+    label: consentStrings().title,
+    Icon: SignatureIcon,
+    weight: "fill",
+    pushesRoute: "ConsentForms",
+    more: true,
+  },
   { name: "Account", label: "Account", Icon: GearSixIcon, weight: "regular" },
 ];
 
@@ -148,6 +159,8 @@ export function FloatingTabBar({ active, onSelect }: FloatingTabBarProps) {
   const barTabs = tabs.filter((tab) => !tab.more);
   const moreTabs = tabs.filter((tab) => tab.more);
   const [moreOpen, setMoreOpen] = useState(false);
+  // Forms waiting for an answer: a count next to the menu entry.
+  const { data: consentPending = 0 } = useConsentPendingCount();
   const bottom = Spacing.bottomInset.navFromBottom + (insets.bottom || 0);
 
   const openTab = (tab: TabEntry) => {
@@ -244,6 +257,13 @@ export function FloatingTabBar({ active, onSelect }: FloatingTabBarProps) {
                 <Text style={styles.moreLabel} color={Palette.text.onBrand}>
                   {tab.label === "Gate" ? "Gate Requests" : tab.label}
                 </Text>
+                {tab.name === "ConsentForms" && consentPending > 0 ? (
+                  <View style={styles.moreBadge}>
+                    <Text style={styles.moreBadgeText} color={Palette.text.onBrand}>
+                      {consentPending > 99 ? "99+" : consentPending}
+                    </Text>
+                  </View>
+                ) : null}
               </Pressable>
             ))}
           </View>
@@ -364,5 +384,19 @@ const styles = StyleSheet.create({
   moreLabel: {
     fontSize: 15,
     fontWeight: "500",
+  },
+  moreBadge: {
+    minWidth: 20,
+    height: 20,
+    paddingHorizontal: 6,
+    borderRadius: 10,
+    backgroundColor: Palette.nav.badge,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  moreBadgeText: {
+    fontSize: 11,
+    fontWeight: "700",
+    lineHeight: 14,
   },
 });
